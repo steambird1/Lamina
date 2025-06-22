@@ -22,7 +22,11 @@ int main(int argc, char* argv[]) {
             if (!ast) {
                 print_traceback("<stdin>", lineno);
             } else {
-                interpreter.execute(ast);
+                // 只支持 BlockStmt
+                auto* block = dynamic_cast<BlockStmt*>(ast.get());
+                if (block) {
+                    for (auto& stmt : block->statements) interpreter.execute(stmt);
+                }
             }
             ++lineno;
         }
@@ -43,6 +47,10 @@ int main(int argc, char* argv[]) {
         print_traceback(argv[1], 1);
         return 2;
     }
-    interpreter.execute(ast);
+    // 只支持 BlockStmt
+    auto* block = dynamic_cast<BlockStmt*>(ast.get());
+    if (block) {
+        for (auto& stmt : block->statements) interpreter.execute(stmt);
+    }
     return 0;
 }
