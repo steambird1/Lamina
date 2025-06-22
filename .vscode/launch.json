@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Lamina Debug (REPL)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/interpreter/lamina.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/interpreter",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "preLaunchTask": "build-lamina"
+        },
+        {
+            "name": "Lamina Debug (Run Script)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/interpreter/lamina.exe",
+            "args": ["examples/hello.lm"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/interpreter",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "preLaunchTask": "build-lamina"
+        }
+    ]
+}
