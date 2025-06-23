@@ -1,6 +1,7 @@
 #include "parser.hpp"
 #include <memory>
 #include <functional>
+#include <iostream>
 
 std::unique_ptr<Expression> Parser::parse_expression(const std::vector<Token>& tokens, size_t& i) {
     // 支持优先级：! > ^ > * / // % > + -
@@ -31,9 +32,24 @@ std::unique_ptr<Expression> Parser::parse_expression(const std::vector<Token>& t
             ++idx;
             auto expr = parse_expression(tokens, idx);
             if (tokens[idx].type == TokenType::RParen) ++idx;
-            return expr;
-        } else if (tokens[idx].type == TokenType::Identifier) {
-            return std::make_unique<IdentifierExpr>(tokens[idx++].text);
+            return expr;        } else if (tokens[idx].type == TokenType::Identifier) {
+            std::string name = tokens[idx++].text;
+            // 支持函数调用
+            if (tokens[idx].type == TokenType::LParen) {
+                ++idx; // consume '('
+                std::vector<std::unique_ptr<Expression>> args;
+                while (tokens[idx].type != TokenType::RParen && tokens[idx].type != TokenType::EndOfFile) {
+                    args.push_back(parse_expression(tokens, idx));
+                    if (tokens[idx].type == TokenType::Comma) {
+                        ++idx;
+                    } else {
+                        break; // 如果不是逗号则退出循环，只支持arg1,arg2,arg3格式
+                    }
+                }
+                if (tokens[idx].type == TokenType::RParen) ++idx;
+                return std::make_unique<CallExpr>(name, std::move(args));
+            }
+            return std::make_unique<IdentifierExpr>(name);
         }
         return nullptr;
     };
@@ -92,29 +108,64 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         i += 2;
         auto expr = parse_expression(tokens, i);
         if (tokens[i].type == TokenType::Semicolon) ++i;
-        return std::make_unique<AssignStmt>(name, std::move(expr));
-    } else if (tokens[i].type == TokenType::Print && tokens[i+1].type == TokenType::LParen) {
-        i += 2;
-        auto expr = parse_expression(tokens, i);
-        if (tokens[i].type == TokenType::RParen) ++i;
-        if (tokens[i].type == TokenType::Semicolon) ++i;
-        return std::make_unique<PrintStmt>(std::move(expr));
-    } else if (tokens[i].type == TokenType::Identifier && tokens[i+1].type == TokenType::LParen) {
-        // 预留函数调用
-        // ...
+        return std::make_unique<AssignStmt>(name, std::move(expr));    } else if (tokens[i].type == TokenType::Print) {
+        ++i;  // Skip print token
+        
+        if (i < tokens.size() && tokens[i].type == TokenType::LParen) {
+            ++i;  // Skip opening parenthesis
+            
+            if (i < tokens.size() && tokens[i].type != TokenType::RParen) {
+                auto expr = parse_expression(tokens, i);
+                
+                if (i < tokens.size() && tokens[i].type == TokenType::RParen) {
+                    ++i;  // Skip closing parenthesis
+                }
+                
+                if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) {
+                    ++i;  // Skip semicolon
+                }
+                
+                return std::make_unique<PrintStmt>(std::move(expr));
+            } else {
+                // Empty print()
+                if (i < tokens.size() && tokens[i].type == TokenType::RParen) {
+                    ++i;  // Skip closing parenthesis
+                }
+                
+                if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) {
+                    ++i;  // Skip semicolon
+                }
+                
+                // Create a empty string literal for empty print
+                auto emptyExpr = std::make_unique<LiteralExpr>("");
+                return std::make_unique<PrintStmt>(std::move(emptyExpr));
+            }
+        } else {
+            std::cerr << "Error: Expected '(' after 'print'" << std::endl;
+            return nullptr;
+        }
     } else if (tokens[i].type == TokenType::Return) {
         ++i;
         auto expr = parse_expression(tokens, i);
         if (tokens[i].type == TokenType::Semicolon) ++i;
         return std::make_unique<ReturnStmt>(std::move(expr));
+    } else if (tokens[i].type == TokenType::Break) {
+        ++i;
+        if (tokens[i].type == TokenType::Semicolon) ++i;
+        return std::make_unique<BreakStmt>();
+    } else if (tokens[i].type == TokenType::Continue) {
+        ++i;
+        if (tokens[i].type == TokenType::Semicolon) ++i;
+        return std::make_unique<ContinueStmt>();
     } else if (tokens[i].type == TokenType::Semicolon) {
         ++i; // 空语句
         return nullptr;
-    } else {
-        // 表达式语句
-        auto expr = parse_expression(tokens, i);
-        if (tokens[i].type == TokenType::Semicolon) ++i;
-        if (expr) return std::make_unique<PrintStmt>(std::move(expr)); // 这里可自定义为 ExprStmt
+    } else {        // 表达式语句 (包括函数调用)
+        if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
+            auto expr = parse_expression(tokens, i);
+            if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
+            if (expr) return std::make_unique<ExprStmt>(std::move(expr));
+        }
     }
     // 函数定义 func name (params) { block }
     if (tokens[i].type == TokenType::Func && tokens[i+1].type == TokenType::Identifier && tokens[i+2].type == TokenType::LParen) {
@@ -163,31 +214,24 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         if (tokens[i].type == TokenType::RBrace) ++i;
         return std::make_unique<WhileStmt>(std::move(cond), std::move(body));
     }
-    // for 语句（简单 C 风格）
-    if (tokens[i].type == TokenType::For && tokens[i+1].type == TokenType::LParen) {
-        // 这里只做结构预留，具体实现可后续完善
-        // ...
-    }
-    // 函数调用表达式
-    if (tokens[i].type == TokenType::Identifier && tokens[i+1].type == TokenType::LParen) {
-        std::string callee = tokens[i].text;
-        i += 2;
-        std::vector<std::unique_ptr<Expression>> args;
-        while (tokens[i].type != TokenType::RParen) {
-            args.push_back(parse_expression(tokens, i));
-            if (tokens[i].type == TokenType::Comma) ++i;
-            else break;
-        }
-        if (tokens[i].type == TokenType::RParen) ++i;
-        if (tokens[i].type == TokenType::Semicolon) ++i;
-        return std::make_unique<PrintStmt>(std::make_unique<CallExpr>(callee, std::move(args)));
-    }
     // include "module"
     if (tokens[i].type == TokenType::Include && tokens[i+1].type == TokenType::String) {
         std::string mod = tokens[i+1].text;
         i += 2;
         if (tokens[i].type == TokenType::Semicolon) ++i;
         return std::make_unique<IncludeStmt>(mod);
+    }
+    // break 语句
+    if (tokens[i].type == TokenType::Break) {
+        ++i;
+        if (tokens[i].type == TokenType::Semicolon) ++i;
+        return std::make_unique<BreakStmt>();
+    }
+    // continue 语句
+    if (tokens[i].type == TokenType::Continue) {
+        ++i;
+        if (tokens[i].type == TokenType::Semicolon) ++i;
+        return std::make_unique<ContinueStmt>();
     }
     return nullptr;
 }

@@ -17,7 +17,6 @@ for          // 计数循环
 return       // 返回值
 break        // 中断循环
 continue     // 跳过当前迭代
-import       // 导入模块
 print        // 输出
 exit         // 退出程序
 true         // 布尔值

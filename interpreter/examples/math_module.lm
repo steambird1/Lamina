@@ -1,0 +1,31 @@
+// math_module.lm - 基本数学模块
+
+// 定义一些常量
+var PI = 3.1415926;
+var E = 2.7182818;
+
+// 定义数学函数
+func abs(x) {
+    if (x < 0) {
+        return -x;
+    }
+    return x;
+}
+
+func square(x) {
+    return x * x;
+}
+
+func cube(x) {
+    return x * x * x;
+}
+
+func factorial(n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// 模块加载成功提示
+print("数学模块已加载");

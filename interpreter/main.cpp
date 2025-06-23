@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     }
     std::ifstream file(argv[1]);
     if (!file) {
-        std::cerr << "无法打开文件: " << argv[1] << std::endl;
+        std::cerr << "Unable to open file: " << argv[1] << std::endl;
         return 1;
     }
     std::stringstream buffer;

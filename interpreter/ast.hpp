@@ -74,12 +74,16 @@ struct IfStmt : public Statement {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<BlockStmt> thenBlock;
     std::unique_ptr<BlockStmt> elseBlock;
+    IfStmt(std::unique_ptr<Expression> cond, std::unique_ptr<BlockStmt> thenB, std::unique_ptr<BlockStmt> elseB)
+        : condition(std::move(cond)), thenBlock(std::move(thenB)), elseBlock(std::move(elseB)) {}
 };
 
 // while 语句
 struct WhileStmt : public Statement {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<BlockStmt> body;
+    WhileStmt(std::unique_ptr<Expression> cond, std::unique_ptr<BlockStmt> b)
+        : condition(std::move(cond)), body(std::move(b)) {}
 };
 
 // 函数定义
@@ -87,6 +91,8 @@ struct FuncDefStmt : public Statement {
     std::string name;
     std::vector<std::string> params;
     std::unique_ptr<BlockStmt> body;
+    FuncDefStmt(const std::string& n, const std::vector<std::string>& p, std::unique_ptr<BlockStmt> b)
+        : name(n), params(p), body(std::move(b)) {}
 };
 
 // 函数调用
@@ -107,4 +113,20 @@ struct ReturnStmt : public Statement {
 struct IncludeStmt : public Statement {
     std::string module;
     IncludeStmt(const std::string& m) : module(m) {}
+};
+
+// break 语句
+struct BreakStmt : public Statement {
+    BreakStmt() {}
+};
+
+// continue 语句
+struct ContinueStmt : public Statement {
+    ContinueStmt() {}
+};
+
+// 表达式语句
+struct ExprStmt : public Statement {
+    std::unique_ptr<Expression> expr;
+    ExprStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };

@@ -12,6 +12,8 @@ enum class TokenType {
     For,       
     Return,    
     Include,   // 新增
+    Break,     // 新增
+    Continue,  // 新增
     Identifier,
     Assign,
     Number,

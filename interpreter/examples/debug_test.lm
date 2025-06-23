@@ -1,0 +1,22 @@
+// Simple debug test script
+print("Debug test starting");
+
+// Test variable declarations
+var x = 10;
+print("x = " + x);
+
+// Test simple arithmetic
+print("x + 5 = " + (x + 5));
+print("x - 3 = " + (x - 3));
+print("x * 2 = " + (x * 2));
+print("x / 2 = " + (x / 2));
+
+// Test modulo
+print("15 % 4 = " + (15 % 4));
+
+// Test comparison
+if (x > 5) {
+    print("x is greater than 5");
+}
+
+print("Debug test complete");

@@ -1,0 +1,16 @@
+// 测试模块系统
+
+print("开始测试模块系统");
+
+// 导入数学模块
+include "math_module";  
+
+// 使用模块中的函数和常量
+print("PI 值: " + PI);
+print("E 值: " + E);
+
+print("3 的平方: " + square(3));
+print("4 的绝对值: " + abs(-4));
+print("5 的阶乘: " + factorial(5));
+
+print("模块系统测试结束");

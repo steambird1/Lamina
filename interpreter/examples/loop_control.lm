@@ -1,0 +1,27 @@
+// 测试 break 和 continue
+
+// 测试 break
+print("测试 break:");
+var i = 0;
+while (i < 10) {
+    print(i);
+    i = i + 1;
+    if (i == 5) {
+        print("遇到 5，跳出循环");
+        break;
+    }
+}
+print("break 测试结束");
+
+// 测试 continue
+print("测试 continue:");
+var j = 0;
+while (j < 10) {
+    j = j + 1;
+    if (j % 2 == 0) {
+        print("跳过偶数: " + j);
+        continue;
+    }
+    print("处理奇数: " + j);
+}
+print("continue 测试结束");

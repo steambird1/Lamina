@@ -5,6 +5,8 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     std::vector<Token> tokens;
     size_t i = 0;
     int line = 1, col = 1;
+    // 清楚日志，用于调试
+    std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') { ++line; col = 1; ++i; continue; }
         if (isspace(src[i])) { ++col; ++i; continue; }
@@ -36,6 +38,12 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
         } else if (src.compare(i, 7, "include") == 0 && !isalnum(src[i+7])) {
             tokens.push_back(Token(TokenType::Include, "include", line, start_col));
             i += 7; col += 7;
+        } else if (src.compare(i, 5, "break") == 0 && !isalnum(src[i+5])) {
+            tokens.push_back(Token(TokenType::Break, "break", line, start_col));
+            i += 5; col += 5;
+        } else if (src.compare(i, 8, "continue") == 0 && !isalnum(src[i+8])) {
+            tokens.push_back(Token(TokenType::Continue, "continue", line, start_col));
+            i += 8; col += 8;
         } else if (isalpha(src[i]) || src[i] == '_') {
             size_t j = i+1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
@@ -71,13 +79,15 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i; ++col;
         } else if (src[i] == '*') {
             tokens.push_back(Token(TokenType::Star, "*", line, start_col));
-            ++i; ++col;
+            ++i; ++col;        } else if (src[i] == '/' && i+1 < src.size() && src[i+1] == '/') {
+            // Comment - skip until end of line
+            size_t j = i + 2;
+            while (j < src.size() && src[j] != '\n') ++j;
+            i = j; // Skip to the end of comment
+            continue; // Continue the loop (which will handle the newline)
         } else if (src[i] == '/') {
             tokens.push_back(Token(TokenType::Slash, "/", line, start_col));
             ++i; ++col;
-        } else if (src[i] == '/' && src[i+1] == '/') {
-            tokens.push_back(Token(TokenType::DoubleSlash, "//", line, start_col));
-            i += 2; col += 2;
         } else if (src[i] == '%') {
             tokens.push_back(Token(TokenType::Percent, "%", line, start_col));
             ++i; ++col;

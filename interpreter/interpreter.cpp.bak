@@ -6,31 +6,32 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <fstream>
+#include <sstream>
 
-// Exception for return statements
+// 用于 return 语句的异常
 class ReturnException : public std::exception {
-public:
+  public:
     Value value;
     ReturnException(const Value& v) : value(v) {}
 };
 
-// Exception for break statements
+// 用于 break 语句的异常
 class BreakException : public std::exception {
-public:
+  public:
     BreakException() {}
 };
 
-// Exception for continue statements
+// 用于 continue 语句的异常
 class ContinueException : public std::exception {
-public:
+  public:
     ContinueException() {}
 };
 
-// Scope stack operations
+// 作用域栈操作
 void Interpreter::push_scope() {
     variable_stack.emplace_back();
 }
-
 void Interpreter::pop_scope() {
     if (variable_stack.size() > 1) variable_stack.pop_back();
 }
@@ -43,7 +44,6 @@ Value Interpreter::get_variable(const std::string& name) const {
     std::cerr << "Error: Undefined variable '" << name << "'" << std::endl;
     return Value("<undefined>");
 }
-
 void Interpreter::set_variable(const std::string& name, const Value& val) {
     if (!variable_stack.empty()) {
         (*variable_stack.rbegin())[name] = val;
@@ -52,87 +52,55 @@ void Interpreter::set_variable(const std::string& name, const Value& val) {
 
 void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     if (!node) return;
-      if (auto* p = dynamic_cast<PrintStmt*>(node.get())) {
-        if (p->expr) {
-            Value val = eval(p->expr.get());
-            std::cout << val.to_string() << std::endl;
-        } else {
-            std::cerr << "Error: Null expression in print statement" << std::endl;
-            std::cout << "<error>" << std::endl;
-        }
-    }    else if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
-        if (v->expr) {
-            Value val = eval(v->expr.get());
-            set_variable(v->name, val);
-        } else {
-            std::cerr << "Error: Null expression in variable declaration of '" << v->name << "'" << std::endl;
-            set_variable(v->name, Value("<undefined>"));
-        }
-    }
-    else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
-        Value val = eval(a->expr.get());
-        set_variable(a->name, val);
-    }
-    else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
+    if (auto* p = dynamic_cast<PrintStmt*>(node.get())) {
+        Value val = eval(p->expr.get());
+        std::cout << val.to_string() << std::endl;
+    } else if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
+        Value val = eval(v->expr.get());
+        set_variable(v->name, val);
+    } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         Value cond = eval(ifs->condition.get());
         bool cond_true = cond.type == Value::Type::Int ? std::get<int>(cond.data) != 0 : false;
         if (cond_true) {
             for (auto& stmt : ifs->thenBlock->statements) execute(stmt);
         } else if (ifs->elseBlock) {
             for (auto& stmt : ifs->elseBlock->statements) execute(stmt);
-        }
-    } 
-    else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
+        }    } else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
         while (true) {
             Value cond = eval(ws->condition.get());
             bool cond_true = cond.type == Value::Type::Int ? std::get<int>(cond.data) != 0 : false;
-            if (!cond_true) break;
+            if (!cond_true) {
+                break;
+            }
             try {
                 for (auto& stmt : ws->body->statements) execute(stmt);
             } catch (BreakException&) {
                 break; // Exit the loop
             } catch (ContinueException&) {
-                continue; // Skip to next iteration
+                continue; // Skip to the next iteration
             }
         }
-    } 
-    else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
+    } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
         functions[func->name] = func;
-    } 
-    else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
-        for (auto& stmt : block->statements) execute(stmt);
-    } 
-    else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
+    } else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
+        for (auto& stmt : block->statements) execute(stmt);    } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
         Value val = eval(ret->expr.get());
-        throw ReturnException(val);
-    } 
-    else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
+        throw ReturnException(val);    } else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
         throw BreakException();
-    } 
-    else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
+    } else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
         throw ContinueException();
-    } 
-    else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
+    } else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
         if (!load_module(includeStmt->module)) {
             std::cerr << "Error: Failed to include module '" << includeStmt->module << "'" << std::endl;
         }
-    }    else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
-        if (exprstmt->expr) {
-            eval(exprstmt->expr.get());
-        } else {
-            std::cerr << "Error: Empty expression statement" << std::endl;
-        }
+    } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
+        eval(exprstmt->expr.get());
     }
 }
 
 Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
-        // 避免重复打印相同的错误信息
-        static bool errorPrinted = false;
-        if (!errorPrinted) {
-            std::cerr << "Error: Attempted to evaluate null expression" << std::endl;
-            errorPrinted = true;
-        }
+        std::cerr << "Error: Attempted to evaluate null expression" << std::endl;
         return Value("<error>");
     }
     
@@ -144,14 +112,10 @@ Value Interpreter::eval(const ASTNode* node) {
         } catch (...) {
             return Value(lit->value);
         }
-    } 
-    else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
-        return get_variable(id->name);
-    } 
-    else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
+    } else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
+        return get_variable(id->name);    } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         Value l = eval(bin->left.get());
         Value r = eval(bin->right.get());
-        
         // String concatenation
         if (bin->op == "+") {
             if (l.type == Value::Type::String || r.type == Value::Type::String) {
@@ -160,119 +124,63 @@ Value Interpreter::eval(const ASTNode* node) {
                 return Value(std::get<int>(l.data) + std::get<int>(r.data));
             }
         }
-          // Type checking for arithmetic operations
-        if ((bin->op == "-" || bin->op == "*" || bin->op == "/" || 
-             bin->op == "//" || bin->op == "%" || bin->op == "^")) {
-            // 检查左操作数
-            if (l.type != Value::Type::Int) {
-                std::cerr << "Error: Left operand of '" << bin->op << "' must be an integer, got " 
-                          << (l.type == Value::Type::String ? "string" : 
-                             l.type == Value::Type::Array ? "array" : "unknown type") << std::endl;
-                return Value("<type error>");
-            }
-            // 检查右操作数
-            if (r.type != Value::Type::Int) {
-                std::cerr << "Error: Right operand of '" << bin->op << "' must be an integer, got " 
-                          << (r.type == Value::Type::String ? "string" : 
-                             r.type == Value::Type::Array ? "array" : "unknown type") << std::endl;
-                return Value("<type error>");
-            }
-        }
-        
         int li = l.type == Value::Type::Int ? std::get<int>(l.data) : 0;
         int ri = r.type == Value::Type::Int ? std::get<int>(r.data) : 0;
-        
         if (bin->op == "-") return Value(li - ri);
-        if (bin->op == "*") return Value(li * ri);
-        
-        if (bin->op == "/") {
+        if (bin->op == "*") return Value(li * ri);        if (bin->op == "/") {
             if (ri == 0) {
                 std::cerr << "Error: Division by zero" << std::endl;
                 return Value("<div by zero>");
             }
-            return Value(li / ri);
-        }
-        
-        if (bin->op == "//") {
+            return Value(li / ri); // Integer division for now
+        }        if (bin->op == "//") {
             if (ri == 0) {
                 std::cerr << "Error: Integer division by zero" << std::endl;
                 return Value("<div by zero>");
             }
             return Value(li / ri);
         }
-        
         if (bin->op == "%") {
             if (ri == 0) {
                 std::cerr << "Error: Modulo by zero" << std::endl;
                 return Value("<mod by zero>");
             }
             return Value(li % ri);
-        }
-        
         if (bin->op == "^") {
-            if (ri < 0) {
-                std::cerr << "Error: Negative exponent not supported" << std::endl;
-                return Value("<neg exp>");
-            }
             int res = 1;
             for (int j = 0; j < ri; ++j) res *= li;
             return Value(res);
         }
-        
-        std::cerr << "Error: Unknown binary operator '" << bin->op << "'" << std::endl;
-        return Value("<unknown op>");
-    } 
-    else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
+        return Value("<binop error>");
+    } else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
-        
-        if (v.type != Value::Type::Int) {
-            std::cerr << "Error: Unary operator requires integer operand" << std::endl;
-            return Value("<type error>");
-        }
-        
-        int vi = std::get<int>(v.data);
-        
+        int vi = v.type == Value::Type::Int ? std::get<int>(v.data) : 0;
         if (unary->op == "-") return Value(-vi);
         if (unary->op == "!") {
-            if (vi < 0) {
-                std::cerr << "Error: Factorial of negative number" << std::endl;
-                return Value("<factorial error>");
-            }
             int res = 1;
             for (int j = 1; j <= vi; ++j) res *= j;
             return Value(res);
         }
-        
-        std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;
-        return Value("<unknown op>");
+        return Value("<unary error>");
     }    // Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
-        // Check if function exists
         auto it = functions.find(call->callee);
         if (it != functions.end()) {
             FuncDefStmt* func = it->second;
-            if (!func) {
-                std::cerr << "Error: Function object for '" << call->callee << "' is null" << std::endl;
-                return Value("<func error>");
-            }
             push_scope();
             
-            // Check parameter count
+            // Check for parameter count mismatch
             if (call->args.size() > func->params.size()) {
                 std::cerr << "Warning: Too many arguments provided to function '" << call->callee 
                           << "'. Expected " << func->params.size() << ", got " << call->args.size() << std::endl;
             }
-              // Pass arguments
+            
+            // Pass arguments
             for (size_t j = 0; j < func->params.size(); ++j) {
                 if (j < call->args.size()) {
-                    if (call->args[j]) {
-                        set_variable(func->params[j], eval(call->args[j].get()));
-                    } else {
-                        std::cerr << "Error: Null argument " << j+1 << " in call to function '" 
-                                  << call->callee << "'" << std::endl;
-                        set_variable(func->params[j], Value("<null arg>"));
-                    }
+                    set_variable(func->params[j], eval(call->args[j].get()));
                 } else {
+                    // Default value for missing parameters
                     std::cerr << "Warning: Missing argument '" << func->params[j] 
                               << "' in call to function '" << call->callee << "'" << std::endl;
                     set_variable(func->params[j], Value("<undefined>"));
@@ -293,34 +201,15 @@ Value Interpreter::eval(const ASTNode* node) {
         return Value("<undefined function>");
     }    // Support array literals [a, b, ...]
     else if (auto* arr = dynamic_cast<const BlockStmt*>(node)) {
+        // Only for array expressions
         std::vector<Value> vals;
-        bool hasError = false;
-        
-        for (size_t i = 0; i < arr->statements.size(); i++) {
-            const auto& stmt = arr->statements[i];
-            if (!stmt) {
-                std::cerr << "Error: Null statement in array at position " << i << std::endl;
-                hasError = true;
-                continue;
-            }
-            
+        for (const auto& stmt : arr->statements) {
             if (auto* exprStmt = dynamic_cast<PrintStmt*>(stmt.get())) {
-                if (exprStmt->expr) {
-                    vals.push_back(eval(exprStmt->expr.get()));
-                } else {
-                    std::cerr << "Error: Null expression in array at position " << i << std::endl;
-                    vals.push_back(Value("<error>"));
-                    hasError = true;
-                }
+                vals.push_back(eval(exprStmt->expr.get()));
             } else {
                 std::cerr << "Warning: Only expressions are allowed in array literals" << std::endl;
             }
         }
-        
-        if (hasError) {
-            std::cerr << "Warning: Array contains errors, results may be unexpected" << std::endl;
-        }
-        
         return Value(vals);
     }
     
@@ -330,7 +219,7 @@ Value Interpreter::eval(const ASTNode* node) {
 
 // Load and execute module
 bool Interpreter::load_module(const std::string& module_name) {
-    // Check if already loaded to avoid circular imports
+    // Check if already loaded, avoid circular imports
     if (loaded_modules.find(module_name) != loaded_modules.end()) {
         return true;  // Already loaded
     }
@@ -361,9 +250,7 @@ bool Interpreter::load_module(const std::string& module_name) {
         }
         std::cerr << std::endl;
         return false;
-    }
-
-    // Read file into string
+    }    // Read file into string
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string source = buffer.str();
@@ -380,9 +267,7 @@ bool Interpreter::load_module(const std::string& module_name) {
         std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;
         loaded_modules.erase(module_name); // Remove from loaded modules on failure
         return false;
-    }
-
-    // Execute module code (should be a block statement)
+    }    // Execute module code (should be a block statement)
     auto* block = dynamic_cast<BlockStmt*>(ast.get());
     if (block) {
         // Create a new scope for module execution
