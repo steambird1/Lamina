@@ -1,5 +1,0 @@
-func add(a, b) {
-    return a + b;
-}
-var x = add(2, 3);
-print(x);  // 输出 5

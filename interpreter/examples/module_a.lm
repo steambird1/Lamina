@@ -1,8 +1,0 @@
-// module_a.lm
-print("加载模块 A");
-var a_value = 10;
-
-// 导入模块 B
-include "module_b";
-
-print("模块 A 完成，b_value = " + b_value);

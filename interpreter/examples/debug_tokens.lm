@@ -1,5 +1,0 @@
-# Debug test for tokenization
-
-print("Debug test:");
-var a = 5;
-print(a == 5);
