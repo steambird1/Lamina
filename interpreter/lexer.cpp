@@ -1,11 +1,12 @@
 #include "lexer.hpp"
 #include <cctype>
+#include <iostream>
 
 std::vector<Token> Lexer::tokenize(const std::string& src) {
     std::vector<Token> tokens;
     size_t i = 0;
     int line = 1, col = 1;
-    // 清楚日志，用于调试
+    // Clear log for debugging
     std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') { ++line; col = 1; ++i; continue; }
@@ -48,9 +49,29 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             size_t j = i+1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
             tokens.push_back(Token(TokenType::Identifier, src.substr(i, j-i), line, start_col));
-            col += (j-i); i = j;
+            col += (j-i); i = j;        } else if (src[i] == '=' && i + 1 < src.size() && src[i+1] == '=') {
+            tokens.push_back(Token(TokenType::Equal, "==", line, start_col));
+            i += 2; col += 2;
+        } else if (src[i] == '!' && i + 1 < src.size() && src[i+1] == '=') {
+            tokens.push_back(Token(TokenType::NotEqual, "!=", line, start_col));
+            i += 2; col += 2;
+        } else if (src[i] == '<' && i + 1 < src.size() && src[i+1] == '=') {
+            tokens.push_back(Token(TokenType::LessEqual, "<=", line, start_col));
+            i += 2; col += 2;
+        } else if (src[i] == '>' && i + 1 < src.size() && src[i+1] == '=') {
+            tokens.push_back(Token(TokenType::GreaterEqual, ">=", line, start_col));
+            i += 2; col += 2;
+        } else if (src[i] == '<') {
+            tokens.push_back(Token(TokenType::Less, "<", line, start_col));
+            ++i; ++col;
+        } else if (src[i] == '>') {
+            tokens.push_back(Token(TokenType::Greater, ">", line, start_col));
+            ++i; ++col;
         } else if (src[i] == '=') {
             tokens.push_back(Token(TokenType::Assign, "=", line, start_col));
+            ++i; ++col;
+        } else if (src[i] == '>') {
+            tokens.push_back(Token(TokenType::Greater, ">", line, start_col));
             ++i; ++col;
         } else if (isdigit(src[i])) {
             size_t j = i;
@@ -66,11 +87,21 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
         } else if (src[i] == ';') {
             tokens.push_back(Token(TokenType::Semicolon, ";", line, start_col));
             ++i; ++col;
-        } else if (src[i] == '"') {
+        } else if (src[i] == '"' || src[i] == '\'') {
+            char quote_type = src[i];
             size_t j = i + 1;
-            while (j < src.size() && src[j] != '"') ++j;
-            tokens.push_back(Token(TokenType::String, src.substr(i + 1, j - i - 1), line, start_col));
-            col += (j-i+1); i = j + 1;
+            while (j < src.size() && src[j] != quote_type) {
+                j++;
+            }
+
+            if (j >= src.size()) { // Unterminated string
+                std::cerr << "Error: Unterminated string literal at line " << line << std::endl;
+                i = src.size(); // Stop tokenizing
+            } else {
+                tokens.push_back(Token(TokenType::String, src.substr(i + 1, j - i - 1), line, start_col));
+                col += (j - i + 1);
+                i = j + 1;
+            }
         } else if (src[i] == '+') {
             tokens.push_back(Token(TokenType::Plus, "+", line, start_col));
             ++i; ++col;
@@ -79,12 +110,15 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i; ++col;
         } else if (src[i] == '*') {
             tokens.push_back(Token(TokenType::Star, "*", line, start_col));
-            ++i; ++col;        } else if (src[i] == '/' && i+1 < src.size() && src[i+1] == '/') {
-            // Comment - skip until end of line
-            size_t j = i + 2;
+            ++i; ++col;
+        } else if (src[i] == '#') { // Use '#' for comments
+            size_t j = i + 1;
             while (j < src.size() && src[j] != '\n') ++j;
-            i = j; // Skip to the end of comment
-            continue; // Continue the loop (which will handle the newline)
+            i = j;
+            continue;
+        } else if (src[i] == '/' && i + 1 < src.size() && src[i+1] == '/') {
+            tokens.push_back(Token(TokenType::DoubleSlash, "//", line, start_col));
+            i += 2; col += 2;
         } else if (src[i] == '/') {
             tokens.push_back(Token(TokenType::Slash, "/", line, start_col));
             ++i; ++col;

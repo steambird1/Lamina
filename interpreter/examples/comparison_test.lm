@@ -1,0 +1,45 @@
+# 测试所有比较运算符
+
+print("=== 测试比较运算符 ===");
+
+var a = 5;
+var b = 3;
+var c = 5;
+
+print("a = 5, b = 3, c = 5");
+
+# 等于
+print("a == c: " + (a == c));
+print("a == b: " + (a == b));
+
+# 不等于
+print("a != b: " + (a != b));
+print("a != c: " + (a != c));
+
+# 小于
+print("b < a: " + (b < a));
+print("a < b: " + (a < b));
+
+# 小于等于
+print("b <= a: " + (b <= a));
+print("a <= c: " + (a <= c));
+
+# 大于
+print("a > b: " + (a > b));
+print("b > a: " + (b > a));
+
+# 大于等于
+print("a >= b: " + (a >= b));
+print("a >= c: " + (a >= c));
+
+# 字符串比较
+var s1 = "hello";
+var s2 = "world";
+var s3 = "hello";
+
+print("字符串比较:");
+print('s1 == s3: ' + (s1 == s3));
+print('s1 == s2: ' + (s1 == s2));
+print('s1 < s2: ' + (s1 < s2));
+
+print("=== 测试完成 ===");

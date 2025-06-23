@@ -33,6 +33,12 @@ enum class TokenType {
     Percent,     
     Caret,       
     Bang,        
+    Equal,       // ==
+    NotEqual,    // !=
+    Less,        // <
+    LessEqual,   // <=
+    Greater,     // >
+    GreaterEqual,// >=
     EndOfFile,
     Unknown
 };

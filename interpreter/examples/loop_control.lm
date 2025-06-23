@@ -1,6 +1,6 @@
-// 测试 break 和 continue
+# 测试 break 和 continue
 
-// 测试 break
+# 测试 break
 print("测试 break:");
 var i = 0;
 while (i < 10) {
@@ -13,7 +13,7 @@ while (i < 10) {
 }
 print("break 测试结束");
 
-// 测试 continue
+# 测试 continue
 print("测试 continue:");
 var j = 0;
 while (j < 10) {

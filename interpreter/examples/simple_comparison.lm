@@ -1,0 +1,14 @@
+# 简单的比较测试
+
+print("简单比较测试:");
+
+var a = 5;
+var b = 3;
+
+print(a);
+print(b);
+print(a == b);
+print(a > b);
+print(a < b);
+
+print("测试完成");

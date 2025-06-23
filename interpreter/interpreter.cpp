@@ -70,10 +70,18 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     }
     else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
+        if (!a->expr) {
+            std::cerr << "Error: Null expression in assignment to '" << a->name << "'" << std::endl;
+            return;
+        }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
     }
     else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
+        if (!ifs->condition) {
+            std::cerr << "Error: Null condition in if statement" << std::endl;
+            return;
+        }
         Value cond = eval(ifs->condition.get());
         bool cond_true = cond.type == Value::Type::Int ? std::get<int>(cond.data) != 0 : false;
         if (cond_true) {
@@ -83,6 +91,10 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } 
     else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
+        if (!ws->condition) {
+            std::cerr << "Error: Null condition in while statement" << std::endl;
+            return;
+        }
         while (true) {
             Value cond = eval(ws->condition.get());
             bool cond_true = cond.type == Value::Type::Int ? std::get<int>(cond.data) != 0 : false;
@@ -127,7 +139,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
 
 Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
-        // 避免重复打印相同的错误信息
+        // Avoid printing the same error message repeatedly
         static bool errorPrinted = false;
         if (!errorPrinted) {
             std::cerr << "Error: Attempted to evaluate null expression" << std::endl;
@@ -163,14 +175,14 @@ Value Interpreter::eval(const ASTNode* node) {
           // Type checking for arithmetic operations
         if ((bin->op == "-" || bin->op == "*" || bin->op == "/" || 
              bin->op == "//" || bin->op == "%" || bin->op == "^")) {
-            // 检查左操作数
+            // Check left operand
             if (l.type != Value::Type::Int) {
                 std::cerr << "Error: Left operand of '" << bin->op << "' must be an integer, got " 
                           << (l.type == Value::Type::String ? "string" : 
                              l.type == Value::Type::Array ? "array" : "unknown type") << std::endl;
                 return Value("<type error>");
             }
-            // 检查右操作数
+            // Check right operand
             if (r.type != Value::Type::Int) {
                 std::cerr << "Error: Right operand of '" << bin->op << "' must be an integer, got " 
                           << (r.type == Value::Type::String ? "string" : 
@@ -217,6 +229,49 @@ Value Interpreter::eval(const ASTNode* node) {
             int res = 1;
             for (int j = 0; j < ri; ++j) res *= li;
             return Value(res);
+        }
+        
+        // Comparison operators
+        if (bin->op == "==" || bin->op == "!=" || bin->op == "<" || 
+            bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
+            
+            // Handle different type combinations
+            if (l.type == Value::Type::Int && r.type == Value::Type::Int) {
+                int li = std::get<int>(l.data);
+                int ri = std::get<int>(r.data);
+                
+                if (bin->op == "==") return Value(li == ri ? 1 : 0);
+                if (bin->op == "!=") return Value(li != ri ? 1 : 0);
+                if (bin->op == "<") return Value(li < ri ? 1 : 0);
+                if (bin->op == "<=") return Value(li <= ri ? 1 : 0);
+                if (bin->op == ">") return Value(li > ri ? 1 : 0);
+                if (bin->op == ">=") return Value(li >= ri ? 1 : 0);
+            }
+            else if (l.type == Value::Type::String && r.type == Value::Type::String) {
+                std::string ls = std::get<std::string>(l.data);
+                std::string rs = std::get<std::string>(r.data);
+                
+                if (bin->op == "==") return Value(ls == rs ? 1 : 0);
+                if (bin->op == "!=") return Value(ls != rs ? 1 : 0);
+                if (bin->op == "<") return Value(ls < rs ? 1 : 0);
+                if (bin->op == "<=") return Value(ls <= rs ? 1 : 0);
+                if (bin->op == ">") return Value(ls > rs ? 1 : 0);
+                if (bin->op == ">=") return Value(ls >= rs ? 1 : 0);
+            }
+            else {
+                // Type mismatch - only equality/inequality make sense
+                if (bin->op == "==") return Value(0); // Different types are never equal
+                if (bin->op == "!=") return Value(1); // Different types are always not equal
+                
+                std::cerr << "Error: Cannot compare " 
+                          << (l.type == Value::Type::String ? "string" : 
+                             l.type == Value::Type::Array ? "array" : "integer")
+                          << " with "
+                          << (r.type == Value::Type::String ? "string" : 
+                             r.type == Value::Type::Array ? "array" : "integer")
+                          << " using operator '" << bin->op << "'" << std::endl;
+                return Value("<comparison error>");
+            }
         }
         
         std::cerr << "Error: Unknown binary operator '" << bin->op << "'" << std::endl;
@@ -291,37 +346,6 @@ Value Interpreter::eval(const ASTNode* node) {
         }
         std::cerr << "Error: Call to undefined function '" << call->callee << "'" << std::endl;
         return Value("<undefined function>");
-    }    // Support array literals [a, b, ...]
-    else if (auto* arr = dynamic_cast<const BlockStmt*>(node)) {
-        std::vector<Value> vals;
-        bool hasError = false;
-        
-        for (size_t i = 0; i < arr->statements.size(); i++) {
-            const auto& stmt = arr->statements[i];
-            if (!stmt) {
-                std::cerr << "Error: Null statement in array at position " << i << std::endl;
-                hasError = true;
-                continue;
-            }
-            
-            if (auto* exprStmt = dynamic_cast<PrintStmt*>(stmt.get())) {
-                if (exprStmt->expr) {
-                    vals.push_back(eval(exprStmt->expr.get()));
-                } else {
-                    std::cerr << "Error: Null expression in array at position " << i << std::endl;
-                    vals.push_back(Value("<error>"));
-                    hasError = true;
-                }
-            } else {
-                std::cerr << "Warning: Only expressions are allowed in array literals" << std::endl;
-            }
-        }
-        
-        if (hasError) {
-            std::cerr << "Warning: Array contains errors, results may be unexpected" << std::endl;
-        }
-        
-        return Value(vals);
     }
     
     std::cerr << "Error: Unsupported expression type" << std::endl;

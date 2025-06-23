@@ -1,0 +1,18 @@
+// Test script for robustness and error handling
+
+print("--- Testing robustness ---");
+
+// These should now produce parser errors instead of crashing the interpreter
+// var x =; 
+// y =;
+// if () {}
+// while () {}
+// print(1,);
+
+// Test empty statements
+;;
+
+print("Testing empty print statement:");
+print();
+
+print("--- Testing completed ---");
