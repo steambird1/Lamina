@@ -60,8 +60,12 @@ struct AssignStmt : public Statement {
 
 // print 语句
 struct PrintStmt : public Statement {
-    std::unique_ptr<Expression> expr;
-    PrintStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
+    std::vector<std::unique_ptr<Expression>> exprs;
+    PrintStmt(std::vector<std::unique_ptr<Expression>> e) : exprs(std::move(e)) {}
+    // 为了向后兼容，保留单个表达式的构造函数
+    PrintStmt(std::unique_ptr<Expression> e) {
+        exprs.push_back(std::move(e));
+    }
 };
 
 // 复合语句块
@@ -101,6 +105,13 @@ struct CallExpr : public Expression {
     std::vector<std::unique_ptr<Expression>> args;
     CallExpr(const std::string& c, std::vector<std::unique_ptr<Expression>> a)
         : callee(c), args(std::move(a)) {}
+};
+
+// 数组字面量
+struct ArrayExpr : public Expression {
+    std::vector<std::unique_ptr<Expression>> elements;
+    ArrayExpr(std::vector<std::unique_ptr<Expression>> elems)
+        : elements(std::move(elems)) {}
 };
 
 // return 语句
