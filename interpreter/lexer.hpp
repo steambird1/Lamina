@@ -9,29 +9,34 @@ enum class TokenType {
     If,        
     Else,      
     While,     
-    For,       
-    Return,    
+    For,     Return,    
     Include,   // 新增
     Break,     // 新增
     Continue,  // 新增
+    Define,    // define
+    Bigint,    // bigint
+    True,      // true
+    False,     // false
+    Null,      // null
+    Input,     // input
     Identifier,
     Assign,
-    Number,
+    Number,    
     LParen,
     RParen,
     LBrace,    
-    RBrace,    
-    Comma,     
+    RBrace,
+    LBracket,   // [
+    RBracket,   // ]
+    Comma,
     Dot,       // 新增
     String,
     Semicolon,
     Plus,    
-    Minus,   
-    Star,    
+    Minus,    Star,    
     Slash,   
-    DoubleSlash, 
     Percent,     
-    Caret,       
+    Caret,
     Bang,        
     Equal,       // ==
     NotEqual,    // !=

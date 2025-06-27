@@ -141,3 +141,19 @@ struct ExprStmt : public Statement {
     std::unique_ptr<Expression> expr;
     ExprStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };
+
+// Define语句（用于设置常量，如递归深度）
+struct DefineStmt : public Statement {
+    std::string name;
+    std::unique_ptr<Expression> value;
+    DefineStmt(const std::string& n, std::unique_ptr<Expression> v) 
+        : name(n), value(std::move(v)) {}
+};
+
+// BigInt变量声明
+struct BigIntDeclStmt : public Statement {
+    std::string name;
+    std::unique_ptr<Expression> init_value;
+    BigIntDeclStmt(const std::string& n, std::unique_ptr<Expression> v = nullptr) 
+        : name(n), init_value(std::move(v)) {}
+};
