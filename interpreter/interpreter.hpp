@@ -8,11 +8,42 @@
 #include <set>
 #include <functional>
 
+// 定义一个运行时错误类，供解释器内部使用
+class RuntimeError : public std::exception {
+public:
+    std::string message;
+    RuntimeError(const std::string& msg) : message(msg) {}
+    const char* what() const noexcept override {
+        return message.c_str();
+    }
+};
+
+// Exception for return statements
+class ReturnException : public std::exception {
+public:
+    Value value;
+    ReturnException(const Value& v) : value(v) {}
+};
+
+// Exception for break statements
+class BreakException : public std::exception {
+public:
+    BreakException() {}
+};
+
+// Exception for continue statements
+class ContinueException : public std::exception {
+public:
+    ContinueException() {}
+};
+
 class Interpreter {
 public:
     Interpreter() { register_builtin_functions(); }
     void execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
+    // 打印当前作用域中的所有变量
+    void printVariables() const;
 private:
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };    

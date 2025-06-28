@@ -26,6 +26,12 @@ struct IdentifierExpr : public Expression {
     IdentifierExpr(const std::string& n) : name(n) {}
 };
 
+// 变量引用
+struct VarExpr : public Expression {
+    std::string name;
+    VarExpr(const std::string& n) : name(n) {}
+};
+
 // 二元运算
 struct BinaryExpr : public Expression {
     std::string op;

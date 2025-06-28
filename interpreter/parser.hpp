@@ -15,7 +15,9 @@ public:
     static std::unique_ptr<Expression> parse_unary(const std::vector<Token>& tokens, size_t& i);
     static std::unique_ptr<Expression> parse_primary(const std::vector<Token>& tokens, size_t& i);
     // 解析一组语句，返回 BlockStmt
-    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i);
+    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i, bool is_global);
+    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i); // 兼容老代码
     // 解析单条语句
     static std::unique_ptr<Statement> parse_statement(const std::vector<Token>& tokens, size_t& i);
+    static std::unique_ptr<Statement> parse_while(const std::vector<Token>& tokens, size_t& i);
 };
