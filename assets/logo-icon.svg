@@ -21,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.6395834"
-     inkscape:cx="-34.76493"
-     inkscape:cy="59.466327"
+     inkscape:zoom="4.6374422"
+     inkscape:cx="65.337742"
+     inkscape:cy="64.583016"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -108,37 +108,19 @@
      fill="url(#mainGrad)"
      id="path4"
      style="fill:url(#mainGrad-0);stroke-width:1.47537" />
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;opacity:0.3;fill:#4a5568;fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
-     x="52.818802"
-     y="54.005535"
-     id="text12-3"><tspan
-       sodipodi:role="line"
-       id="tspan12-4"
-       x="52.818802"
-       y="54.005535"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:6.17553">M</tspan></text>
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;opacity:0.6;fill:#4a5568;fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
-     x="58.123005"
-     y="60.067482"
-     id="text12-9"><tspan
-       sodipodi:role="line"
-       id="tspan12-5"
-       x="58.123005"
-       y="60.067482"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:6.17553">M</tspan></text>
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:url(#linearGradient23);fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
-     x="63.794231"
-     y="65.460495"
-     id="text12"><tspan
-       sodipodi:role="line"
-       id="tspan12"
-       x="63.794231"
-       y="65.460495"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient23);fill-opacity:1;stroke-width:6.17553">M</tspan></text>
+  <path
+     d="m 95.058514,54.005535 h -9.21506 V 29.954711 L 79.185453,45.562417 H 72.792806 L 66.134805,29.954711 V 54.005535 H 57.402209 V 18.0861 H 68.161153 L 76.242423,36.106125 84.29957,18.0861 h 10.758944 z"
+     id="text12-3"
+     style="font-weight:bold;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';opacity:0.3;fill:#4a5568;stroke-width:6.17553;stroke-opacity:0"
+     aria-label="M" />
+  <path
+     d="M 100.36272,60.067482 H 91.147657 V 36.016658 L 84.489656,51.624364 H 78.097009 L 71.439008,36.016658 V 60.067482 H 62.706412 V 24.148047 h 10.758944 l 8.08127,18.020025 8.057147,-18.020025 h 10.758947 z"
+     id="text12-9"
+     style="font-weight:bold;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';opacity:0.6;fill:#4a5568;stroke-width:6.17553;stroke-opacity:0"
+     aria-label="M" />
+  <path
+     d="M 106.03394,65.460495 H 96.818884 V 41.409671 L 90.160882,57.017377 H 83.768236 L 77.110234,41.409671 V 65.460495 H 68.377638 V 29.54106 h 10.758945 l 8.081269,18.020025 8.057147,-18.020025 h 10.758941 z"
+     id="text12"
+     style="font-weight:bold;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';fill:url(#linearGradient23);stroke-width:6.17553;stroke-opacity:0"
+     aria-label="M" />
 </svg>

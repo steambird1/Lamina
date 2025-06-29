@@ -1,5 +1,6 @@
-# Lamina
-![LOGO](./assets/logo.svg "Lamina Layered Funcional Elegant")
+# <img src="./assets/logo-icon.svg" width="10%"> Lamina 
+<img src="./assets/logo.svg" width="100%">
+
 [![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)
 [![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
