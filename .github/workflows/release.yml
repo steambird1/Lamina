@@ -40,6 +40,7 @@ jobs:
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
+        update: true
         install: mingw-w64-x86_64-gcc
         path-type: inherit
 
@@ -77,8 +78,11 @@ jobs:
     - name: Build (Windows)
       if: matrix.os == 'windows-latest'
       working-directory: interpreter
-      shell: msys2 {0}
+      shell: bash
       run: |
+        # Use MSYS2 environment for MinGW
+        export PATH="/c/msys64/mingw64/bin:$PATH"
+        
         echo "Building Lamina for ${{ matrix.name }}..."
         
         # Windows with MSYS2 supports static linking
@@ -126,8 +130,11 @@ jobs:
     - name: Prepare release package (Windows)
       if: matrix.os == 'windows-latest'
       working-directory: interpreter
-      shell: msys2 {0}
+      shell: bash
       run: |
+        # Use MSYS2 environment for MinGW
+        export PATH="/c/msys64/mingw64/bin:$PATH"
+        
         mkdir -p ../release-temp
         cp ${{ matrix.executable }} ../release-temp/
         
