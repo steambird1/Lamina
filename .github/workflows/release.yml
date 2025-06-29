@@ -41,6 +41,7 @@ jobs:
       with:
         msystem: MINGW64
         install: mingw-w64-x86_64-gcc
+        path-type: inherit
 
     - name: Setup build environment (macOS)
       if: matrix.os == 'macos-latest'
@@ -48,15 +49,12 @@ jobs:
         # Xcode command line tools should be available
         xcode-select --install || true
 
-    - name: Build
+    - name: Build (Linux/macOS)
+      if: matrix.os != 'windows-latest'
       working-directory: interpreter
       shell: bash
       run: |
         echo "Building Lamina for ${{ matrix.name }}..."
-        
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          export PATH="/c/msys64/mingw64/bin:$PATH"
-        fi
         
         # Use different compiler flags for different platforms
         if [ "${{ matrix.os }}" = "macos-latest" ]; then
@@ -65,7 +63,7 @@ jobs:
             main.cpp lexer.cpp parser.cpp interpreter.cpp \
             -o ${{ matrix.executable }}
         else
-          # Linux and Windows support static linking
+          # Linux supports static linking
           g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
             main.cpp lexer.cpp parser.cpp interpreter.cpp \
             -o ${{ matrix.executable }}
@@ -76,7 +74,25 @@ jobs:
         
         echo "Build completed successfully!"
 
-    - name: Prepare release package
+    - name: Build (Windows)
+      if: matrix.os == 'windows-latest'
+      working-directory: interpreter
+      run: |
+        Write-Host "Building Lamina for ${{ matrix.name }}..."
+        
+        # Windows with MSYS2 supports static linking
+        & "C:\msys64\mingw64\bin\g++.exe" -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ main.cpp lexer.cpp parser.cpp interpreter.cpp -o ${{ matrix.executable }}
+          
+        # Verify the build
+        if (Test-Path "${{ matrix.executable }}") {
+            Write-Host "Build completed successfully!"
+        } else {
+            Write-Error "Build failed - executable not found"
+            exit 1
+        }
+
+    - name: Prepare release package (Linux/macOS)
+      if: matrix.os != 'windows-latest'
       working-directory: interpreter
       shell: bash
       run: |
@@ -104,6 +120,36 @@ jobs:
           echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
         fi
 
+    - name: Prepare release package (Windows)
+      if: matrix.os == 'windows-latest'
+      working-directory: interpreter
+      run: |
+        New-Item -ItemType Directory -Force -Path "..\release-temp"
+        Copy-Item "${{ matrix.executable }}" "..\release-temp\"
+        
+        # Copy examples if they exist
+        if (Test-Path "examples") {
+            Copy-Item "examples" "..\release-temp\" -Recurse
+        }
+        
+        # Copy documentation
+        Copy-Item "..\README.md" "..\release-temp\"
+        Copy-Item "..\LICENSE" "..\release-temp\"
+        
+        # Create version info
+        @"
+        Lamina Interpreter
+        Build date: $(Get-Date)
+        Platform: ${{ matrix.name }}
+        Compiler: g++
+        "@ | Out-File "..\release-temp\VERSION.txt" -Encoding UTF8
+        
+        if ("${{ github.ref_type }}" -eq "tag") {
+            "Version: ${{ github.ref_name }}" | Out-File "..\release-temp\VERSION.txt" -Append -Encoding UTF8
+        } else {
+            "Version: ${{ github.sha }}" | Out-File "..\release-temp\VERSION.txt" -Append -Encoding UTF8
+        }
+
     - name: Create archive (Linux/macOS)
       if: matrix.archive == 'tar.gz'
       shell: bash
@@ -114,11 +160,8 @@ jobs:
 
     - name: Create archive (Windows)
       if: matrix.archive == 'zip'
-      shell: bash
       run: |
-        cd release-temp
-        7z a ../lamina-${{ matrix.name }}-x64.zip *
-        cd ..
+        Compress-Archive -Path "release-temp\*" -DestinationPath "lamina-${{ matrix.name }}-x64.zip"
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
@@ -140,19 +183,36 @@ jobs:
       with:
         path: artifacts
         
+    - name: Get tag annotation
+      id: tag_data
+      run: |
+        # 获取标签注释信息
+        TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+        
+        # 如果有标签注释，使用它；否则使用默认内容
+        if [ -n "$TAG_MESSAGE" ]; then
+          echo "HAS_ANNOTATION=true" >> $GITHUB_OUTPUT
+          # 转义换行符以便在 GitHub Actions 中使用
+          echo "TAG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "HAS_ANNOTATION=false" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref_name }}
         name: Lamina ${{ github.ref_name }}
         body: |
-          ## Lamina Interpreter ${{ github.ref_name }}
+          ${{ steps.tag_data.outputs.HAS_ANNOTATION == 'true' && steps.tag_data.outputs.TAG_CONTENT || format('## Lamina Interpreter {0}
           
-          ### 🎉 新版本发布
+          ###  新版本发布
           
-          这是 Lamina 解释器的 ${{ github.ref_name }} 版本，专注于精确数学计算的面向过程编程语言。
+          这是 Lamina 解释器的 {0} 版本。
           
-          ### 📦 下载说明
+          ###  下载说明
           
           - **Linux**: 下载 `lamina-linux-x64.tar.gz`
           - **Windows**: 下载 `lamina-windows-x64.zip`  
@@ -169,22 +229,7 @@ jobs:
              # 执行脚本
              ./lamina script.lm
              ```
-          
-          ### ⚡ 主要特性
-          
-          - 精确数学计算（有理数和无理数）
-          - 向量和矩阵运算
-          - 函数式编程支持
-          - 模块化系统
-          - 完整的错误栈追踪
-          
-          ### 📚 更多信息
-          
-          查看 [README.md](https://github.com/Ziyang-bai/Lamina/blob/main/README.md) 获取完整的语法指南和示例。
-          
-          ---
-          
-          **注意**: include 语句现在强制要求使用引号包裹文件名 (`include "filename";`)
+          ', github.ref_name, github.ref_name) }}
         draft: false
         prerelease: false
         files: |
