@@ -8,6 +8,14 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib> // For std::exit
+#include <cstring> // For strcmp
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#else
+#include <unistd.h> // For isatty
+#include <cstdlib>  // For getenv
+#endif
 
 // Forward declaration for error handling
 static void error_and_exit(const std::string& msg);
@@ -29,7 +37,18 @@ Value Interpreter::get_variable(const std::string& name) const {
         auto found = it->find(name);
         if (found != it->end()) return found->second;
     }
-    throw RuntimeError("未定义的变量 '" + name + "'");
+    
+    // 如果变量找不到，检查是否是函数名
+    auto func_it = functions.find(name);
+    if (func_it != functions.end()) {
+        // 返回一个函数类型的值（这里我们需要扩展Value类型）
+        // 暂时返回一个特殊的字符串值表示函数
+        return Value("__function_" + name);
+    }
+    
+    RuntimeError error("Undefined variable '" + name + "'");
+    error.stack_trace = get_stack_trace();
+    throw error;
     return Value(); // Unreachable, but suppress compiler warning
 }
 
@@ -52,7 +71,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                                     continue;
                                 } else {
                                     // 更安全的处理方式
-                                    std::cerr << "警告: print 语句中有空表达式，跳过" << std::endl;
+                                    std::cerr << "Warning: Null expression in print statement, skipped" << std::endl;
                                     continue;
                                 }
                             }
@@ -62,8 +81,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                                 std::cout << " ";
                             }
                         } catch (const std::exception& e) {
-                            std::cerr << "警告: print 参数求值错误: " << e.what() << std::endl;
-                            std::cout << "<错误>";
+                            std::cerr << "Warning: Error evaluating print argument: " << e.what() << std::endl;
+                            std::cout << "<error>";
                             if (i < p->exprs.size() - 1) {
                                 std::cout << " ";
                             }
@@ -75,7 +94,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                     std::cout << std::endl;  // Empty print statement just prints a newline
                 }
             } catch (const std::exception& e) {
-                std::cerr << "警告: print 语句执行错误: " << e.what() << std::endl;
+                std::cerr << "Warning: Error executing print statement: " << e.what() << std::endl;
                 // 确保换行
                 std::cout << std::endl;
             }
@@ -84,7 +103,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             Value val = eval(v->expr.get());
             set_variable(v->name, val);
         } else {
-            throw RuntimeError("变量 '" + v->name + "' 的声明中表达式为空");
+            RuntimeError error("Variable '" + v->name + "' declaration has null expression");
+            error.stack_trace = get_stack_trace();
+            throw error;
         }
         }
         else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
@@ -144,7 +165,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             }
         } else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
             if (!ws->condition) {
-                throw RuntimeError("循环条件不能为空");
+                RuntimeError error("Loop condition cannot be null");
+                error.stack_trace = get_stack_trace();
+                throw error;
             }
             
             // 更健壮的while循环实现
@@ -155,9 +178,11 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 while (true) {
                     // 安全检查：防止无限循环
                     if (++iteration_count > MAX_ITERATIONS) {
-                        std::cerr << "警告: 循环执行次数超过 " << MAX_ITERATIONS 
-                                << "，可能存在无限循环，强制退出" << std::endl;
-                        throw RuntimeError("可能的无限循环被中止");
+                        Interpreter::print_warning("Loop exceeded " + std::to_string(MAX_ITERATIONS) + 
+                                                  " iterations, possible infinite loop, terminating", true);
+                        RuntimeError error("Possible infinite loop terminated");
+                        error.stack_trace = get_stack_trace();
+                        throw error;
                     }
                     
                     // 评估循环条件
@@ -166,7 +191,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                         cond = eval(ws->condition.get());
                     } catch (const std::exception& e) {
                         // 如果条件计算出错，优雅地退出循环
-                        throw RuntimeError("循环条件执行出错: " + std::string(e.what()));
+                        RuntimeError error("Loop condition error: " + std::string(e.what()));
+                        error.stack_trace = get_stack_trace();
+                        throw error;
                     }
                     
                     if (!cond.as_bool()) {
@@ -199,7 +226,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 throw;
             } catch (const std::exception& e) {
                 // 所有其他异常都作为运行时错误处理
-                throw RuntimeError("循环体执行错误: " + std::string(e.what()));
+                RuntimeError error("Loop body execution error: " + std::string(e.what()));
+                error.stack_trace = get_stack_trace();
+                throw error;
             }
         } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
             functions[func->name] = func;
@@ -222,12 +251,12 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 error_and_exit("Failed to include module '" + includeStmt->module + "'");
             }
         } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
-        if (exprstmt->expr) {
-            eval(exprstmt->expr.get());
-        } else {
-            error_and_exit("Empty expression statement");
+            if (exprstmt->expr) {
+                eval(exprstmt->expr.get());
+            } else {
+                error_and_exit("Empty expression statement");
+            }
         }
-    }
     } catch (const ReturnException&) {
         // 直接重新抛出 ReturnException，这是正常的控制流程
         throw;
@@ -238,18 +267,19 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         // 直接重新抛出 ContinueException，这是正常的控制流程
         throw;
     } catch (const RuntimeError& re) {
-        // 为运行时错误提供更详细的上下文
-        std::cerr << "运行时错误: " << re.what() << std::endl;
-        throw; // 重新抛出，让外层处理
+        // 直接重新抛出运行时错误，不要重复输出
+        throw;
     } catch (const std::exception& e) {
         // 将标准异常转换为运行时错误，提供更多上下文
-        std::string errorMsg = std::string("执行语句异常: ") + e.what() + " [" + typeid(e).name() + "]";
-        std::cerr << "错误: " << errorMsg << std::endl;
-        throw RuntimeError(errorMsg); // 抛出包装后的运行时错误
+        std::string errorMsg = std::string("Statement execution error: ") + e.what() + " [" + typeid(e).name() + "]";
+        RuntimeError error(errorMsg);
+        error.stack_trace = get_stack_trace();
+        throw error; // 抛出包装后的运行时错误
     } catch (...) {
         // 捕获所有其他异常
-        std::cerr << "严重错误: 未知异常类型" << std::endl;
-        throw RuntimeError("未知异常类型");
+        RuntimeError error("Unknown exception type");
+        error.stack_trace = get_stack_trace();
+        throw error;
     }
 }
 
@@ -280,6 +310,9 @@ Value Interpreter::eval(const ASTNode* node) {
     else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
         return get_variable(id->name);
     } 
+    else if (auto* var = dynamic_cast<const VarExpr*>(node)) {
+        return get_variable(var->name);
+    } 
     else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         Value l = eval(bin->left.get());
         Value r = eval(bin->right.get());
@@ -294,8 +327,19 @@ Value Interpreter::eval(const ASTNode* node) {
             else if (l.is_array() && r.is_array()) {
                 return l.vector_add(r);
             }
-            // Numeric addition
+            // Numeric addition with irrational and rational number support
             else if (l.is_numeric() && r.is_numeric()) {
+                // If either operand is irrational, use irrational arithmetic
+                if (l.is_irrational() || r.is_irrational()) {
+                    ::Irrational result = l.as_irrational() + r.as_irrational();
+                    return Value(result);
+                }
+                // If either operand is rational, use rational arithmetic
+                if (l.is_rational() || r.is_rational()) {
+                    ::Rational result = l.as_rational() + r.as_rational();
+                    return Value(result);
+                }
+                
                 double result = l.as_number() + r.as_number();                // Return int if both operands are int and result is whole
                 if (l.is_int() && r.is_int()) {
                     return Value(static_cast<int>(result));
@@ -333,6 +377,17 @@ Value Interpreter::eval(const ASTNode* node) {
                 }
                 // Regular multiplication (both must be numeric)
                 if (l.is_numeric() && r.is_numeric()) {
+                    // If either operand is irrational, use irrational arithmetic
+                    if (l.is_irrational() || r.is_irrational()) {
+                        ::Irrational result = l.as_irrational() * r.as_irrational();
+                        return Value(result);
+                    }
+                    // If either operand is rational, use rational arithmetic
+                    if (l.is_rational() || r.is_rational()) {
+                        ::Rational result = l.as_rational() * r.as_rational();
+                        return Value(result);
+                    }
+                    
                     double result = l.as_number() * r.as_number();
                     return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
                 }
@@ -345,19 +400,75 @@ Value Interpreter::eval(const ASTNode* node) {
                 error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
             }
             
+            // For division, always use rational arithmetic for precise results
+            if (bin->op == "/") {
+                // If either operand is irrational, use irrational arithmetic
+                if (l.is_irrational() || r.is_irrational()) {
+                    ::Irrational lr = l.as_irrational();
+                    ::Irrational rr = r.as_irrational();
+                    if (rr.is_zero()) {
+                        error_and_exit("Division by zero");
+                    }
+                    return Value(lr / rr);
+                }
+                
+                ::Rational lr = l.as_rational();
+                ::Rational rr = r.as_rational();
+                if (rr.is_zero()) {
+                    error_and_exit("Division by zero");
+                }
+                return Value(lr / rr);
+            }
+            
+            // Use irrational arithmetic if either operand is irrational
+            if (l.is_irrational() || r.is_irrational()) {
+                ::Irrational lr = l.as_irrational();
+                ::Irrational rr = r.as_irrational();
+                
+                if (bin->op == "-") {
+                    return Value(lr - rr);
+                }
+                // Note: Other operations (%, ^) may fall back to double arithmetic
+                // for irrational numbers as they're complex to handle exactly
+            }
+            
+            // Use rational arithmetic if either operand is rational
+            if (l.is_rational() || r.is_rational()) {
+                ::Rational lr = l.as_rational();
+                ::Rational rr = r.as_rational();
+                
+                if (bin->op == "-") {
+                    return Value(lr - rr);
+                }
+                if (bin->op == "%") {
+                    // For rational modulo, convert to double temporarily
+                    double ld = lr.to_double();
+                    double rd = rr.to_double();
+                    if (rd == 0.0) {
+                        error_and_exit("Modulo by zero");
+                    }
+                    return Value(static_cast<int>(ld) % static_cast<int>(rd));
+                }
+                if (bin->op == "^") {
+                    // For rational exponentiation, use integer exponent if possible
+                    if (rr.is_integer() && rr.get_denominator() == 1) {
+                        int exp = static_cast<int>(rr.get_numerator());
+                        if (exp >= -1000 && exp <= 1000) { // Reasonable range
+                            return Value(lr.pow(exp));
+                        }
+                    }
+                    // Fall back to double arithmetic for non-integer or large exponents
+                    return Value(std::pow(lr.to_double(), rr.to_double()));
+                }
+            }
+            
+            // Fall back to double arithmetic
             double ld = l.as_number();
             double rd = r.as_number();
             
             if (bin->op == "-") {
                 double result = ld - rd;
                 return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
-            }
-            else if (bin->op == "/") {
-                if (rd == 0.0) {
-                    // 原：std::cerr << "Error: Division by zero" << std::endl;
-                    error_and_exit("Division by zero");
-                }
-                return Value(ld / rd); // Always return float for division
             }
             if (bin->op == "%") {
                 if (rd == 0.0) {
@@ -426,7 +537,9 @@ Value Interpreter::eval(const ASTNode* node) {
     else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
           if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
-            throw RuntimeError("一元运算符要求操作数为整数或大整数");
+            RuntimeError error("Unary operator requires integer or big integer operand");
+            error.stack_trace = get_stack_trace();
+            throw error;
         }
         
         if (unary->op == "-") {
@@ -450,7 +563,9 @@ Value Interpreter::eval(const ASTNode* node) {
             }
             
             if (vi < 0) {
-                throw RuntimeError("不能计算负数的阶乘");
+                RuntimeError error("Cannot calculate factorial of negative number");
+                error.stack_trace = get_stack_trace();
+                throw error;
             }
             
             // Use BigInt for factorial if the number is large or result would be large
@@ -472,15 +587,28 @@ Value Interpreter::eval(const ASTNode* node) {
         return Value("<unknown op>");
     }    // Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
+        std::string actual_callee = call->callee;
+        
+        // 检查调用的名称是否是一个参数，如果是，获取其实际值
+        try {
+            Value callee_value = get_variable(actual_callee);
+            if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
+                // 这是一个函数参数，提取实际的函数名
+                actual_callee = std::get<std::string>(callee_value.data).substr(11);
+            }
+        } catch (const RuntimeError&) {
+            // 如果不是变量，保持原名称
+        }
+        
         // Check builtin functions first
-        auto builtin_it = builtin_functions.find(call->callee);
+        auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
             std::vector<Value> args;
             for (const auto& arg : call->args) {
                 if (arg) {
                     args.push_back(eval(arg.get()));
                 } else {
-                    std::cerr << "Error: Null argument in call to builtin function '" << call->callee << "'" << std::endl;
+                    std::cerr << "Error: Null argument in call to builtin function '" << actual_callee << "'" << std::endl;
                     return Value();
                 }
             }
@@ -488,28 +616,30 @@ Value Interpreter::eval(const ASTNode* node) {
         }
         
         // Check user-defined functions
-        auto it = functions.find(call->callee);
+        auto it = functions.find(actual_callee);
         if (it != functions.end()) {
             FuncDefStmt* func = it->second;
             if (!func) {
-                std::cerr << "Error: Function object for '" << call->callee << "' is null" << std::endl;
+                std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
                 return Value("<func error>");
             }
             
             // Check recursion depth
             if (recursion_depth >= max_recursion_depth) {
-                std::cerr << "Error: Maximum recursion depth exceeded (" << max_recursion_depth << ")" << std::endl;
-                std::cerr.flush(); // 确保错误信息立即输出
-                return Value(); // 返回默认空值
+                RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
+                error.stack_trace = get_stack_trace();
+                throw error;
             }
             
             recursion_depth++;
             push_scope();
+            push_frame(actual_callee, "<script>", 0); // Add to call stack
             
             // Check parameter count
             if (call->args.size() > func->params.size()) {
-                std::cerr << "Warning: Too many arguments provided to function '" << call->callee 
-                          << "'. Expected " << func->params.size() << ", got " << call->args.size() << std::endl;
+                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee + 
+                                          "'. Expected " + std::to_string(func->params.size()) + 
+                                          ", got " + std::to_string(call->args.size()), true);
             }
               
             // Pass arguments
@@ -518,13 +648,11 @@ Value Interpreter::eval(const ASTNode* node) {
                     if (call->args[j]) {
                         set_variable(func->params[j], eval(call->args[j].get()));
                     } else {
-                        std::cerr << "Error: Null argument " << j+1 << " in call to function '" 
-                                  << call->callee << "'" << std::endl;
+                        Interpreter::print_error("Null argument " + std::to_string(j+1) + " in call to function '" + actual_callee + "'", true);
                         set_variable(func->params[j], Value("<null arg>"));
                     }
                 } else {
-                    std::cerr << "Warning: Missing argument '" << func->params[j] 
-                              << "' in call to function '" << call->callee << "'" << std::endl;
+                    Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
                     set_variable(func->params[j], Value("<undefined>"));
                 }
             }
@@ -535,33 +663,48 @@ Value Interpreter::eval(const ASTNode* node) {
                     try {
                         execute(stmt);
                     } catch (const ReturnException& re) {
-                        // 正常的return处理
+                        // Normal return handling
+                        pop_frame();
                         pop_scope();
                         recursion_depth--;
                         return re.value;
                     } catch (const RuntimeError& re) {
-                        // 将运行时错误包装上下文后重新抛出
-                        std::string enriched = "函数 '" + call->callee + "' 执行错误: " + re.what();
-                        throw RuntimeError(enriched);
+                        // If the error doesn't have a stack trace yet, capture current state
+                        RuntimeError enriched(re.message);
+                        if (re.stack_trace.empty()) {
+                            enriched.stack_trace = get_stack_trace(); 
+                        } else {
+                            enriched.stack_trace = re.stack_trace; // Preserve existing trace
+                        }
+                        pop_frame();
+                        pop_scope();
+                        recursion_depth--;
+                        throw enriched;
                     } catch (const std::exception& e) {
-                        // 将标准异常包装后重新抛出为RuntimeError
-                        std::string enriched = "函数 '" + call->callee + "' 执行中的标准异常: " + std::string(e.what());
-                        throw RuntimeError(enriched);
+                        // Wrap standard exception as RuntimeError
+                        RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
+                        enriched.stack_trace = get_stack_trace(); // Get stack trace before cleanup
+                        pop_frame();
+                        pop_scope();
+                        recursion_depth--;
+                        throw enriched;
                     }
                 }
             } catch (const ReturnException& re) {
-                // 确保在任何情况下都清理作用域
+                // Ensure cleanup in any case
+                pop_frame();
                 pop_scope();
                 recursion_depth--;
                 return re.value;
             }
             
+            pop_frame();
             pop_scope();
             recursion_depth--;
             return Value(); // Default value when no return
         }
         
-        std::cerr << "Error: Call to undefined function '" << call->callee << "'" << std::endl;
+        std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
         return Value("<undefined function>");
     }
     else if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
@@ -585,6 +728,37 @@ bool Interpreter::load_module(const std::string& module_name) {
     // Check if already loaded to avoid circular imports
     if (loaded_modules.find(module_name) != loaded_modules.end()) {
         return true;  // Already loaded
+    }
+    
+    // Handle built-in hidden library "splash"
+    if (module_name == "splash") {
+        // Output ASCII art logo
+        std::cout << "   __                    _            \n";
+        std::cout << "  / /   ____ _____ ___  (_)___  ____ _\n";
+        std::cout << " / /   / __ `/ __ `__ \\/ / __ \\/ __ `/\n";
+        std::cout << "/ /___/ /_/ / / / / / / / / / / /_/ / \n";
+        std::cout << "/_____/\\__,_/_/ /_/ /_/_/_/ /_/\\__,_/  \n";
+        std::cout << "                                       \n";
+        
+        // Mark as loaded to avoid multiple outputs
+        loaded_modules.insert(module_name);
+        return true;
+    }
+    
+    // Handle built-in hidden library "them" (credits)
+    if (module_name == "them") {
+        // Output credits and developer information
+        std::cout << "Credits\n";
+        std::cout << "Lamina Interpreter\n";
+        std::cout << "Developed by Ziyang-bai\n";
+        std::cout << "Special thanks to all contributors and users!\n";
+        std::cout << "For more information, visit: https://github.com/Ziyang-bai/Lamina\n";
+        std::cout << "This interpreter is open source and welcomes contributions.\n";
+        std::cout << "Designed by Ziyang-Bai\n";
+        std::cout << "\n";
+        // Mark as loaded to avoid multiple outputs
+        loaded_modules.insert(module_name);
+        return true;
     }
     
     // Build possible file paths
@@ -666,12 +840,51 @@ void Interpreter::register_builtin_functions() {
             std::cerr << "Error: sqrt() requires numeric argument" << std::endl;
             return Value();
         }
+        
+        // For exact square root representation
+        if (args[0].is_int()) {
+            int val = std::get<int>(args[0].data);
+            if (val < 0) {
+                std::cerr << "Error: sqrt() of negative number" << std::endl;
+                return Value();
+            }
+            if (val == 0 || val == 1) {
+                return Value(val);
+            }
+            // Check if it's a perfect square
+            int sqrt_val = static_cast<int>(std::sqrt(val));
+            if (sqrt_val * sqrt_val == val) {
+                return Value(sqrt_val);
+            }
+            // Return exact irrational representation
+            return Value(::Irrational::sqrt(val));
+        }
+        
+        // For other numeric types, use floating point
         double val = args[0].as_number();
         if (val < 0) {
             std::cerr << "Error: sqrt() of negative number" << std::endl;
             return Value();
         }
         return Value(std::sqrt(val));
+    };
+    
+    // Pi constant
+    builtin_functions["pi"] = [](const std::vector<Value>& args) -> Value {
+        if (args.size() != 0) {
+            std::cerr << "Error: pi() requires no arguments" << std::endl;
+            return Value();
+        }
+        return Value(::Irrational::pi());
+    };
+    
+    // Euler's number e constant
+    builtin_functions["e"] = [](const std::vector<Value>& args) -> Value {
+        if (args.size() != 0) {
+            std::cerr << "Error: e() requires no arguments" << std::endl;
+            return Value();
+        }
+        return Value(::Irrational::e());
     };
     
     builtin_functions["abs"] = [](const std::vector<Value>& args) -> Value {
@@ -869,6 +1082,49 @@ void Interpreter::register_builtin_functions() {
         double dividend = args[0].as_number();
         return Value(static_cast<int>(dividend / divisor));
     };
+    
+    // Convert decimal to fraction
+    builtin_functions["fraction"] = [](const std::vector<Value>& args) -> Value {
+        if (args.size() != 1) {
+            std::cerr << "Error: fraction() requires exactly 1 argument" << std::endl;
+            return Value();
+        }
+        if (!args[0].is_numeric()) {
+            std::cerr << "Error: fraction() requires numeric argument" << std::endl;
+            return Value();
+        }
+        
+        // If already a rational, return as is
+        if (args[0].is_rational()) {
+            return args[0];
+        }
+        
+        // Convert double to rational approximation
+        double val = args[0].as_number();
+        try {
+            Rational rat = Rational::from_double(val);
+            return Value(rat);
+        } catch (const std::exception& e) {
+            std::cerr << "Error: Cannot convert to fraction: " << e.what() << std::endl;
+            return Value();
+        }
+    };
+    
+    // Convert fraction to decimal
+    builtin_functions["decimal"] = [](const std::vector<Value>& args) -> Value {
+        if (args.size() != 1) {
+            std::cerr << "Error: decimal() requires exactly 1 argument" << std::endl;
+            return Value();
+        }
+        if (!args[0].is_numeric()) {
+            std::cerr << "Error: decimal() requires numeric argument" << std::endl;
+            return Value();
+        }
+        
+        // Convert to double representation
+        double val = args[0].as_number();
+        return Value(val);
+    };
 }
 
 // 在文件顶端添加错误处理函数
@@ -885,12 +1141,12 @@ static void report_error(const std::string& msg) {
 // 打印当前所有变量
 void Interpreter::printVariables() const {
     if (variable_stack.empty()) {
-        std::cout << "没有定义的变量。" << std::endl;
+        std::cout << "No variables defined." << std::endl;
         return;
     }
     
-    std::cout << "\n当前变量列表：" << std::endl;
-    std::cout << "----------------" << std::endl;
+    std::cout << "\nCurrent variable list:" << std::endl;
+    std::cout << "--------------------" << std::endl;
     
     // 从最内层作用域开始打印
     bool hasVars = false;
@@ -903,15 +1159,132 @@ void Interpreter::printVariables() const {
     }
     
     if (!hasVars) {
-        std::cout << "没有定义的变量。" << std::endl;
+        std::cout << "No variables defined." << std::endl;
     }
     
     // 打印函数列表
     if (!functions.empty()) {
-        std::cout << "\n定义的函数：" << std::endl;
-        std::cout << "----------------" << std::endl;
+        std::cout << "\nDefined functions:" << std::endl;
+        std::cout << "------------------" << std::endl;
         for (const auto& [name, _] : functions) {
             std::cout << name << "()" << std::endl;
         }
+    }
+}
+
+// Stack trace management functions
+void Interpreter::push_frame(const std::string& function_name, const std::string& file_name, int line_number) {
+    call_stack.emplace_back(function_name, file_name, line_number);
+}
+
+void Interpreter::pop_frame() {
+    if (!call_stack.empty()) {
+        call_stack.pop_back();
+    }
+}
+
+std::vector<StackFrame> Interpreter::get_stack_trace() const {
+    return call_stack;
+}
+
+void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) const {
+    bool colors_enabled = supports_colors() && use_colors;
+    
+    // Use stack trace from error if available, otherwise use current call stack
+    const auto& trace = error.stack_trace.empty() ? call_stack : error.stack_trace;
+    
+    // Print error header only if we have stack frames to show
+    if (!trace.empty()) {
+        if (colors_enabled) {
+            std::cerr << "\033[1;31mTraceback (most recent call last):\033[0m\n";
+        } else {
+            std::cerr << "Traceback (most recent call last):\n";
+        }
+        
+        // Print stack frames
+        for (const auto& frame : trace) {
+            if (colors_enabled) {
+                std::cerr << "  File \"\033[1;34m" << frame.file_name << "\033[0m\", line " 
+                          << frame.line_number << ", in \033[1;33m" << frame.function_name << "\033[0m\n";
+            } else {
+                std::cerr << "  File \"" << frame.file_name << "\", line " 
+                          << frame.line_number << ", in " << frame.function_name << "\n";
+            }
+        }
+    }
+    
+    // Print error message
+    if (colors_enabled) {
+        std::cerr << "\033[1;31mRuntimeError: " << error.message << "\033[0m\n";
+    } else {
+        std::cerr << "RuntimeError: " << error.message << "\n";
+    }
+}
+
+bool Interpreter::supports_colors() {
+    static bool checked = false;
+    static bool colors_supported = false;
+    
+    if (!checked) {
+        checked = true;
+        
+        // Check for NO_COLOR environment variable (universal standard)
+        if (getenv("NO_COLOR") != nullptr) {
+            colors_supported = false;
+            return colors_supported;
+        }
+        
+        #ifdef _WIN32
+        // On Windows, check if we're in a modern terminal that supports ANSI escape codes
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD mode;
+        if (GetConsoleMode(hConsole, &mode)) {
+            // Check if ENABLE_VIRTUAL_TERMINAL_PROCESSING is available (Windows 10+)
+            colors_supported = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+            if (!colors_supported) {
+                // Try to enable it
+                SetConsoleMode(hConsole, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+                if (GetConsoleMode(hConsole, &mode)) {
+                    colors_supported = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+                }
+            }
+        }
+        
+        // Also check if output is redirected
+        if (colors_supported && _isatty(_fileno(stderr)) == 0) {
+            colors_supported = false; // Output is redirected, don't use colors
+        }
+        #else
+        // On Unix-like systems, check if stderr is a terminal and TERM is set
+        colors_supported = isatty(STDERR_FILENO) && getenv("TERM") != nullptr;
+        
+        // Additional check for specific terminal types that don't support colors
+        const char* term = getenv("TERM");
+        if (term && (strcmp(term, "dumb") == 0 || strcmp(term, "unknown") == 0)) {
+            colors_supported = false;
+        }
+        #endif
+    }
+    
+    return colors_supported;
+}
+
+void Interpreter::print_error(const std::string& message, bool use_colors) {
+    bool colors_enabled = supports_colors() && use_colors;
+    
+    if (colors_enabled) {
+        std::cerr << "\033[1;31mError: " << message << "\033[0m\n";
+    } else {
+        std::cerr << "Error: " << message << "\n";
+    }
+}
+
+void Interpreter::print_warning(const std::string& message, bool use_colors) {
+    bool colors_enabled = supports_colors() && use_colors;
+    
+    if (colors_enabled) {
+        std::cerr << "\033[1;33mWarning: " << message << "\033[0m\n";
+    } else {
+        std::cerr << "Warning: " << message << "\n";
     }
 }

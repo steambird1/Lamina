@@ -4,6 +4,12 @@
 #include <string>
 #include <stdexcept>
 
+// Set to false to disable debug output
+static const bool PARSER_DEBUG = false;
+
+// Debug output macro - no output if DEBUG is false
+#define DEBUG_OUT if (PARSER_DEBUG) std::cerr
+
 std::unique_ptr<Expression> Parser::parse_expression(const std::vector<Token>& tokens, size_t& i) {
     // Safety check
     if (i >= tokens.size() || tokens[i].type == TokenType::EndOfFile) {
@@ -171,26 +177,26 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
     return nullptr;
 }
 
-// 辅助函数：打印token上下文，用于错误报告
+// Helper function: print token context for error reporting
 static void print_context(const std::vector<Token>& tokens, size_t pos, int context_size = 5) {
-    std::cerr << "上下文: ";
+    std::cerr << "Context: ";
     size_t context_start = pos > context_size ? pos - context_size : 0;
     size_t context_end = std::min(pos + context_size, tokens.size() - 1);
     
     for (size_t j = context_start; j <= context_end; j++) {
         if (j == pos) {
-            std::cerr << "[" << tokens[j].text << "] "; // 高亮显示当前token
+            std::cerr << "[" << tokens[j].text << "] "; // Highlight current token
         } else {
             std::cerr << tokens[j].text << " ";
         }
     }
     std::cerr << std::endl;
     
-    // 打印行号和列号指示器
-    std::cerr << "位置: ";
+    // Print line and column position indicators
+    std::cerr << "Position: ";
     for (size_t j = context_start; j <= context_end; j++) {
         if (j == pos) {
-            std::cerr << "行" << tokens[j].line << "列" << tokens[j].column << " ";
+            std::cerr << "line" << tokens[j].line << "col" << tokens[j].column << " ";
         } else {
             std::cerr << std::string(tokens[j].text.length() + 1, ' ');
         }
@@ -201,47 +207,47 @@ static void print_context(const std::vector<Token>& tokens, size_t pos, int cont
 std::unique_ptr<BlockStmt> Parser::parse_block(const std::vector<Token>& tokens, size_t& i, bool is_global) {
     auto block = std::make_unique<BlockStmt>();
     
-    // 记录当前块的起始位置，便于调试
+    // Record current block start position for debugging
     int start_line = (i < tokens.size()) ? tokens[i].line : -1;
     int start_col = (i < tokens.size()) ? tokens[i].column : -1;
     
-    // 使用非静态变量记录嵌套深度，避免多次解析干扰
+    // Use non-static variable to record nesting depth, avoid interference from multiple parsing
     static thread_local int current_block_depth = 0;
     current_block_depth++;
     
-    std::cerr << "Debug - 开始解析块: " 
-              << (is_global ? "全局块" : "局部块") 
-              << ", 深度=" << current_block_depth 
-              << ", 位置=" << start_line << ":" << start_col 
-              << ", 当前token=" << (i < tokens.size() ? "'" + tokens[i].text + "'" : "EOF")
+    DEBUG_OUT << "Debug - Block parsing started: " 
+              << (is_global ? "global" : "local") 
+              << ", depth=" << current_block_depth 
+              << ", position=" << start_line << ":" << start_col 
+              << ", current token=" << (i < tokens.size() ? "'" + tokens[i].text + "'" : "EOF")
               << std::endl;
     
-    // 记录起始标记的位置用于错误报告
+    // Record start token position for error reporting
     size_t block_start_index = i;
     
     while (i < tokens.size()) {
-        // 首先检查是否到达块结束
+        // Check if we reached end of block
         if (!is_global && tokens[i].type == TokenType::RBrace) {
-            // 局部块遇到 } 结束
-            std::cerr << "Debug - 块正常结束: 深度=" << current_block_depth 
-                      << ", 位置=" << tokens[i].line << ":" << tokens[i].column 
-                      << ", 语句数=" << block->statements.size()
+            // Local block ended with } brace
+            DEBUG_OUT << "Debug - Block ended normally: depth=" << current_block_depth 
+                      << ", position=" << tokens[i].line << ":" << tokens[i].column 
+                      << ", statement_count=" << block->statements.size()
                       << std::endl;
             current_block_depth--;
-            i++; // 消费右花括号
+            i++; // consume right brace
             return block;
         }
         
-        // 检查是否到达文件结尾
+        // Check if we reached end of file
         if (tokens[i].type == TokenType::EndOfFile) {
             if (!is_global) {
-                // 局部块未正常结束就遇到EOF，提供更详细的错误信息
-                std::cerr << "Error: 缺少右花括号 '}' - 块开始于行" << start_line 
-                          << "列" << start_col
-                          << "，在文件结束前未闭合" << std::endl;
+                // Local block ended unexpectedly at EOF, provide detailed error info
+                std::cerr << "\033[31mError: Missing closing brace '}' - block started at line " << start_line 
+                          << " col " << start_col
+                          << ", not closed before end of file\033[0m" << std::endl;
                 
-                // 输出开始块的前后上下文，帮助定位问题
-                std::cerr << "块开始处上下文:" << std::endl;
+                // Output context around the block start to help locate the issue
+                std::cerr << "Block start context:" << std::endl;
                 size_t context_start = block_start_index > 5 ? block_start_index - 5 : 0;
                 size_t context_end = std::min(block_start_index + 5, tokens.size() - 1);
                 for (size_t j = context_start; j <= context_end; j++) {
@@ -253,61 +259,61 @@ std::unique_ptr<BlockStmt> Parser::parse_block(const std::vector<Token>& tokens,
                 }
                 std::cerr << std::endl;
                 
-                // 显示块内容摘要
-                std::cerr << "块包含 " << block->statements.size() << " 条语句" << std::endl;
+                // Show block content summary
+                std::cerr << "Block contains " << block->statements.size() << " statements" << std::endl;
                 
                 current_block_depth--;
-                // 抛出异常而非直接退出，让调用者有机会恢复
-                throw std::runtime_error("解析错误: 块未闭合，缺少右花括号");
+                // Throw exception instead of direct exit, let caller recover
+                throw std::runtime_error("Parse error: Unclosed block, missing closing brace");
             } else {
-                // 全局块遇到EOF，正常结束
-                std::cerr << "Debug - 全局块在EOF处结束: 深度=" << current_block_depth 
-                          << ", 语句数=" << block->statements.size() << std::endl;
+                // Global block reached EOF, normal termination
+                DEBUG_OUT << "Debug - Global block ended at EOF: depth=" << current_block_depth 
+                          << ", statements=" << block->statements.size() << std::endl;
                 current_block_depth--;
                 return block;
             }
         }
         
-        // 解析块中的语句
+        // Parse statements in block
         auto stmt = parse_statement(tokens, i);
         if (stmt) {
             block->statements.push_back(std::move(stmt));
         } else if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
-            // 只有在未到文件末尾且解析失败时才报错
-            std::cerr << "Error: 在token " << i 
-                      << " (行" << tokens[i].line 
-                      << "列" << tokens[i].column 
-                      << ")处有无效或意外的语句: " 
-                      << tokens[i].text << std::endl;
+            // Only report error if not at end of file and parsing failed
+            std::cerr << "\033[31mError: Invalid or unexpected statement at token " << i 
+                      << " (line " << tokens[i].line 
+                      << " col " << tokens[i].column 
+                      << "): " 
+                      << tokens[i].text << "\033[0m" << std::endl;
                       
-            // 尝试恢复：跳过当前token继续解析
+            // Try to recover: skip current token and continue parsing
             i++;
             continue;
         } else {
-            // 到达文件末尾，此时应该是全局块
+            // Reached end of file, should be global block at this point
             if (!is_global) {
-                std::cerr << "Error: 意外的文件结束，缺少块闭合，开始于行" << start_line << std::endl;
+                std::cerr << "\033[31mError: Unexpected end of file, missing block closure, started at line " << start_line << "\033[0m" << std::endl;
                 current_block_depth--;
-                throw std::runtime_error("解析错误: 块未闭合，缺少右花括号");
+                throw std::runtime_error("Parse error: Unclosed block, missing closing brace");
             }
             break;
         }
         
-        // 检查进度，避免死循环
+        // Check progress to avoid infinite loops
         if (i >= tokens.size()) {
             if (!is_global) {
-                std::cerr << "Error: 意外的文件结束，缺少块闭合，开始于行" << start_line << std::endl;
+                std::cerr << "\033[31mError: Unexpected end of file, missing block closure, started at line " << start_line << "\033[0m" << std::endl;
                 current_block_depth--;
-                throw std::runtime_error("解析错误: 块未闭合，缺少右花括号");
+                throw std::runtime_error("Parse error: Unclosed block, missing closing brace");
             }
             break;
         }
     }
     
-    std::cerr << "Debug - 块解析完成: 深度=" << current_block_depth 
-              << ", 语句数=" << block->statements.size() << std::endl;
+    DEBUG_OUT << "Debug - Block parsing completed: depth=" << current_block_depth 
+              << ", statements=" << block->statements.size() << std::endl;
     
-    // 确保在返回前减少深度计数
+    // Ensure depth count is reduced before returning
     current_block_depth--;
     return block;
 }
@@ -324,18 +330,18 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
     
     int while_line = tokens[i].line;
     int while_col = tokens[i].column;
-    size_t while_start_index = i; // 记录while语句开始位置
+    size_t while_start_index = i; // Record while statement start position
     
-    std::cerr << "Debug - 开始解析while循环, 行 " << while_line << " 列 " << while_col << std::endl;
+    DEBUG_OUT << "Debug - Starting while loop parsing, line " << while_line << " col " << while_col << std::endl;
     
-    ++i; // 跳过while
+    ++i; // Skip 'while'
     
-    // 检查是否有左括号
+    // Check for opening parenthesis
     if (i >= tokens.size() || tokens[i].type != TokenType::LParen) {
-        std::cerr << "Error: while语句后缺少左括号 '('" << std::endl;
+        std::cerr << "\033[31mError: Missing opening parenthesis '(' after while statement\033[0m" << std::endl;
         print_context(tokens, i > 0 ? i - 1 : 0);
         
-        // 尝试恢复：寻找左括号或左大括号
+        // Try to recover: look for opening parenthesis or opening brace
         while (i < tokens.size() && 
               tokens[i].type != TokenType::LParen && 
               tokens[i].type != TokenType::LBrace) {
@@ -343,91 +349,91 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
         }
         
         if (i >= tokens.size() || tokens[i].type != TokenType::LParen) {
-            return nullptr; // 找不到可恢复的点
+            return nullptr; // Can't find recoverable point
         }
     }
     
-    ++i; // 跳过左括号
+    ++i; // Skip opening parenthesis
     
-    // 解析条件
+    // Parse condition
     if (i >= tokens.size()) {
-        std::cerr << "Error: while语句意外结束，缺少条件表达式" << std::endl;
+        std::cerr << "\033[31mError: while statement ended unexpectedly, missing condition expression\033[0m" << std::endl;
         print_context(tokens, while_start_index);
         return nullptr;
     }
     
     auto cond = parse_expression(tokens, i);
     if (!cond) {
-        std::cerr << "Error: while语句缺少有效的条件表达式" << std::endl;
+        std::cerr << "\033[31mError: while statement missing valid condition expression\033[0m" << std::endl;
         print_context(tokens, i);
         
-        // 尝试恢复：创建一个恒为真的条件
+        // Try to recover: create a condition that's always true
         cond = std::make_unique<LiteralExpr>("true");
         
-        // 尝试寻找右括号
+        // Try to find right parenthesis
         while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
             ++i;
         }
         
         if (i >= tokens.size()) {
-            return nullptr; // 找不到右括号，无法继续
+            return nullptr; // Can't find closing parenthesis, can't continue
         }
     }
     
-    // 检查右括号
+    // Check for closing parenthesis
     if (i >= tokens.size()) {
-        std::cerr << "Error: while语句条件后意外结束，缺少右括号" << std::endl;
+        std::cerr << "\033[31mError: while statement condition ended unexpectedly, missing closing parenthesis\033[0m" << std::endl;
         print_context(tokens, while_start_index);
         return nullptr;
     }
     
     if (tokens[i].type == TokenType::RParen) {
-        ++i; // 消费右括号
+        ++i; // Consume closing parenthesis
     } else {
-        std::cerr << "Error: while语句条件缺少右括号 ')'，在行" << tokens[i-1].line << "之后" << std::endl;
+        std::cerr << "\033[31mError: while statement condition missing closing parenthesis ')', after line " << tokens[i-1].line << "\033[0m" << std::endl;
         print_context(tokens, i);
         
-        // 尝试恢复：寻找左大括号
+        // Try to recover: look for opening brace
         while (i < tokens.size() && tokens[i].type != TokenType::LBrace) {
             ++i;
         }
         
         if (i >= tokens.size()) {
-            return nullptr; // 找不到左大括号，无法继续
+            return nullptr; // Can't find opening brace, can't continue
         }
     }
     
-    // 检查左大括号
+    // Check for opening brace
     if (i >= tokens.size()) {
-        std::cerr << "Error: while语句右括号后意外结束，缺少循环体" << std::endl;
+        std::cerr << "\033[31mError: while statement ended unexpectedly after closing parenthesis, missing loop body\033[0m" << std::endl;
         print_context(tokens, while_start_index);
         return nullptr;
     }
     
     if (tokens[i].type == TokenType::LBrace) {
-        ++i; // 消费左大括号
+        ++i; // Consume opening brace
     } else {
-        std::cerr << "Error: while语句缺少左大括号 '{'" << std::endl;
+        std::cerr << "\033[31mError: while statement missing opening brace '{'\033[0m" << std::endl;
         print_context(tokens, i);
         
-        // 尝试恢复：创建一个空块并返回
+        // Try to recover: create an empty block and return
         auto emptyBody = std::make_unique<BlockStmt>();
         return std::make_unique<WhileStmt>(std::move(cond), std::move(emptyBody));
     }
     
-    // 解析循环体
-    std::cerr << "Debug - 解析while循环体" << std::endl;
+    // Parse loop body
+    DEBUG_OUT << "Debug - Parsing while loop body" << std::endl;
     std::unique_ptr<BlockStmt> body;
     
     try {
         body = parse_block(tokens, i, false);
-        std::cerr << "Debug - while循环体解析完成，包含" << body->statements.size() << "条语句" << std::endl;
+        DEBUG_OUT << "Debug - while loop body parsing completed, contains " << body->statements.size() << " statements" << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "Error: 解析while循环体时出错: " << e.what() << std::endl;
-        // 创建空块作为恢复措施
+        std::cerr << "Error: Error parsing while loop body: " << e.what() << std::endl;
+        // Create empty block as recovery measure
         body = std::make_unique<BlockStmt>();
         
-        // 尝试定位到下一个语句开始
+        // Try to locate next statement start
         while (i < tokens.size() && 
                tokens[i].type != TokenType::Semicolon &&
                tokens[i].type != TokenType::RBrace) {
@@ -435,18 +441,132 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
         }
         
         if (i < tokens.size() && tokens[i].type == TokenType::RBrace) {
-            ++i; // 消费右大括号
+            ++i; // Consume right brace
         }
     }
     
-    std::cerr << "Debug - while循环解析完成，定义于行 " << while_line 
-              << ", 结束于行 " << (i < tokens.size() ? tokens[i-1].line : -1) << std::endl;
+    DEBUG_OUT << "Debug - while loop parsing completed, defined at line " << while_line 
+              << ", ended at line " << (i < tokens.size() ? tokens[i-1].line : -1) << std::endl;
     
     return std::make_unique<WhileStmt>(std::move(cond), std::move(body));
 }
 
 std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tokens, size_t& i) {
-    // 处理函数定义和if语句之前，检查并解析while语句
+    // Handle include statements first - support both quoted strings and identifiers
+    if (tokens[i].type == TokenType::Include && i+1 < tokens.size() && 
+        (tokens[i+1].type == TokenType::String || tokens[i+1].type == TokenType::Identifier)) {
+        std::string mod = tokens[i+1].text;
+        i += 2;
+        if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
+        return std::make_unique<IncludeStmt>(mod);
+    }
+    
+    // Handle function definitions next, before other statement types
+    if (tokens[i].type == TokenType::Func && i+2 < tokens.size() && 
+        tokens[i+1].type == TokenType::Identifier && tokens[i+2].type == TokenType::LParen) {
+        std::string name = tokens[i+1].text;
+        int func_line = tokens[i].line;
+        int func_col = tokens[i].column;
+        DEBUG_OUT << "Debug - Starting function parsing: " << name << " at line " << func_line << " col " << func_col << std::endl;
+        
+        size_t func_start_index = i; // Record function start position for error reporting
+        i += 3; // Skip 'func name('
+        
+        // Collect parameters
+        std::vector<std::string> params;
+        while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
+            if (tokens[i].type == TokenType::Identifier) {
+                params.push_back(tokens[i].text);
+                ++i;
+                if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
+                    ++i;
+                } else if (i < tokens.size() && tokens[i].type != TokenType::RParen) {
+                    std::cerr << "\033[31mError: Function '" << name << "' parameter list missing comma, found: " 
+                              << tokens[i].text << " at line " << tokens[i].line << "\033[0m" << std::endl;
+                    // Try to recover: look for closing parenthesis or comma
+                    while (i < tokens.size() && 
+                          tokens[i].type != TokenType::RParen && 
+                          tokens[i].type != TokenType::Comma) {
+                        ++i;
+                    }
+                    if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
+                        ++i; // Consume comma and continue
+                    }
+                }
+            } else {
+                std::cerr << "\033[31mError: Function '" << name << "' parameter list has invalid token: " 
+                          << tokens[i].text << " at line " << tokens[i].line << "\033[0m" << std::endl;
+                
+                // Try to recover: look for next comma or closing parenthesis
+                while (i < tokens.size() && 
+                      tokens[i].type != TokenType::RParen && 
+                      tokens[i].type != TokenType::Comma) {
+                    ++i;
+                }
+                if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
+                    ++i; // Consume comma and continue
+                }
+            }
+        }
+        
+        if (i >= tokens.size()) {
+            std::cerr << "\033[31mError: Function '" << name << "' ended unexpectedly while parsing parameters, started at line " << func_line << "\033[0m" << std::endl;
+            // Output context around function start
+            print_context(tokens, func_start_index);
+            return nullptr;
+        }
+        
+        if (tokens[i].type == TokenType::RParen) {
+            ++i; // Consume closing parenthesis
+        } else {
+            std::cerr << "\033[31mError: Function '" << name << "' parameter list missing closing parenthesis, after line " << tokens[i-1].line << " col " << tokens[i-1].column << "\033[0m" << std::endl;
+            print_context(tokens, i);
+            // Try to recover: look for opening brace
+            while (i < tokens.size() && tokens[i].type != TokenType::LBrace) {
+                ++i;
+            }
+            if (i >= tokens.size()) {
+                return nullptr; // Can't find opening brace, give up
+            }
+        }
+        
+        if (i >= tokens.size()) {
+            std::cerr << "\033[31mError: Function '" << name << "' ended unexpectedly after closing parenthesis\033[0m" << std::endl;
+            return nullptr;
+        }
+        
+        if (tokens[i].type == TokenType::LBrace) {
+            ++i; // Consume opening brace
+            DEBUG_OUT << "Debug - Starting function '" << name << "' body parsing, line " << tokens[i-1].line << " col " << tokens[i-1].column << std::endl;
+        } else {
+            std::cerr << "\033[31mError: Function '" << name << "' definition missing opening brace '{', after line " << tokens[i-1].line << "\033[0m" << std::endl;
+            print_context(tokens, i);
+            return nullptr;
+        }
+        
+        // Parse function body
+        try {
+            auto body = parse_block(tokens, i, false);
+            
+            DEBUG_OUT << "Debug - Function '" << name << "' body parsing completed" << std::endl;
+            
+            // Note: parse_block now handles the closing brace, so no need to check again
+            return std::make_unique<FuncDefStmt>(name, params, std::move(body));
+        }
+        catch (const std::exception& e) {
+            std::cerr << "\033[31mError: Error parsing function '" << name << "' body: " << e.what() << "\033[0m" << std::endl;
+            // Try to recover: look for closing brace or function definition end marker
+            while (i < tokens.size() && tokens[i].type != TokenType::RBrace) {
+                ++i;
+            }
+            if (i < tokens.size()) {
+                ++i; // Skip closing brace
+            }
+            return nullptr;
+        }
+    }
+    
+    // Handle while statements
     if (tokens[i].type == TokenType::While) {
         return parse_while(tokens, i);
     }
@@ -565,138 +685,22 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
     } else if (tokens[i].type == TokenType::Semicolon) {
         ++i; // Empty statement
         return nullptr;
-    } else {
-        // Expression statement (including function calls)
-        if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
-            auto expr = parse_expression(tokens, i);
-            if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
-            if (expr) return std::make_unique<ExprStmt>(std::move(expr));
-        }
-    }
-    
-    // Function definition: func name(params) { block }
-    if (tokens[i].type == TokenType::Func && i+2 < tokens.size() && 
-        tokens[i+1].type == TokenType::Identifier && tokens[i+2].type == TokenType::LParen) {
-        std::string name = tokens[i+1].text;
-        int func_line = tokens[i].line;
-        int func_col = tokens[i].column;
-        std::cerr << "Debug - 开始解析函数: " << name << " 在行 " << func_line << "列" << func_col << std::endl;
-        
-        size_t func_start_index = i; // 记录函数开始位置用于错误报告
-        i += 3; // 跳过 func name(
-        
-        // 收集参数
-        std::vector<std::string> params;
-        while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
-            if (tokens[i].type == TokenType::Identifier) {
-                params.push_back(tokens[i].text);
-                ++i;
-                if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
-                    ++i;
-                } else if (i < tokens.size() && tokens[i].type != TokenType::RParen) {
-                    std::cerr << "Error: 函数 '" << name << "' 的参数列表中缺少逗号，找到: " 
-                              << tokens[i].text << " 在行" << tokens[i].line << std::endl;
-                    // 尝试恢复：寻找右括号或逗号
-                    while (i < tokens.size() && 
-                          tokens[i].type != TokenType::RParen && 
-                          tokens[i].type != TokenType::Comma) {
-                        ++i;
-                    }
-                    if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
-                        ++i; // 消费逗号并继续
-                    }
-                }
-            } else {
-                std::cerr << "Error: 函数 '" << name << "' 的参数列表中有无效的标记: " 
-                          << tokens[i].text << " 在行" << tokens[i].line << std::endl;
-                
-                // 尝试恢复：寻找下一个逗号或右括号
-                while (i < tokens.size() && 
-                      tokens[i].type != TokenType::RParen && 
-                      tokens[i].type != TokenType::Comma) {
-                    ++i;
-                }
-                if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
-                    ++i; // 消费逗号并继续
-                }
-            }
-        }
-        
-        if (i >= tokens.size()) {
-            std::cerr << "Error: 函数 '" << name << "' 在解析参数时意外结束，开始于行" << func_line << std::endl;
-            // 输出函数开始处的上下文
-            print_context(tokens, func_start_index);
-            return nullptr;
-        }
-        
-        if (tokens[i].type == TokenType::RParen) {
-            ++i; // 消费右括号
-        } else {
-            std::cerr << "Error: 函数 '" << name << "' 的参数列表缺少右括号，在行" << tokens[i-1].line << "列" << tokens[i-1].column << "之后" << std::endl;
-            print_context(tokens, i);
-            // 尝试恢复：寻找左大括号
-            while (i < tokens.size() && tokens[i].type != TokenType::LBrace) {
-                ++i;
-            }
-            if (i >= tokens.size()) {
-                return nullptr; // 没找到左大括号，放弃
-            }
-        }
-        
-        if (i >= tokens.size()) {
-            std::cerr << "Error: 函数 '" << name << "' 在右括号后意外结束" << std::endl;
-            return nullptr;
-        }
-        
-        if (tokens[i].type == TokenType::LBrace) {
-            ++i; // 消费左大括号
-            std::cerr << "Debug - 开始解析函数 '" << name << "' 的函数体，行" << tokens[i-1].line << "列" << tokens[i-1].column << std::endl;
-        } else {
-            std::cerr << "Error: 函数 '" << name << "' 定义缺少左大括号 '{'，在行" << tokens[i-1].line << "之后" << std::endl;
-            print_context(tokens, i);
-            return nullptr;
-        }
-        
-        // 解析函数体
-        try {
-            auto body = parse_block(tokens, i, false);
-            
-            std::cerr << "Debug - 函数 '" << name << "' 函数体解析完成" << std::endl;
-            
-            // 注意：现在parse_block会处理右花括号，所以不需要再次检查
-            return std::make_unique<FuncDefStmt>(name, params, std::move(body));
-        }
-        catch (const std::exception& e) {
-            std::cerr << "Error: 解析函数 '" << name << "' 的函数体时出错: " << e.what() << std::endl;
-            // 尝试恢复：寻找右大括号或函数定义结束标记
-            while (i < tokens.size() && tokens[i].type != TokenType::RBrace) {
-                ++i;
-            }
-            if (i < tokens.size()) {
-                ++i; // 消费右大括号
-            }
-            // 返回不完整的函数定义
-            auto empty_body = std::make_unique<BlockStmt>();
-            return std::make_unique<FuncDefStmt>(name, params, std::move(empty_body));
-        }
-    }
-
-    // if statement
-    if (tokens[i].type == TokenType::If && i+1 < tokens.size()) {
+    } else if (tokens[i].type == TokenType::If && i+1 < tokens.size()) {
+        // if statement
         int if_line = tokens[i].line;
         int if_col = tokens[i].column;
-        size_t if_start_index = i; // 记录if语句开始位置
+        size_t if_start_index = i; // Record if statement start position
         
-        std::cerr << "Debug - 开始解析if语句, 行 " << if_line << " 列 " << if_col << std::endl;
+        DEBUG_OUT << "Debug - Starting if statement parsing, line " << if_line << " column " << if_col << std::endl;
         
-        ++i; // 跳过if
+        ++i; // Skip 'if'
         
-        // 检查是否有左括号
+        // Check for left parenthesis
         if (i >= tokens.size() || tokens[i].type != TokenType::LParen) {
-            std::cerr << "Error: if语句后缺少左括号 '('" << std::endl;
+            std::cerr << "Error: Missing left parenthesis '(' after if statement" << std::endl;
             print_context(tokens, i > 0 ? i - 1 : 0);
             
-            // 尝试恢复：寻找左括号或左大括号
+            // Try to recover: look for left parenthesis or left brace
             while (i < tokens.size() && 
                   tokens[i].type != TokenType::LParen && 
                   tokens[i].type != TokenType::LBrace) {
@@ -704,88 +708,88 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             }
             
             if (i >= tokens.size() || tokens[i].type != TokenType::LParen) {
-                return nullptr; // 找不到可恢复的点
+                return nullptr; // Cannot find recoverable point
             }
         }
         
-        ++i; // 跳过左括号
+        ++i; // Skip left parenthesis
         
-        // 解析条件
+        // Parse condition
         if (i >= tokens.size()) {
-            std::cerr << "Error: if语句意外结束，缺少条件表达式" << std::endl;
+            std::cerr << "Error: if statement ended unexpectedly, missing condition expression" << std::endl;
             print_context(tokens, if_start_index);
             return nullptr;
         }
         
         auto cond = parse_expression(tokens, i);
         if (!cond) {
-            std::cerr << "Error: if语句缺少有效的条件表达式" << std::endl;
+            std::cerr << "Error: if statement missing valid condition expression" << std::endl;
             print_context(tokens, i);
             
-            // 尝试恢复：寻找右括号
+            // Try to recover: look for right parenthesis
             while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
                 ++i;
             }
             
             if (i >= tokens.size()) {
-                return nullptr; // 找不到右括号，无法继续
+                return nullptr; // Cannot find right parenthesis, cannot continue
             }
         }
         
-        // 检查右括号
+        // Check right parenthesis
         if (i >= tokens.size()) {
-            std::cerr << "Error: if语句条件后意外结束，缺少右括号" << std::endl;
+            std::cerr << "Error: if statement condition ended unexpectedly, missing right parenthesis" << std::endl;
             print_context(tokens, if_start_index);
             return nullptr;
         }
         
         if (tokens[i].type == TokenType::RParen) {
-            ++i; // 消费右括号
+            ++i; // Consume right parenthesis
         } else {
-            std::cerr << "Error: if语句条件缺少右括号 ')'，在行" << tokens[i-1].line << "之后" << std::endl;
+            std::cerr << "Error: if statement condition missing right parenthesis ')', after line " << tokens[i-1].line << std::endl;
             print_context(tokens, i);
             
-            // 尝试恢复：寻找左大括号
+            // Try to recover: look for left brace
             while (i < tokens.size() && tokens[i].type != TokenType::LBrace) {
                 ++i;
             }
             
             if (i >= tokens.size()) {
-                return nullptr; // 找不到左大括号，无法继续
+                return nullptr; // Cannot find left brace, cannot continue
             }
         }
         
-        // 检查左大括号
+        // Check left brace
         if (i >= tokens.size()) {
-            std::cerr << "Error: if语句右括号后意外结束，缺少函数体" << std::endl;
+            std::cerr << "Error: if statement ended unexpectedly after right parenthesis, missing body" << std::endl;
             print_context(tokens, if_start_index);
             return nullptr;
         }
         
         if (tokens[i].type == TokenType::LBrace) {
-            ++i; // 消费左大括号
+            ++i; // Consume left brace
         } else {
-            std::cerr << "Error: if语句缺少左大括号 '{'" << std::endl;
+            std::cerr << "Error: if statement missing left brace '{'" << std::endl;
             print_context(tokens, i);
             
-            // 尝试恢复：创建一个空块并返回
+            // Try to recover: create an empty block and return
             auto emptyThenBlock = std::make_unique<BlockStmt>();
             return std::make_unique<IfStmt>(std::move(cond), std::move(emptyThenBlock), nullptr);
         }
         
-        // 解析then块
-        std::cerr << "Debug - 解析if的then块" << std::endl;
+        // Parse then block
+        DEBUG_OUT << "Debug - Parsing if then block" << std::endl;
         std::unique_ptr<BlockStmt> thenBlock;
         
         try {
             thenBlock = parse_block(tokens, i, false);
-            std::cerr << "Debug - if的then块解析完成，包含" << thenBlock->statements.size() << "条语句" << std::endl;
+            DEBUG_OUT << "Debug - if then block parsing completed, contains " << thenBlock->statements.size() << " statements" << std::endl;
         } catch (const std::exception& e) {
-            std::cerr << "Error: 解析if的then块时出错: " << e.what() << std::endl;
-            // 创建空块作为恢复措施
+            std::cerr << "Error: Error parsing if then block: " << e.what() << std::endl;
+            // Create empty block as recovery measure
             thenBlock = std::make_unique<BlockStmt>();
             
-            // 尝试定位到else关键字或接下来的语句
+            // Try to locate else keyword or next statement
             while (i < tokens.size() && 
                    tokens[i].type != TokenType::Else && 
                    tokens[i].type != TokenType::Semicolon &&
@@ -798,108 +802,121 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             }
         }
         
-        // 检查是否有else块
+        // Check for else block
         std::unique_ptr<BlockStmt> elseBlock;
         if (i < tokens.size() && tokens[i].type == TokenType::Else) {
             int else_line = tokens[i].line;
-            ++i; // 消费else关键字
-            std::cerr << "Debug - 开始解析else块，行" << else_line << std::endl;
+            ++i; // Consume else keyword
+            DEBUG_OUT << "Debug - Starting else block parsing, line " << else_line << std::endl;
             
             if (i >= tokens.size()) {
-                std::cerr << "Error: else关键字后意外结束" << std::endl;
+                std::cerr << "Error: else keyword ended unexpectedly" << std::endl;
                 return std::make_unique<IfStmt>(std::move(cond), std::move(thenBlock), nullptr);
             }
             
-            // 检查左大括号
-            if (tokens[i].type == TokenType::LBrace) {
-                ++i; // 消费左大括号
+            // Check if it's else if
+            if (tokens[i].type == TokenType::If) {
+                DEBUG_OUT << "Debug - Detected else if, parsing recursively" << std::endl;
+                // Recursively parse else if as a new if statement
+                auto nestedIf = parse_statement(tokens, i);
+                if (nestedIf) {
+                    elseBlock = std::make_unique<BlockStmt>();
+                    elseBlock->statements.push_back(std::move(nestedIf));
+                    DEBUG_OUT << "Debug - else if parsing completed" << std::endl;
+                } else {
+                    std::cerr << "Error: else if parsing failed" << std::endl;
+                    return std::make_unique<IfStmt>(std::move(cond), std::move(thenBlock), nullptr);
+                }
+            } else if (tokens[i].type == TokenType::LBrace) {
+                // Regular else block
+                ++i; // Consume left brace
+                
+                // Parse else block
+                try {
+                    elseBlock = parse_block(tokens, i, false);
+                    DEBUG_OUT << "Debug - else block parsing completed, contains " << elseBlock->statements.size() << " statements" << std::endl;
+                } catch (const std::exception& e) {
+                    std::cerr << "Error: Error parsing else block: " << e.what() << std::endl;
+                    // Create empty block as recovery measure
+                    elseBlock = std::make_unique<BlockStmt>();
+                }
             } else {
-                std::cerr << "Error: else块缺少左大括号 '{'" << std::endl;
+                std::cerr << "Error: else block missing left brace '{'" << std::endl;
                 print_context(tokens, i);
                 
-                // 返回没有else块的if语句
+                // Return if statement without else block
                 return std::make_unique<IfStmt>(std::move(cond), std::move(thenBlock), nullptr);
-            }
-            
-            // 解析else块
-            try {
-                elseBlock = parse_block(tokens, i, false);
-                std::cerr << "Debug - else块解析完成，包含" << elseBlock->statements.size() << "条语句" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "Error: 解析else块时出错: " << e.what() << std::endl;
-                // 创建空块作为恢复措施
-                elseBlock = std::make_unique<BlockStmt>();
             }
         }
         
-        std::cerr << "Debug - if语句解析完成，定义于行 " << if_line 
-                  << ", 结束于行 " << (i < tokens.size() ? tokens[i-1].line : -1) << std::endl;
+        DEBUG_OUT << "Debug - if statement parsing completed, defined at line " << if_line 
+                  << ", ended at line " << (i < tokens.size() ? tokens[i-1].line : -1) << std::endl;
                   
         return std::make_unique<IfStmt>(std::move(cond), std::move(thenBlock), std::move(elseBlock));
+    } else {
+        // Expression statement (including function calls)
+        if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
+            auto expr = parse_expression(tokens, i);
+            if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
+            if (expr) return std::make_unique<ExprStmt>(std::move(expr));
+        }
     }
     
-    // include "module"
-    if (tokens[i].type == TokenType::Include && tokens[i+1].type == TokenType::String) {
-        std::string mod = tokens[i+1].text;
-        i += 2;
-        if (tokens[i].type == TokenType::Semicolon) ++i;
-        return std::make_unique<IncludeStmt>(mod);
-    }
-    
-    // 末尾加更详细的调试输出和错误处理
+    // Add more detailed debug output and error handling at the end
     if (i < tokens.size()) {
-        // 遇到无法识别的token，提供更详细的上下文
-        std::cerr << "错误: 无法识别的语法元素 '" << tokens[i].text 
-                  << "' (类型=" << static_cast<int>(tokens[i].type) 
-                  << ") 位于行 " << tokens[i].line 
-                  << " 列 " << tokens[i].column << std::endl;
+        // Encountered an unrecognized token, provide detailed context
+        std::cerr << "\033[1;31mError:\033[0m Unrecognized syntax element '" << tokens[i].text 
+                  << "' (type=" << static_cast<int>(tokens[i].type) 
+                  << ") at line " << tokens[i].line 
+                  << " column " << tokens[i].column << std::endl;
                   
-        // 打印上下文
-        std::cerr << "上下文: ";
+        // Print context
+        std::cerr << "\033[1;33mContext:\033[0m ";
         size_t context_start = i > 5 ? i - 5 : 0;
         size_t context_end = std::min(i + 5, tokens.size() - 1);
         
         for (size_t j = context_start; j <= context_end; j++) {
             if (j == i) {
-                std::cerr << "[" << tokens[j].text << "] ";
+                std::cerr << "\033[1;31m[" << tokens[j].text << "]\033[0m ";
             } else {
                 std::cerr << tokens[j].text << " ";
             }
         }
         std::cerr << std::endl;
         
-        // 尝试提供可能的错误原因
+        // Try to provide possible error causes
         if (tokens[i].type == TokenType::RBrace) {
-            std::cerr << "提示: 发现额外的右花括号 '}'，可能是块嵌套问题" << std::endl;
+            std::cerr << "Hint: Found extra closing brace '}', may be a block nesting issue" << std::endl;
         } else if (tokens[i].type == TokenType::RParen) {
-            std::cerr << "提示: 发现额外的右括号 ')'，检查表达式或条件语句" << std::endl;
+            std::cerr << "Hint: Found extra closing parenthesis ')', check expressions or conditional statements" << std::endl;
         } else if (tokens[i].type == TokenType::Else) {
-            std::cerr << "提示: 'else'关键字前缺少完整的if语句" << std::endl;
+            std::cerr << "Hint: 'else' keyword missing complete if statement before it" << std::endl;
         }
     } else {
-        std::cerr << "错误: 解析器在文件末尾意外结束" << std::endl;
+        std::cerr << "\033[31mError: Parser ended unexpectedly at end of file\033[0m" << std::endl;
     }
     
-    // 返回空指针表示解析失败
+    // Return null pointer to indicate parsing failure
     return nullptr;
 }
 
 std::unique_ptr<ASTNode> Parser::parse(const std::vector<Token>& tokens) {
     size_t i = 0;
     try {
-        std::cerr << "Debug - 开始解析文件，总token数：" << tokens.size() << std::endl;
-        auto result = parse_block(tokens, i, true); // 主 block
+        DEBUG_OUT << "Debug - Starting file parsing, total tokens: " << tokens.size() << std::endl;
+        auto result = parse_block(tokens, i, true); // Main block
         
-        // 验证是否消费了所有token
+        // Verify that all tokens were consumed
         if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
-            std::cerr << "警告: 解析完成后还有未处理的token，从位置 " << i << " 开始" << std::endl;
-            std::cerr << "未处理的第一个token: " << tokens[i].text 
-                      << " (行" << tokens[i].line << ")" << std::endl;
+            std::cerr << "\033[33mWarning: Unprocessed tokens remain after parsing completion, starting from position " << i << "\033[0m" << std::endl;
+            std::cerr << "First unprocessed token: " << tokens[i].text 
+                      << " (line " << tokens[i].line << ")" << std::endl;
         }
         
         return result;
     } catch (const std::exception& e) {
-        std::cerr << "解析错误: " << e.what() << std::endl;
+        std::cerr << "\033[31mParse error: " << e.what() << "\033[0m" << std::endl;
         return nullptr;
     }
 }
+

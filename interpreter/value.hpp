@@ -1,5 +1,7 @@
 #pragma once
 #include "bigint.hpp"
+#include "rational.hpp"
+#include "irrational.hpp"
 #include <string>
 #include <variant>
 #include <vector>
@@ -7,9 +9,9 @@
 #include <iostream>
 
 class Value {
-public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigInt };
+public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigInt, Rational, Irrational };
     Type type;
-    std::variant<std::nullptr_t, bool, int, double, std::string, std::vector<Value>, std::vector<std::vector<Value>>, ::BigInt> data;
+    std::variant<std::nullptr_t, bool, int, double, std::string, std::vector<Value>, std::vector<std::vector<Value>>, ::BigInt, ::Rational, ::Irrational> data;
     
     // Constructors
     Value() : type(Type::Null), data(nullptr) {}
@@ -19,6 +21,8 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
     Value(double f) : type(Type::Float), data(f) {}    Value(const std::string& s) : type(Type::String), data(s) {}
     Value(const char* s) : type(Type::String), data(std::string(s)) {}
     Value(const ::BigInt& bi) : type(Type::BigInt), data(bi) {}
+    Value(const ::Rational& r) : type(Type::Rational), data(r) {}
+    Value(const ::Irrational& ir) : type(Type::Irrational), data(ir) {}
     Value(const std::vector<Value>& arr) {
         // Check if this is a matrix (array of arrays)
         bool is_matrix = !arr.empty() && arr[0].is_array();
@@ -52,7 +56,9 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
     bool is_array() const { return type == Type::Array; }
     bool is_matrix() const { return type == Type::Matrix; }
     bool is_bigint() const { return type == Type::BigInt; }
-    bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt; }
+    bool is_rational() const { return type == Type::Rational; }
+    bool is_irrational() const { return type == Type::Irrational; }
+    bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt || type == Type::Rational || type == Type::Irrational; }
       // Get numeric value as double
     double as_number() const {
         if (type == Type::Int) return static_cast<double>(std::get<int>(data));
@@ -62,7 +68,41 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
             int int_val = std::get<::BigInt>(data).to_int();
             return static_cast<double>(int_val);
         }
+        if (type == Type::Rational) {
+            return std::get<::Rational>(data).to_double();
+        }
+        if (type == Type::Irrational) {
+            return std::get<::Irrational>(data).to_double();
+        }
         return 0.0;
+    }
+    
+    // Get numeric value as Rational (for precise calculations)
+    ::Rational as_rational() const {
+        if (type == Type::Rational) return std::get<::Rational>(data);
+        if (type == Type::Int) return ::Rational(std::get<int>(data));
+        if (type == Type::Float) return ::Rational::from_double(std::get<double>(data));
+        if (type == Type::BigInt) {
+            int int_val = std::get<::BigInt>(data).to_int();
+            return ::Rational(int_val);
+        }
+        if (type == Type::Irrational) {
+            return ::Rational::from_double(std::get<::Irrational>(data).to_double());
+        }
+        return ::Rational(0);
+    }
+    
+    // Get numeric value as Irrational (for exact irrational calculations)
+    ::Irrational as_irrational() const {
+        if (type == Type::Irrational) return std::get<::Irrational>(data);
+        if (type == Type::Int) return ::Irrational::constant(std::get<int>(data));
+        if (type == Type::Float) return ::Irrational::constant(std::get<double>(data));
+        if (type == Type::Rational) return ::Irrational::constant(std::get<::Rational>(data).to_double());
+        if (type == Type::BigInt) {
+            int int_val = std::get<::BigInt>(data).to_int();
+            return ::Irrational::constant(int_val);
+        }
+        return ::Irrational::constant(0);
     }
       // Get boolean value
     bool as_bool() const {
@@ -70,6 +110,8 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         if (type == Type::Int) return std::get<int>(data) != 0;
         if (type == Type::Float) return std::get<double>(data) != 0.0;
         if (type == Type::BigInt) return !std::get<::BigInt>(data).is_zero();
+        if (type == Type::Rational) return !std::get<::Rational>(data).is_zero();
+        if (type == Type::Irrational) return !std::get<::Irrational>(data).is_zero();
         if (type == Type::String) return !std::get<std::string>(data).empty();
         if (type == Type::Array) return !std::get<std::vector<Value>>(data).empty();
         return false;
@@ -116,6 +158,12 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
             }
             case Type::BigInt: {
                 return std::get<::BigInt>(data).to_string();
+            }
+            case Type::Rational: {
+                return std::get<::Rational>(data).to_string();
+            }
+            case Type::Irrational: {
+                return std::get<::Irrational>(data).to_string();
             }
         }
         return "<unknown>";

@@ -7,7 +7,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     size_t i = 0;
     int line = 1, col = 1;
     // Clear log for debugging
-    std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
+    // Debug: std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') { ++line; col = 1; ++i; continue; }
         if (isspace(src[i])) { ++col; ++i; continue; }

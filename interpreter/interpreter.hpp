@@ -7,12 +7,28 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <stack>
 
-// 定义一个运行时错误类，供解释器内部使用
+// Stack frame for function call tracking
+struct StackFrame {
+    std::string function_name;
+    std::string file_name;
+    int line_number;
+    
+    StackFrame(const std::string& func, const std::string& file, int line)
+        : function_name(func), file_name(file), line_number(line) {}
+};
+
+// Enhanced runtime error class with stack trace support
 class RuntimeError : public std::exception {
 public:
     std::string message;
+    std::vector<StackFrame> stack_trace;
+    
     RuntimeError(const std::string& msg) : message(msg) {}
+    RuntimeError(const std::string& msg, const std::vector<StackFrame>& trace) 
+        : message(msg), stack_trace(trace) {}
+    
     const char* what() const noexcept override {
         return message.c_str();
     }
@@ -42,8 +58,20 @@ public:
     Interpreter() { register_builtin_functions(); }
     void execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
-    // 打印当前作用域中的所有变量
+    // Print all variables in current scope
     void printVariables() const;
+    
+    // Stack trace management
+    void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
+    void pop_frame();
+    std::vector<StackFrame> get_stack_trace() const;
+    void print_stack_trace(const RuntimeError& error, bool use_colors = true) const;
+    
+    // Utility functions for error display
+    static bool supports_colors();
+    static void print_error(const std::string& message, bool use_colors = true);
+    static void print_warning(const std::string& message, bool use_colors = true);
+    
 private:
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };    
@@ -56,7 +84,11 @@ private:
     // List of loaded modules to prevent circular imports
     std::set<std::string> loaded_modules;    
     // Store loaded module ASTs to keep function pointers valid
-    std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;    // Recursion depth tracking
+    std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
+    
+    // Stack trace for function calls
+    std::vector<StackFrame> call_stack;
+    // Recursion depth tracking
     int recursion_depth = 0;
     int max_recursion_depth = 100;  // 可变的递归深度限制
     // Variable lookup
