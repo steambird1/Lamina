@@ -50,6 +50,7 @@ jobs:
 
     - name: Build
       working-directory: interpreter
+      shell: bash
       run: |
         echo "Building Lamina for ${{ matrix.name }}..."
         
@@ -77,6 +78,7 @@ jobs:
 
     - name: Prepare release package
       working-directory: interpreter
+      shell: bash
       run: |
         mkdir -p ../release-temp
         cp ${{ matrix.executable }} ../release-temp/
@@ -104,6 +106,7 @@ jobs:
 
     - name: Create archive (Linux/macOS)
       if: matrix.archive == 'tar.gz'
+      shell: bash
       run: |
         cd release-temp
         tar -czf ../lamina-${{ matrix.name }}-x64.tar.gz *
@@ -111,6 +114,7 @@ jobs:
 
     - name: Create archive (Windows)
       if: matrix.archive == 'zip'
+      shell: bash
       run: |
         cd release-temp
         7z a ../lamina-${{ matrix.name }}-x64.zip *
