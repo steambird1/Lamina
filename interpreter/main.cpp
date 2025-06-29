@@ -10,8 +10,8 @@
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         // 进入交互式终端（REPL）
-        std::cout << "Lamina Terminal v1.0. Press Ctrl+C to exit.\n";
-        std::cout << "Type :help for help, :quit or :exit to quit\n";
+        std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit.\n";
+        std::cout << "Type :help for help.\n";
         Interpreter interpreter;
         int lineno = 1;
         while (true) {
@@ -31,13 +31,13 @@ int main(int argc, char* argv[]) {
                 }
                 
                 // 处理特殊命令
-                if (line == ":quit" || line == ":exit") {
+                if (line == ":exit") {
                     break;
                 }
                 
                 if (line == ":help") {
                     std::cout << "Lamina Interpreter Commands:\n";
-                    std::cout << "  :quit or :exit - Exit interpreter\n";
+                    std::cout << "  :exit - Exit interpreter\n";
                     std::cout << "  :help - Show this help message\n";
                     std::cout << "  :vars - Show all variables\n";
                     std::cout << "  :clear - Clear screen\n";

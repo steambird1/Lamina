@@ -457,7 +457,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         (tokens[i+1].type == TokenType::String || tokens[i+1].type == TokenType::Identifier)) {
         std::string mod = tokens[i+1].text;
         i += 2;
-        if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after include statement" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<IncludeStmt>(mod);
     }
     
@@ -580,7 +584,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             std::cerr << "Error: Missing expression in define statement for '" << name << "'" << std::endl;
             return nullptr;
         }
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after define statement" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<DefineStmt>(name, std::move(expr));
     } else if (tokens[i].type == TokenType::Bigint && i+1 < tokens.size() && 
                tokens[i+1].type == TokenType::Identifier) {
@@ -595,7 +603,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
                 return nullptr;
             }
         }
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after bigint declaration" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<BigIntDeclStmt>(name, std::move(init_value));
     } else if (tokens[i].type == TokenType::Var && tokens[i+1].type == TokenType::Identifier && tokens[i+2].type == TokenType::Assign) {
         std::string name = tokens[i+1].text;
@@ -605,7 +617,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             std::cerr << "Error: Missing expression in variable declaration for '" << name << "'" << std::endl;
             return nullptr;
         }
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after variable declaration" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<VarDeclStmt>(name, std::move(expr));
     } else if (tokens[i].type == TokenType::Identifier && tokens[i+1].type == TokenType::Assign) {
         std::string name = tokens[i].text;
@@ -615,7 +631,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             std::cerr << "Error: Missing expression in assignment to '" << name << "'" << std::endl;
             return nullptr;
         }
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after assignment" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<AssignStmt>(name, std::move(expr));
     } else if (tokens[i].type == TokenType::Print) {
         ++i;  // Skip print token
@@ -672,15 +692,27 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
             std::cerr << "Error: Missing expression in return statement" << std::endl;
             return nullptr;
         }
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after return statement" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<ReturnStmt>(std::move(expr));
     } else if (tokens[i].type == TokenType::Break) {
         ++i;
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after break statement" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<BreakStmt>();
     } else if (tokens[i].type == TokenType::Continue) {
         ++i;
-        if (tokens[i].type == TokenType::Semicolon) ++i;
+        if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+            std::cerr << "Error: Missing semicolon ';' after continue statement" << std::endl;
+            return nullptr;
+        }
+        ++i;
         return std::make_unique<ContinueStmt>();
     } else if (tokens[i].type == TokenType::Semicolon) {
         ++i; // Empty statement
@@ -857,7 +889,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         // Expression statement (including function calls)
         if (i < tokens.size() && tokens[i].type != TokenType::EndOfFile) {
             auto expr = parse_expression(tokens, i);
-            if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) ++i;
+            if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
+                std::cerr << "Error: Missing semicolon ';' after expression statement" << std::endl;
+                return nullptr;
+            }
+            ++i;
             if (expr) return std::make_unique<ExprStmt>(std::move(expr));
         }
     }
