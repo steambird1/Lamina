@@ -452,9 +452,12 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
 }
 
 std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tokens, size_t& i) {
-    // Handle include statements first - support both quoted strings and identifiers
-    if (tokens[i].type == TokenType::Include && i+1 < tokens.size() && 
-        (tokens[i+1].type == TokenType::String || tokens[i+1].type == TokenType::Identifier)) {
+    // Handle include statements first - only support quoted strings
+    if (tokens[i].type == TokenType::Include && i+1 < tokens.size()) {
+        if (tokens[i+1].type != TokenType::String) {
+            std::cerr << "Error: Include statement requires a quoted string (e.g., include \"filename\";)" << std::endl;
+            return nullptr;
+        }
         std::string mod = tokens[i+1].text;
         i += 2;
         if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {

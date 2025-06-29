@@ -771,7 +771,7 @@ bool Interpreter::load_module(const std::string& module_name) {
     }
 
     // Try different paths: current directory, examples directory, etc.
-    std::vector<std::string> search_paths = {"", "./", "./examples/", "../examples/"};
+    std::vector<std::string> search_paths = {"", "./", "./include/"};
     
     std::ifstream file;
     std::string full_path;
