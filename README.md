@@ -153,6 +153,7 @@ var x = 10;
 var name = "Alice";
 var arr = [1, 2, 3];
 bigint large_num = 999999999999;  // 大整数需显式声明
+bigint factorial_result = 25!;    // 可直接从运算结果赋值
 ```
 
 ---
@@ -170,7 +171,7 @@ bigint large_num = 999999999999;  // 大整数需显式声明
 | `bool` | 布尔值 | `true`, `false` |
 | `string` | 字符串 | `"Hello"`, `"world"` |
 | `null` | 空值 | `null` |
-| `bigint` | 大整数（需显式声明） | `bigint x = 999999;` |
+| `bigint` | 大整数（需显式声明） | `bigint x = 999999;`, `bigint y = 30!;` |
 
 ### 复合类型
 

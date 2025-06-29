@@ -130,7 +130,10 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
             if (bi->init_value) {
                 Value val = eval(bi->init_value.get());
-                if (val.is_int()) {
+                if (val.is_bigint()) {
+                    // 如果值已经是BigInt，直接使用
+                    set_variable(bi->name, val);
+                } else if (val.is_int()) {
                     // 将普通整数转换为BigInt
                     ::BigInt big_val(std::get<int>(val.data));
                     set_variable(bi->name, Value(big_val));

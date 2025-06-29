@@ -30,6 +30,10 @@ print("大整数:", big_num);
 
 bigint factorial_8 = 8!;
 print("8! (BigInt):", factorial_8);
+
+// 测试大阶乘直接赋值（已修复的功能）
+bigint large_factorial = 25!;
+print("25! (大阶乘 BigInt):", large_factorial);
 print();
 
 // ============================================================================
@@ -273,6 +277,7 @@ print();
 print("测试覆盖的功能包括:");
 print("✓ 基本数据类型");
 print("✓ 配置定义");
+print("✓ BigInt 大整数支持（含大阶乘）");
 print("✓ 数组和矩阵");
 print("✓ 算术运算符");
 print("✓ 向量运算");
