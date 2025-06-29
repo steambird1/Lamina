@@ -53,9 +53,9 @@ int main(int argc, char* argv[]) {
                 
                 if (line == ":clear") {
                     #ifdef _WIN32
-                    system("cls");
+                    (void)system("cls");
                     #else
-                    system("clear");
+                    (void)system("clear");
                     #endif
                     ++lineno;
                     continue;

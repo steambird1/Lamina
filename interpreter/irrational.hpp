@@ -1,4 +1,5 @@
 #pragma once
+#define _USE_MATH_DEFINES
 #include <string>
 #include <cmath>
 #include <vector>
@@ -6,6 +7,14 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#ifndef M_E
+#define M_E 2.71828182845904523536
+#endif
 
 // 无理数类，支持常见无理数的精确表示
 class Irrational {
@@ -240,6 +249,8 @@ public:
                 return coefficient * M_PI;
             case Type::E:
                 return coefficient * M_E;
+            case Type::LOG:
+                return coefficient * std::log(radicand);
             case Type::COMPLEX: {
                 double result = constant_term;
                 for (const auto& [key, coeff] : coefficients) {
@@ -254,8 +265,9 @@ public:
                 }
                 return result;
             }
+            default:
+                return 0.0;
         }
-        return 0.0;
     }
     
     // 转换为字符串（精确表示）
@@ -328,6 +340,26 @@ public:
                     return temp + "e";
                 }
                 
+            case Type::LOG:
+                if (coefficient == 1.0) {
+                    return "log(" + std::to_string(radicand) + ")";
+                }
+                if (coefficient == -1.0) {
+                    return "-log(" + std::to_string(radicand) + ")";
+                }
+                // 处理系数格式化
+                if (std::abs(coefficient - std::round(coefficient)) < 1e-15) {
+                    return std::to_string(static_cast<int>(std::round(coefficient))) + "log(" + std::to_string(radicand) + ")";
+                } else {
+                    // 格式化小数，去掉末尾的0
+                    std::ostringstream oss;
+                    oss << std::fixed << std::setprecision(6) << coefficient;
+                    std::string temp = oss.str();
+                    temp.erase(temp.find_last_not_of('0') + 1);
+                    if (temp.back() == '.') temp.pop_back();
+                    return temp + "log(" + std::to_string(radicand) + ")";
+                }
+                
             case Type::COMPLEX: {
                 std::string result;
                 bool first = true;
@@ -394,8 +426,9 @@ public:
                 
                 return result.empty() ? "0" : result;
             }
+            default:
+                return "0";
         }
-        return "0";
     }
     
     // 判断是否为零

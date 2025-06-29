@@ -180,8 +180,8 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
 // Helper function: print token context for error reporting
 static void print_context(const std::vector<Token>& tokens, size_t pos, int context_size = 5) {
     std::cerr << "Context: ";
-    size_t context_start = pos > context_size ? pos - context_size : 0;
-    size_t context_end = std::min(pos + context_size, tokens.size() - 1);
+    size_t context_start = pos > static_cast<size_t>(context_size) ? pos - static_cast<size_t>(context_size) : 0;
+    size_t context_end = std::min(pos + static_cast<size_t>(context_size), tokens.size() - 1);
     
     for (size_t j = context_start; j <= context_end; j++) {
         if (j == pos) {

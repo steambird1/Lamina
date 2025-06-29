@@ -19,7 +19,6 @@
 
 // Forward declaration for error handling
 static void error_and_exit(const std::string& msg);
-static void report_error(const std::string& msg);
 
 // 这些异常类已经移到了 interpreter.hpp
 
@@ -244,9 +243,11 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             throw ReturnException(val);
         } 
         else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
+            (void)breakStmt; // 避免未使用变量警告
             throw BreakException();
         } 
         else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
+            (void)contStmt; // 避免未使用变量警告
             throw ContinueException();
         } 
         else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
@@ -1137,9 +1138,9 @@ static void error_and_exit(const std::string& msg) {
 }
 
 // 添加一个新的错误报告函数，只打印错误但不终止程序
-static void report_error(const std::string& msg) {
-    std::cerr << "Error: " << msg << std::endl;
-}
+// static void report_error(const std::string& msg) {
+//     std::cerr << "Error: " << msg << std::endl;
+// }
 
 // 打印当前所有变量
 void Interpreter::printVariables() const {

@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <climits>
 
 class BigInt {
 private:
@@ -19,10 +20,21 @@ public:
             return;
         }
         
-        n = std::abs(n);
-        while (n > 0) {
-            digits.push_back(n % 10);
-            n /= 10;
+        // 处理 INT_MIN 的特殊情况
+        if (n == INT_MIN) {
+            // INT_MIN 的绝对值超出 int 范围，直接处理
+            long long ln = static_cast<long long>(n);
+            ln = -ln;  // 现在安全了
+            while (ln > 0) {
+                digits.push_back(ln % 10);
+                ln /= 10;
+            }
+        } else {
+            n = std::abs(n);
+            while (n > 0) {
+                digits.push_back(n % 10);
+                n /= 10;
+            }
         }
     }
     

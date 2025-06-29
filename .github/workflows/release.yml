@@ -57,9 +57,18 @@ jobs:
           export PATH="/c/msys64/mingw64/bin:$PATH"
         fi
         
-        g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
-          main.cpp lexer.cpp parser.cpp interpreter.cpp \
-          -o ${{ matrix.executable }}
+        # Use different compiler flags for different platforms
+        if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          # macOS doesn't support -static-libgcc
+          g++ -std=c++17 -O3 -DNDEBUG \
+            main.cpp lexer.cpp parser.cpp interpreter.cpp \
+            -o ${{ matrix.executable }}
+        else
+          # Linux and Windows support static linking
+          g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
+            main.cpp lexer.cpp parser.cpp interpreter.cpp \
+            -o ${{ matrix.executable }}
+        fi
           
         # Verify the build
         ./${{ matrix.executable }} --help || echo "No help option available"
