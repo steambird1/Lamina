@@ -77,19 +77,22 @@ jobs:
     - name: Build (Windows)
       if: matrix.os == 'windows-latest'
       working-directory: interpreter
+      shell: msys2 {0}
       run: |
-        Write-Host "Building Lamina for ${{ matrix.name }}..."
+        echo "Building Lamina for ${{ matrix.name }}..."
         
         # Windows with MSYS2 supports static linking
-        & "C:\msys64\mingw64\bin\g++.exe" -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ main.cpp lexer.cpp parser.cpp interpreter.cpp -o ${{ matrix.executable }}
+        g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
+          main.cpp lexer.cpp parser.cpp interpreter.cpp \
+          -o ${{ matrix.executable }}
           
         # Verify the build
-        if (Test-Path "${{ matrix.executable }}") {
-            Write-Host "Build completed successfully!"
-        } else {
-            Write-Error "Build failed - executable not found"
+        if [ -f "${{ matrix.executable }}" ]; then
+            echo "Build completed successfully!"
+        else
+            echo "Build failed - executable not found"
             exit 1
-        }
+        fi
 
     - name: Prepare release package (Linux/macOS)
       if: matrix.os != 'windows-latest'
@@ -123,32 +126,31 @@ jobs:
     - name: Prepare release package (Windows)
       if: matrix.os == 'windows-latest'
       working-directory: interpreter
+      shell: msys2 {0}
       run: |
-        New-Item -ItemType Directory -Force -Path "..\release-temp"
-        Copy-Item "${{ matrix.executable }}" "..\release-temp\"
+        mkdir -p ../release-temp
+        cp ${{ matrix.executable }} ../release-temp/
         
         # Copy examples if they exist
-        if (Test-Path "examples") {
-            Copy-Item "examples" "..\release-temp\" -Recurse
-        }
+        if [ -d "examples" ]; then
+          cp -r examples ../release-temp/
+        fi
         
         # Copy documentation
-        Copy-Item "..\README.md" "..\release-temp\"
-        Copy-Item "..\LICENSE" "..\release-temp\"
+        cp ../README.md ../release-temp/
+        cp ../LICENSE ../release-temp/
         
         # Create version info
-        @"
-        Lamina Interpreter
-        Build date: $(Get-Date)
-        Platform: ${{ matrix.name }}
-        Compiler: g++
-        "@ | Out-File "..\release-temp\VERSION.txt" -Encoding UTF8
+        echo "Lamina Interpreter" > ../release-temp/VERSION.txt
+        echo "Build date: $(date)" >> ../release-temp/VERSION.txt
+        echo "Platform: ${{ matrix.name }}" >> ../release-temp/VERSION.txt
+        echo "Compiler: g++" >> ../release-temp/VERSION.txt
         
-        if ("${{ github.ref_type }}" -eq "tag") {
-            "Version: ${{ github.ref_name }}" | Out-File "..\release-temp\VERSION.txt" -Append -Encoding UTF8
-        } else {
-            "Version: ${{ github.sha }}" | Out-File "..\release-temp\VERSION.txt" -Append -Encoding UTF8
-        }
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "Version: ${{ github.ref_name }}" >> ../release-temp/VERSION.txt
+        else
+          echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
+        fi
 
     - name: Create archive (Linux/macOS)
       if: matrix.archive == 'tar.gz'
@@ -160,8 +162,11 @@ jobs:
 
     - name: Create archive (Windows)
       if: matrix.archive == 'zip'
+      shell: bash
       run: |
-        Compress-Archive -Path "release-temp\*" -DestinationPath "lamina-${{ matrix.name }}-x64.zip"
+        cd release-temp
+        zip -r ../lamina-${{ matrix.name }}-x64.zip *
+        cd ..
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
