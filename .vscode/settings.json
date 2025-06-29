@@ -62,5 +62,6 @@
         "optional": "cpp",
         "set": "cpp",
         "xtree": "cpp"
-    }
+    },
+    "markdown.validate.enabled": true
 }

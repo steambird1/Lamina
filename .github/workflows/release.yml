@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            executable: lamina
+            archive: tar.gz
+          - os: windows-latest
+            name: windows
+            executable: lamina.exe
+            archive: zip
+          - os: macos-latest
+            name: macos
+            executable: lamina
+            archive: tar.gz
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup build environment (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+
+    - name: Setup build environment (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: mingw-w64-x86_64-gcc
+
+    - name: Setup build environment (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Xcode command line tools should be available
+        xcode-select --install || true
+
+    - name: Build
+      working-directory: interpreter
+      run: |
+        echo "Building Lamina for ${{ matrix.name }}..."
+        
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          export PATH="/c/msys64/mingw64/bin:$PATH"
+        fi
+        
+        g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
+          main.cpp lexer.cpp parser.cpp interpreter.cpp \
+          -o ${{ matrix.executable }}
+          
+        # Verify the build
+        ./${{ matrix.executable }} --help || echo "No help option available"
+        
+        echo "Build completed successfully!"
+
+    - name: Prepare release package
+      working-directory: interpreter
+      run: |
+        mkdir -p ../release-temp
+        cp ${{ matrix.executable }} ../release-temp/
+        
+        # Copy examples if they exist
+        if [ -d "examples" ]; then
+          cp -r examples ../release-temp/
+        fi
+        
+        # Copy documentation
+        cp ../README.md ../release-temp/
+        cp ../LICENSE ../release-temp/
+        
+        # Create version info
+        echo "Lamina Interpreter" > ../release-temp/VERSION.txt
+        echo "Build date: $(date)" >> ../release-temp/VERSION.txt
+        echo "Platform: ${{ matrix.name }}" >> ../release-temp/VERSION.txt
+        echo "Compiler: g++" >> ../release-temp/VERSION.txt
+        
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "Version: ${{ github.ref_name }}" >> ../release-temp/VERSION.txt
+        else
+          echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
+        fi
+
+    - name: Create archive (Linux/macOS)
+      if: matrix.archive == 'tar.gz'
+      run: |
+        cd release-temp
+        tar -czf ../lamina-${{ matrix.name }}-x64.tar.gz *
+        cd ..
+
+    - name: Create archive (Windows)
+      if: matrix.archive == 'zip'
+      run: |
+        cd release-temp
+        7z a ../lamina-${{ matrix.name }}-x64.zip *
+        cd ..
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: lamina-${{ matrix.name }}-x64
+        path: lamina-${{ matrix.name }}-x64.*
+
+  create-release:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Lamina ${{ github.ref_name }}
+        body: |
+          ## Lamina Interpreter ${{ github.ref_name }}
+          
+          ### 🎉 新版本发布
+          
+          这是 Lamina 解释器的 ${{ github.ref_name }} 版本，专注于精确数学计算的面向过程编程语言。
+          
+          ### 📦 下载说明
+          
+          - **Linux**: 下载 `lamina-linux-x64.tar.gz`
+          - **Windows**: 下载 `lamina-windows-x64.zip`  
+          - **macOS**: 下载 `lamina-macos-x64.tar.gz`
+          
+          ###  使用方法
+          
+          1. 解压下载的文件
+          2. 运行解释器:
+             ```bash
+             # 交互模式
+             ./lamina
+             
+             # 执行脚本
+             ./lamina script.lm
+             ```
+          
+          ### ⚡ 主要特性
+          
+          - 精确数学计算（有理数和无理数）
+          - 向量和矩阵运算
+          - 函数式编程支持
+          - 模块化系统
+          - 完整的错误栈追踪
+          
+          ### 📚 更多信息
+          
+          查看 [README.md](https://github.com/Ziyang-bai/Lamina/blob/main/README.md) 获取完整的语法指南和示例。
+          
+          ---
+          
+          **注意**: include 语句现在强制要求使用引号包裹文件名 (`include "filename";`)
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/lamina-linux-x64/lamina-linux-x64.tar.gz
+          artifacts/lamina-windows-x64/lamina-windows-x64.zip
+          artifacts/lamina-macos-x64/lamina-macos-x64.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

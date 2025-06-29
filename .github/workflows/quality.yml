@@ -1,0 +1,165 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format cppcheck
+        
+    - name: Check C++ code formatting
+      working-directory: interpreter
+      run: |
+        echo "Checking C++ code formatting..."
+        
+        # Create a .clang-format file if it doesn't exist
+        if [ ! -f .clang-format ]; then
+          cat > .clang-format << 'EOF'
+        ---
+        Language: Cpp
+        BasedOnStyle: Google
+        IndentWidth: 4
+        TabWidth: 4
+        UseTab: Never
+        ColumnLimit: 100
+        AlignConsecutiveAssignments: true
+        AlignConsecutiveDeclarations: true
+        AllowShortIfStatementsOnASingleLine: false
+        AllowShortLoopsOnASingleLine: false
+        AllowShortFunctionsOnASingleLine: Empty
+        EOF
+        fi
+        
+        # Check if any files need formatting
+        if clang-format --dry-run --Werror *.cpp *.hpp 2>/dev/null; then
+          echo " All C++ files are properly formatted"
+        else
+          echo "⚠️  Some files need formatting (this is just a warning)"
+          echo "Run: clang-format -i *.cpp *.hpp to fix formatting"
+        fi
+        
+    - name: Static code analysis
+      working-directory: interpreter
+      run: |
+        echo "Running static code analysis with cppcheck..."
+        
+        # Run cppcheck on all source files
+        cppcheck --enable=all --std=c++17 --suppress=missingIncludeSystem \
+          --suppress=unusedFunction --suppress=unmatchedSuppression \
+          --error-exitcode=0 \
+          *.cpp *.hpp
+          
+        echo " Static analysis completed"
+        
+    - name: Check for common issues
+      working-directory: interpreter
+      run: |
+        echo "Checking for common C++ issues..."
+        
+        # Check for TODO/FIXME comments
+        if grep -r "TODO\|FIXME\|XXX" *.cpp *.hpp; then
+          echo "ℹ️  Found TODO/FIXME comments (informational only)"
+        fi
+        
+        # Check for potential memory issues
+        if grep -r "malloc\|free\|delete\[\]" *.cpp *.hpp; then
+          echo "⚠️  Found manual memory management (consider using smart pointers)"
+        fi
+        
+        # Check for using namespace std
+        if grep -r "using namespace std" *.cpp *.hpp; then
+          echo "ℹ️  Found 'using namespace std' declarations"
+        fi
+        
+        echo " Common issues check completed"
+
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Check documentation
+      run: |
+        echo "Checking documentation completeness..."
+        
+        # Check if README exists and has content
+        if [ -f README.md ] && [ -s README.md ]; then
+          echo " README.md exists and has content"
+        else
+          echo "❌ README.md is missing or empty"
+          exit 1
+        fi
+        
+        # Check if LICENSE exists
+        if [ -f LICENSE ]; then
+          echo " LICENSE file exists"
+        else
+          echo "⚠️  LICENSE file is missing"
+        fi
+        
+        # Check if example files exist
+        if [ -d "interpreter/examples" ] && [ "$(ls -A interpreter/examples)" ]; then
+          echo " Example files exist"
+          echo "Found examples:"
+          ls -la interpreter/examples/
+        else
+          echo "ℹ️  No example files found"
+        fi
+        
+        # Check README for key sections
+        required_sections=("概述" "快速开始" "基础语法" "示例代码")
+        for section in "${required_sections[@]}"; do
+          if grep -q "$section" README.md; then
+            echo " Found section: $section"
+          else
+            echo "⚠️  Missing section: $section"
+          fi
+        done
+        
+        echo " Documentation check completed"
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Security scan
+      working-directory: interpreter
+      run: |
+        echo "Running basic security checks..."
+        
+        # Check for potentially dangerous functions
+        dangerous_functions=("strcpy" "strcat" "sprintf" "gets" "system")
+        
+        for func in "${dangerous_functions[@]}"; do
+          if grep -r "\b$func\b" *.cpp *.hpp; then
+            echo "⚠️  Found potentially dangerous function: $func"
+          fi
+        done
+        
+        # Check for hardcoded paths or credentials
+        if grep -r "/home/\|/Users/\|C:\\\\" *.cpp *.hpp; then
+          echo "⚠️  Found hardcoded paths"
+        fi
+        
+        if grep -ri "password\|secret\|key\|token" *.cpp *.hpp; then
+          echo "⚠️  Found potential credentials in code"
+        fi
+        
+        echo " Basic security scan completed"

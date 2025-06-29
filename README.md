@@ -2,18 +2,18 @@
 
 [![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)
 [![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)
-[![Math](https://img.shields.io/badge/math-precise-green.svg)](#-精确数学特性)
+[![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
-[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#-精确数学特性) • [示例代码](#示例代码)
+[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码)
 
 ---
 
 ##  目录
 
 - [概述](#概述)
-- [精确数学特性](#-精确数学特性)
+- [精确数学特性](#精确数学特性)
 - [快速开始](#快速开始)
 - [基础语法](#基础语法)
 - [数据类型](#数据类型)
