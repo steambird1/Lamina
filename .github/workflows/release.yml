@@ -144,8 +144,8 @@ jobs:
         fi
         
         # Copy documentation
-        cp ../README.md ../release-temp/
-        cp ../LICENSE ../release-temp/
+        cp ../README.md ../release-temp/ 2>/dev/null || echo "README.md not found"
+        cp ../LICENSE ../release-temp/ 2>/dev/null || echo "LICENSE not found"
         
         # Create version info
         echo "Lamina Interpreter" > ../release-temp/VERSION.txt
@@ -158,6 +158,10 @@ jobs:
         else
           echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
         fi
+        
+        # List contents for debugging
+        echo "Release package contents:"
+        ls -la ../release-temp/
 
     - name: Create archive (Linux/macOS)
       if: matrix.archive == 'tar.gz'
@@ -169,11 +173,8 @@ jobs:
 
     - name: Create archive (Windows)
       if: matrix.archive == 'zip'
-      shell: bash
       run: |
-        cd release-temp
-        zip -r ../lamina-${{ matrix.name }}-x64.zip *
-        cd ..
+        Compress-Archive -Path "release-temp\*" -DestinationPath "lamina-${{ matrix.name }}-x64.zip" -Force
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
