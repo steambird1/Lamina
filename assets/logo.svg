@@ -9,6 +9,7 @@
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
@@ -20,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="59.750523"
-     inkscape:cy="56.038212"
+     inkscape:zoom="7.9999999"
+     inkscape:cx="37.75"
+     inkscape:cy="47.1875"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -31,6 +32,30 @@
      inkscape:current-layer="svg8" />
   <defs
      id="defs4">
+    <linearGradient
+       id="linearGradient22"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#2d5281;stop-opacity:1;"
+         offset="0"
+         id="stop22" />
+      <stop
+         style="stop-color:#5688c5;stop-opacity:1;"
+         offset="1"
+         id="stop23" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient18"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#1a202c;stop-opacity:1;"
+         offset="0"
+         id="stop18" />
+      <stop
+         style="stop-color:#5688c5;stop-opacity:1;"
+         offset="1"
+         id="stop19" />
+    </linearGradient>
     <linearGradient
        id="linearGradient11"
        x1="0"
@@ -131,6 +156,25 @@
          style="stop-color:#5688c5;stop-opacity:1;"
          id="stop2-4" />
     </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient18"
+       id="linearGradient21"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-6.2421851,-7.058604)"
+       x1="51.131046"
+       y1="19.624416"
+       x2="68.700989"
+       y2="37.194359" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient22"
+       id="linearGradient23"
+       x1="52.131035"
+       y1="20.124422"
+       x2="69.700966"
+       y2="37.694351"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <!-- 背景层次效果 -->
   <!-- 文字 -->
@@ -183,4 +227,37 @@
      fill="url(#mainGrad)"
      id="path4"
      style="fill:url(#mainGrad);stroke-width:0.97353" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#4a5568;stroke:none;stroke-width:4.07495;stroke-opacity:0;opacity:0.3;fill-opacity:1"
+     x="38.225624"
+     y="33.201565"
+     id="text12-3"><tspan
+       sodipodi:role="line"
+       id="tspan12-4"
+       x="38.225624"
+       y="33.201565"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:4.07495">M</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#4a5568;stroke:none;stroke-width:4.07495;stroke-opacity:0;fill-opacity:1;opacity:0.6"
+     x="41.725624"
+     y="37.201565"
+     id="text12-9"><tspan
+       sodipodi:role="line"
+       id="tspan12-5"
+       x="41.725624"
+       y="37.201565"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:4.07495">M</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;opacity:1;fill:url(#linearGradient23);stroke:none;stroke-width:4.07495;stroke-opacity:0;fill-opacity:1"
+     x="45.467808"
+     y="40.76017"
+     id="text12"><tspan
+       sodipodi:role="line"
+       id="tspan12"
+       x="45.467808"
+       y="40.76017"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:32.5996px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient23);fill-opacity:1;stroke-width:4.07495">M</tspan></text>
 </svg>

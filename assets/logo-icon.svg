@@ -9,6 +9,7 @@
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
@@ -20,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="3.2791667"
-     inkscape:cx="-35.069886"
-     inkscape:cy="91.944091"
+     inkscape:zoom="1.6395834"
+     inkscape:cx="-34.76493"
+     inkscape:cy="59.466327"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -48,38 +49,96 @@
          style="stop-color:#5688c5;stop-opacity:1;"
          id="stop2" />
     </linearGradient>
+    <linearGradient
+       id="mainGrad-0"
+       x1="36.742348"
+       y1="24.494898"
+       x2="85.73214"
+       y2="73.484695"
+       gradientTransform="matrix(1.3083051,0,0,1.6637779,-15.734079,-14.913373)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0"
+         style="stop-color:#2d5281;stop-opacity:1;"
+         id="stop1-09" />
+      <stop
+         offset="1"
+         style="stop-color:#5688c5;stop-opacity:1;"
+         id="stop2-4" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient22"
+       id="linearGradient23"
+       x1="52.131035"
+       y1="20.124422"
+       x2="69.700966"
+       y2="37.694351"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.5154862,0,0,1.5154862,-5.1116025,3.6890227)" />
+    <linearGradient
+       id="linearGradient22"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#2d5281;stop-opacity:1;"
+         offset="0"
+         id="stop22" />
+      <stop
+         style="stop-color:#5688c5;stop-opacity:1;"
+         offset="1"
+         id="stop23" />
+    </linearGradient>
   </defs>
   <!-- 主要图形 - 层叠的L形状 -->
+  <!-- 装饰点 -->
   <path
-     d="M 14.510801,5.2096569 V 90.825921 H 65.003812 V 69.421855 H 39.757305 V 5.2096569 Z"
+     d="m 16.312722,12.256006 v 81.508131 h 48.0702 V 73.387104 H 40.34782 V 12.256006 Z"
      fill="#1a202c"
      opacity="0.3"
      id="path2"
-     style="stroke-width:1.54973" />
+     style="stroke-width:1.47537" />
   <path
-     d="M 22.926301,12.344345 V 97.960613 H 73.419314 V 76.556544 H 48.172807 V 12.344345 Z"
+     d="M 24.324421,19.048348 V 100.55648 H 72.394622 V 80.179449 H 48.359519 V 19.048348 Z"
      fill="#2d3748"
      opacity="0.6"
      id="path3"
-     style="stroke-width:1.54973" />
+     style="stroke-width:1.47537" />
   <path
-     d="M 31.341804,19.479034 V 105.0953 H 98.665819 V 83.691232 H 56.58831 V 19.479034 Z"
+     d="m 32.336121,25.840693 v 81.508137 h 64.0936 V 86.971791 H 56.371222 V 25.840693 Z"
      fill="url(#mainGrad)"
      id="path4"
-     style="fill:url(#mainGrad);stroke-width:1.54973" />
-  <circle
-     cx="80.294792"
-     cy="28.209658"
-     r="8"
-     fill="#ed8936"
-     opacity="0.8"
-     id="circle7" />
-  <circle
-     cx="90.996185"
-     cy="38.479034"
-     r="5"
-     fill="#ed8936"
-     opacity="0.6"
-     id="circle8" />
-  <!-- 装饰点 -->
+     style="fill:url(#mainGrad-0);stroke-width:1.47537" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;opacity:0.3;fill:#4a5568;fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
+     x="52.818802"
+     y="54.005535"
+     id="text12-3"><tspan
+       sodipodi:role="line"
+       id="tspan12-4"
+       x="52.818802"
+       y="54.005535"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:6.17553">M</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;opacity:0.6;fill:#4a5568;fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
+     x="58.123005"
+     y="60.067482"
+     id="text12-9"><tspan
+       sodipodi:role="line"
+       id="tspan12-5"
+       x="58.123005"
+       y="60.067482"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4a5568;fill-opacity:1;stroke-width:6.17553">M</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:url(#linearGradient23);fill-opacity:1;stroke:none;stroke-width:6.17553;stroke-opacity:0"
+     x="63.794231"
+     y="65.460495"
+     id="text12"><tspan
+       sodipodi:role="line"
+       id="tspan12"
+       x="63.794231"
+       y="65.460495"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:49.4043px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient23);fill-opacity:1;stroke-width:6.17553">M</tspan></text>
 </svg>
