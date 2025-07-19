@@ -64,15 +64,6 @@ struct AssignStmt : public Statement {
         : name(n), expr(std::move(e)) {}
 };
 
-// print 语句
-struct PrintStmt : public Statement {
-    std::vector<std::unique_ptr<Expression>> exprs;
-    PrintStmt(std::vector<std::unique_ptr<Expression>> e) : exprs(std::move(e)) {}
-    // 为了向后兼容，保留单个表达式的构造函数
-    PrintStmt(std::unique_ptr<Expression> e) {
-        exprs.push_back(std::move(e));
-    }
-};
 
 // 复合语句块
 struct BlockStmt : public Statement {

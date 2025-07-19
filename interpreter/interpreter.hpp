@@ -9,6 +9,9 @@
 #include <functional>
 #include <stack>
 
+// Forward declaration for error handling
+void error_and_exit(const std::string& msg);
+
 // Stack frame for function call tracking
 struct StackFrame {
     std::string function_name;
@@ -60,7 +63,7 @@ public:
     Value eval(const ASTNode* node);
     // Print all variables in current scope
     void printVariables() const;
-    
+    void add_function(const std::string& name, FuncDefStmt* func);
     // Stack trace management
     void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
     void pop_frame();
@@ -71,21 +74,22 @@ public:
     static bool supports_colors();
     static void print_error(const std::string& message, bool use_colors = true);
     static void print_warning(const std::string& message, bool use_colors = true);
-    
-private:
-    // Variable scope stack, top is the current scope
-    std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };    
-    // Store function definitions
-    std::unordered_map<std::string, FuncDefStmt*> functions;
     // Builtin function type
     using BuiltinFunction = std::function<Value(const std::vector<Value>&)>;
     // Store builtin functions
-    std::unordered_map<std::string, BuiltinFunction> builtin_functions;    
+    std::unordered_map<std::string, BuiltinFunction> builtin_functions;
+    using EntryFunction = void(*)(Interpreter&);
+    static void register_entry(EntryFunction func);
+private:
+    // Variable scope stack, top is the current scope
+    std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };
+    // Store function definitions
+    std::unordered_map<std::string, FuncDefStmt*> functions;
     // List of loaded modules to prevent circular imports
-    std::set<std::string> loaded_modules;    
+    std::set<std::string> loaded_modules;
     // Store loaded module ASTs to keep function pointers valid
     std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
-    
+
     // Stack trace for function calls
     std::vector<StackFrame> call_stack;
     // Recursion depth tracking
@@ -102,4 +106,6 @@ private:
     bool load_module(const std::string& module_name);
     // Register builtin functions
     void register_builtin_functions();
+    static std::vector<EntryFunction> entry_functions;
+
 };

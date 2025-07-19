@@ -17,14 +17,16 @@
 #include <cstdlib>  // For getenv
 #endif
 
-// Forward declaration for error handling
-static void error_and_exit(const std::string& msg);
 
 // 这些异常类已经移到了 interpreter.hpp
 
 // Scope stack operations
 void Interpreter::push_scope() {
     variable_stack.emplace_back();
+}
+
+void Interpreter::add_function(const std::string& name, FuncDefStmt* func) {
+    functions[name] = func;
 }
 
 void Interpreter::pop_scope() {
@@ -59,233 +61,171 @@ void Interpreter::set_variable(const std::string& name, const Value& val) {
 
 void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     if (!node) return;
-    try {
-        if (auto* p = dynamic_cast<PrintStmt*>(node.get())) {
-            try {
-                if (!p->exprs.empty()) {
-                    for (size_t i = 0; i < p->exprs.size(); ++i) {
-                        try {
-                            if (!p->exprs[i]) {
-                                if (p->exprs.size() == 1) {
-                                    continue;
-                                } else {
-                                    // 更安全的处理方式
-                                    std::cerr << "Warning: Null expression in print statement, skipped" << std::endl;
-                                    continue;
-                                }
-                            }
-                            Value val = eval(p->exprs[i].get());
-                            std::cout << val.to_string();
-                            if (i < p->exprs.size() - 1) {
-                                std::cout << " ";
-                            }
-                        } catch (const std::exception& e) {
-                            std::cerr << "Warning: Error evaluating print argument: " << e.what() << std::endl;
-                            std::cout << "<error>";
-                            if (i < p->exprs.size() - 1) {
-                                std::cout << " ";
-                            }
-                        }
-                    }
-                    std::cout << std::endl;
-                }
-                else {
-                    std::cout << std::endl;  // Empty print statement just prints a newline
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "Warning: Error executing print statement: " << e.what() << std::endl;
-                // 确保换行
-                std::cout << std::endl;
-            }
-        }
-        else if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {        if (v->expr) {
-            Value val = eval(v->expr.get());
-            set_variable(v->name, val);
-        } else {
-            RuntimeError error("Variable '" + v->name + "' declaration has null expression");
-            error.stack_trace = get_stack_trace();
-            throw error;
-        }
-        }
-        else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
-            if (!d->value) {
-                error_and_exit("Null expression in define statement for '" + d->name + "'");
-            }
-            Value val = eval(d->value.get());
-            if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
-                int new_depth = std::get<int>(val.data);
-                if (new_depth > 0 && new_depth <= 10000) {
-                    max_recursion_depth = new_depth;
-                    std::cout << "Recursion depth limit set to: " << new_depth << std::endl;
-                } else {
-                    error_and_exit("Invalid recursion depth value: " + std::to_string(new_depth) + " (must be between 1 and 10000)");
-                }
-            } else {
-                // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
-                // 已替换
-
-            }
-        }
-        else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
-            if (bi->init_value) {
-                Value val = eval(bi->init_value.get());
-                if (val.is_bigint()) {
-                    // 如果值已经是BigInt，直接使用
-                    set_variable(bi->name, val);
-                } else if (val.is_int()) {
-                    // 将普通整数转换为BigInt
-                    ::BigInt big_val(std::get<int>(val.data));
-                    set_variable(bi->name, Value(big_val));
-                } else if (val.is_string()) {
-                    // 从字符串创建BigInt
-                    ::BigInt big_val(std::get<std::string>(val.data));
-                    set_variable(bi->name, Value(big_val));
-                } else {
-                    error_and_exit("Cannot convert " + val.to_string() + " to BigInt");
-                }
-            } else {
-                // 默认初始化为0
-                set_variable(bi->name, Value(::BigInt(0)));
-            }
-        }
-        else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
-            if (!a->expr) {
-                error_and_exit("Null expression in assignment to '" + a->name + "'");
-            }
-            Value val = eval(a->expr.get());
-            set_variable(a->name, val);
-        }    else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
-            if (!ifs->condition) {
-                error_and_exit("Null condition in if statement");
-            }
-            Value cond = eval(ifs->condition.get());
-            bool cond_true = cond.as_bool();
-            if (cond_true) {
-                for (auto& stmt : ifs->thenBlock->statements) execute(stmt);
-            } else if (ifs->elseBlock) {
-                for (auto& stmt : ifs->elseBlock->statements) execute(stmt);
-            }
-        } else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
-            if (!ws->condition) {
-                RuntimeError error("Loop condition cannot be null");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-            
-            // 更健壮的while循环实现
-            int iteration_count = 0;
-            const int MAX_ITERATIONS = 100000; // 防止无限循环
-            
-            try {
-                while (true) {
-                    // 安全检查：防止无限循环
-                    if (++iteration_count > MAX_ITERATIONS) {
-                        Interpreter::print_warning("Loop exceeded " + std::to_string(MAX_ITERATIONS) + 
-                                                  " iterations, possible infinite loop, terminating", true);
-                        RuntimeError error("Possible infinite loop terminated");
-                        error.stack_trace = get_stack_trace();
-                        throw error;
-                    }
-                    
-                    // 评估循环条件
-                    Value cond;
-                    try {
-                        cond = eval(ws->condition.get());
-                    } catch (const std::exception& e) {
-                        // 如果条件计算出错，优雅地退出循环
-                        RuntimeError error("Loop condition error: " + std::string(e.what()));
-                        error.stack_trace = get_stack_trace();
-                        throw error;
-                    }
-                    
-                    if (!cond.as_bool()) {
-                        // 条件为假，退出循环
-                        break;
-                    }
-                    
-                    bool continue_encountered = false;
-                    
-                    // 执行循环体
-                    for (auto& stmt : ws->body->statements) {
-                        if (continue_encountered) continue;
-                        
-                        try {
-                            execute(stmt);
-                        } catch (const BreakException&) {
-                            // 退出整个循环
-                            return;
-                        } catch (const ContinueException&) {
-                            // 跳到下一次迭代
-                            continue_encountered = true;
-                        }
-                    }
-                }
-            } catch (const BreakException&) {
-                // 捕获可能从嵌套块冒泡上来的break异常
-                return;
-            } catch (const ReturnException&) {
-                // 函数返回，直接传递给上层
-                throw;
-            } catch (const std::exception& e) {
-                // 所有其他异常都作为运行时错误处理
-                RuntimeError error("Loop body execution error: " + std::string(e.what()));
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-        } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
-            functions[func->name] = func;
-        }
-        else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
-            for (auto& stmt : block->statements) execute(stmt);
-        } 
-        else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
-            Value val = eval(ret->expr.get());
-            throw ReturnException(val);
-        } 
-        else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
-            (void)breakStmt; // 避免未使用变量警告
-            throw BreakException();
-        } 
-        else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
-            (void)contStmt; // 避免未使用变量警告
-            throw ContinueException();
-        } 
-        else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
-            if (!load_module(includeStmt->module)) {
-                error_and_exit("Failed to include module '" + includeStmt->module + "'");
-            }
-        } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
-            if (exprstmt->expr) {
-                eval(exprstmt->expr.get());
-            } else {
-                error_and_exit("Empty expression statement");
-            }
-        }
-    } catch (const ReturnException&) {
-        // 直接重新抛出 ReturnException，这是正常的控制流程
-        throw;
-    } catch (const BreakException&) {
-        // 直接重新抛出 BreakException，这是正常的控制流程
-        throw;
-    } catch (const ContinueException&) {
-        // 直接重新抛出 ContinueException，这是正常的控制流程
-        throw;
-    } catch (const RuntimeError& re) {
-        // 直接重新抛出运行时错误，不要重复输出
-        throw;
-    } catch (const std::exception& e) {
-        // 将标准异常转换为运行时错误，提供更多上下文
-        std::string errorMsg = std::string("Statement execution error: ") + e.what() + " [" + typeid(e).name() + "]";
-        RuntimeError error(errorMsg);
-        error.stack_trace = get_stack_trace();
-        throw error; // 抛出包装后的运行时错误
-    } catch (...) {
-        // 捕获所有其他异常
-        RuntimeError error("Unknown exception type");
+    if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {        if (v->expr) {
+        Value val = eval(v->expr.get());
+        set_variable(v->name, val);
+    } else {
+        RuntimeError error("Variable '" + v->name + "' declaration has null expression");
         error.stack_trace = get_stack_trace();
         throw error;
     }
+    }
+    else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
+        if (!d->value) {
+            error_and_exit("Null expression in define statement for '" + d->name + "'");
+        }
+        Value val = eval(d->value.get());
+        if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
+            int new_depth = std::get<int>(val.data);
+            if (new_depth > 0 && new_depth <= 10000) {
+                max_recursion_depth = new_depth;
+                std::cout << "Recursion depth limit set to: " << new_depth << std::endl;
+            } else {
+                error_and_exit("Invalid recursion depth value: " + std::to_string(new_depth) + " (must be between 1 and 10000)");
+            }
+        } else {
+            // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
+            // 已替换
+
+        }
+    }
+    else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
+        if (bi->init_value) {
+            Value val = eval(bi->init_value.get());
+            if (val.is_bigint()) {
+                // 如果值已经是BigInt，直接使用
+                set_variable(bi->name, val);
+            } else if (val.is_int()) {
+                // 将普通整数转换为BigInt
+                ::BigInt big_val(std::get<int>(val.data));
+                set_variable(bi->name, Value(big_val));
+            } else if (val.is_string()) {
+                // 从字符串创建BigInt
+                ::BigInt big_val(std::get<std::string>(val.data));
+                set_variable(bi->name, Value(big_val));
+            } else {
+                error_and_exit("Cannot convert " + val.to_string() + " to BigInt");
+            }
+        } else {
+            // 默认初始化为0
+            set_variable(bi->name, Value(::BigInt(0)));
+        }
+    }
+    else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
+        if (!a->expr) {
+            error_and_exit("Null expression in assignment to '" + a->name + "'");
+        }
+        Value val = eval(a->expr.get());
+        set_variable(a->name, val);
+    }    else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
+        if (!ifs->condition) {
+            error_and_exit("Null condition in if statement");
+        }
+        Value cond = eval(ifs->condition.get());
+        bool cond_true = cond.as_bool();
+        if (cond_true) {
+            for (auto& stmt : ifs->thenBlock->statements) execute(stmt);
+        } else if (ifs->elseBlock) {
+            for (auto& stmt : ifs->elseBlock->statements) execute(stmt);
+        }
+    } else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
+        if (!ws->condition) {
+            RuntimeError error("Loop condition cannot be null");
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
+
+        // 更健壮的while循环实现
+        int iteration_count = 0;
+        const int MAX_ITERATIONS = 100000; // 防止无限循环
+
+        try {
+            while (true) {
+                // 安全检查：防止无限循环
+                if (++iteration_count > MAX_ITERATIONS) {
+                    Interpreter::print_warning("Loop exceeded " + std::to_string(MAX_ITERATIONS) +
+                                              " iterations, possible infinite loop, terminating", true);
+                    RuntimeError error("Possible infinite loop terminated");
+                    error.stack_trace = get_stack_trace();
+                    throw error;
+                }
+
+                // 评估循环条件
+                Value cond;
+                try {
+                    cond = eval(ws->condition.get());
+                } catch (const std::exception& e) {
+                    // 如果条件计算出错，优雅地退出循环
+                    RuntimeError error("Loop condition error: " + std::string(e.what()));
+                    error.stack_trace = get_stack_trace();
+                    throw error;
+                }
+
+                if (!cond.as_bool()) {
+                    // 条件为假，退出循环
+                    break;
+                }
+
+                bool continue_encountered = false;
+
+                // 执行循环体
+                for (auto& stmt : ws->body->statements) {
+                    if (continue_encountered) continue;
+
+                    try {
+                        execute(stmt);
+                    } catch (const BreakException&) {
+                        // 退出整个循环
+                        return;
+                    } catch (const ContinueException&) {
+                        // 跳到下一次迭代
+                        continue_encountered = true;
+                    }
+                }
+            }
+        } catch (const BreakException&) {
+            // 捕获可能从嵌套块冒泡上来的break异常
+            return;
+        } catch (const ReturnException&) {
+            // 函数返回，直接传递给上层
+            throw;
+        } catch (const std::exception& e) {
+            // 所有其他异常都作为运行时错误处理
+            RuntimeError error("Loop body execution error: " + std::string(e.what()));
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
+    } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
+        functions[func->name] = func;
+    }
+    else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
+        for (auto& stmt : block->statements) execute(stmt);
+    }
+    else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
+        Value val = eval(ret->expr.get());
+        throw ReturnException(val);
+    }
+    else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
+        (void)breakStmt; // 避免未使用变量警告
+        throw BreakException();
+    }
+    else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
+        (void)contStmt; // 避免未使用变量警告
+        throw ContinueException();
+    }
+    else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
+        if (!load_module(includeStmt->module)) {
+            error_and_exit("Failed to include module '" + includeStmt->module + "'");
+        }
+    } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
+        if (exprstmt->expr) {
+            eval(exprstmt->expr.get());
+        } else {
+            error_and_exit("Empty expression statement");
+        }
+    }
 }
+
 
 Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
@@ -832,307 +772,22 @@ bool Interpreter::load_module(const std::string& module_name) {
     return false;
 }
 
+std::vector<Interpreter::EntryFunction> Interpreter::entry_functions;
+
+void Interpreter::register_entry(Interpreter::EntryFunction func) {
+    entry_functions.push_back(func);
+}
+
 // Register builtin mathematical functions
-void Interpreter::register_builtin_functions() {
-    // Basic math functions
-    builtin_functions["sqrt"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: sqrt() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: sqrt() requires numeric argument" << std::endl;
-            return Value();
-        }
-        
-        // For exact square root representation
-        if (args[0].is_int()) {
-            int val = std::get<int>(args[0].data);
-            if (val < 0) {
-                std::cerr << "Error: sqrt() of negative number" << std::endl;
-                return Value();
-            }
-            if (val == 0 || val == 1) {
-                return Value(val);
-            }
-            // Check if it's a perfect square
-            int sqrt_val = static_cast<int>(std::sqrt(val));
-            if (sqrt_val * sqrt_val == val) {
-                return Value(sqrt_val);
-            }
-            // Return exact irrational representation
-            return Value(::Irrational::sqrt(val));
-        }
-        
-        // For other numeric types, use floating point
-        double val = args[0].as_number();
-        if (val < 0) {
-            std::cerr << "Error: sqrt() of negative number" << std::endl;
-            return Value();
-        }
-        return Value(std::sqrt(val));
-    };
-    
-    // Pi constant
-    builtin_functions["pi"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 0) {
-            std::cerr << "Error: pi() requires no arguments" << std::endl;
-            return Value();
-        }
-        return Value(::Irrational::pi());
-    };
-    
-    // Euler's number e constant
-    builtin_functions["e"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 0) {
-            std::cerr << "Error: e() requires no arguments" << std::endl;
-            return Value();
-        }
-        return Value(::Irrational::e());
-    };
-    
-    builtin_functions["abs"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: abs() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: abs() requires numeric argument" << std::endl;
-            return Value();
-        }
-        double val = args[0].as_number();
-        return Value(std::abs(val));
-    };
-    
-    builtin_functions["sin"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: sin() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: sin() requires numeric argument" << std::endl;
-            return Value();
-        }
-        return Value(std::sin(args[0].as_number()));
-    };
-    
-    builtin_functions["cos"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: cos() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: cos() requires numeric argument" << std::endl;
-            return Value();
-        }
-        return Value(std::cos(args[0].as_number()));
-    };
-    
-    builtin_functions["tan"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("tan() requires exactly 1 argument");
-        }
-        if (!args[0].is_numeric()) {
-            error_and_exit("tan() requires numeric argument");
-        }
-        return Value(std::tan(args[0].as_number()));
-    };
-    
-    builtin_functions["log"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("log() requires exactly 1 argument");
-        }
-        if (!args[0].is_numeric()) {
-            error_and_exit("log() requires numeric argument");
-        }
-        double val = args[0].as_number();
-        if (val <= 0) {
-            error_and_exit("log() requires positive argument");
-        }
-        return Value(std::log(val));
-    };
-    
-    builtin_functions["round"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("round() requires exactly 1 argument");
-        }
-        if (!args[0].is_numeric()) {
-            error_and_exit("round() requires numeric argument");
-        }
-        return Value(static_cast<int>(std::round(args[0].as_number())));
-    };
-    
-    builtin_functions["floor"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("floor() requires exactly 1 argument");
-        }
-        if (!args[0].is_numeric()) {
-            error_and_exit("floor() requires numeric argument");
-        }
-        return Value(static_cast<int>(std::floor(args[0].as_number())));
-    };
-    
-    builtin_functions["ceil"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("ceil() requires exactly 1 argument");
-        }
-        if (!args[0].is_numeric()) {
-            error_and_exit("ceil() requires numeric argument");
-        }
-        return Value(static_cast<int>(std::ceil(args[0].as_number())));
-    };
-    
-    // Vector operations
-    builtin_functions["dot"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 2) {
-            error_and_exit("dot() requires exactly 2 arguments");
-        }
-         return args[0].dot_product(args[1]);
-     };
-
-    builtin_functions["cross"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 2) {
-            error_and_exit("cross() requires exactly 2 arguments");
-        }
-         return args[0].cross_product(args[1]);
-     };
-
-    builtin_functions["norm"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("norm() requires exactly 1 argument");
-        }
-         return args[0].magnitude();
-     };
-
-    builtin_functions["normalize"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("normalize() requires exactly 1 argument");
-        }
-         return args[0].normalize();
-     };
-
-    // Matrix operations
-    builtin_functions["det"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("det() requires exactly 1 argument");
-        }
-         return args[0].determinant();
-     };
-
-    builtin_functions["size"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            error_and_exit("size() requires exactly 1 argument");
-        }
-         if (args[0].is_array()) {
-             const auto& arr = std::get<std::vector<Value>>(args[0].data);
-             return Value(static_cast<int>(arr.size()));
-         }
-         else if (args[0].is_matrix()) {
-             const auto& mat = std::get<std::vector<std::vector<Value>>>(args[0].data);
-             return Value(static_cast<int>(mat.size()));
-         }
-         else if (args[0].is_string()) {
-             const auto& str = std::get<std::string>(args[0].data);
-             return Value(static_cast<int>(str.length()));
-         }
-         return Value(1); // Scalar values have size 1
-     };
-
-    // Input/Output functions
-    builtin_functions["input"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() > 1) {
-            error_and_exit("input() takes 0 or 1 argument (optional prompt)");
-        }
-         
-         // Print prompt if provided
-         if (args.size() == 1) {
-             std::cout << args[0].to_string();
-         }
-         
-         // Read input from user
-         std::string input_line;
-         if (std::getline(std::cin, input_line)) {
-             // Try to parse as number first
-             try {
-                 // Check if it contains a decimal point for float
-                 if (input_line.find('.') != std::string::npos) {
-                     double d = std::stod(input_line);
-                     return Value(d);
-                 } else {
-                     int i = std::stoi(input_line);
-                     return Value(i);
-                 }
-             } catch (...) {
-                 // Return as string if not a number
-                 return Value(input_line);
-             }
-         }
-         
-         // Return empty string if input failed
-         return Value("");
-     };
-    
-    builtin_functions["idiv"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 2) {
-            error_and_exit("idiv() requires exactly 2 arguments");
-        }
-        if (!args[0].is_numeric() || !args[1].is_numeric()) {
-            error_and_exit("idiv() requires numeric arguments");
-        }
-        double divisor = args[1].as_number();
-        if (divisor == 0.0) {
-            error_and_exit("Integer division by zero");
-        }
-        double dividend = args[0].as_number();
-        return Value(static_cast<int>(dividend / divisor));
-    };
-    
-    // Convert decimal to fraction
-    builtin_functions["fraction"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: fraction() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: fraction() requires numeric argument" << std::endl;
-            return Value();
-        }
-        
-        // If already a rational, return as is
-        if (args[0].is_rational()) {
-            return args[0];
-        }
-        
-        // Convert double to rational approximation
-        double val = args[0].as_number();
-        try {
-            Rational rat = Rational::from_double(val);
-            return Value(rat);
-        } catch (const std::exception& e) {
-            std::cerr << "Error: Cannot convert to fraction: " << e.what() << std::endl;
-            return Value();
-        }
-    };
-    
-    // Convert fraction to decimal
-    builtin_functions["decimal"] = [](const std::vector<Value>& args) -> Value {
-        if (args.size() != 1) {
-            std::cerr << "Error: decimal() requires exactly 1 argument" << std::endl;
-            return Value();
-        }
-        if (!args[0].is_numeric()) {
-            std::cerr << "Error: decimal() requires numeric argument" << std::endl;
-            return Value();
-        }
-        
-        // Convert to double representation
-        double val = args[0].as_number();
-        return Value(val);
-    };
+void Interpreter::register_builtin_functions()
+{
+    for (auto entry : entry_functions) {
+        entry(*this);
+    }
 }
 
 // 在文件顶端添加错误处理函数
-static void error_and_exit(const std::string& msg) {
+void error_and_exit(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
     std::exit(EXIT_FAILURE);
 }

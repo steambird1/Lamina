@@ -12,10 +12,8 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
         if (src[i] == '\n') { ++line; col = 1; ++i; continue; }
         if (isspace(src[i])) { ++col; ++i; continue; }
         size_t start_col = col;
-        if (src.compare(i, 5, "print") == 0) {
-            tokens.push_back(Token(TokenType::Print, "print", line, start_col));
-            i += 5; col += 5;
-        } else if (src.compare(i, 3, "var") == 0 && !isalnum(src[i+3])) {
+
+        if (src.compare(i, 3, "var") == 0 && !isalnum(src[i+3])) {
             tokens.push_back(Token(TokenType::Var, "var", line, start_col));
             i += 3; col += 3;
         } else if (src.compare(i, 4, "func") == 0 && !isalnum(src[i+4])) {
@@ -58,9 +56,6 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             i += 5; col += 5;        } else if (src.compare(i, 4, "null") == 0 && !isalnum(src[i+4])) {
             tokens.push_back(Token(TokenType::Null, "null", line, start_col));
             i += 4; col += 4;
-        } else if (src.compare(i, 5, "input") == 0 && !isalnum(src[i+5])) {
-            tokens.push_back(Token(TokenType::Input, "input", line, start_col));
-            i += 5; col += 5;
         } else if (isalpha(src[i]) || src[i] == '_') {
             size_t j = i+1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;

@@ -3,7 +3,6 @@
 #include <vector>
 
 enum class TokenType {
-    Print,
     Var,
     Func,      
     If,        
