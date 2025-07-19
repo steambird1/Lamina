@@ -131,16 +131,16 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
     } else if (tokens[i].type == TokenType::Identifier) {
         std::string name = tokens[i].text;
         ++i;
-        
+
         // Function call
         if (i < tokens.size() && tokens[i].type == TokenType::LParen) {
             ++i; // Skip '('
             std::vector<std::unique_ptr<Expression>> args;
-            
+
             while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
                 auto arg = parse_expression(tokens, i);
                 args.push_back(std::move(arg));
-                
+
                 if (tokens[i].type == TokenType::Comma) {
                     ++i; // Skip ','
                 } else if (tokens[i].type != TokenType::RParen) {
@@ -148,19 +148,19 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
                     return nullptr;
                 }
             }
-            
+
             if (i >= tokens.size() || tokens[i].type != TokenType::RParen) {
                 std::cerr << "Error: Unterminated function call, expected ')'" << std::endl;
                 return nullptr;
             }
-            
+
             ++i; // Skip ')'
             return std::make_unique<CallExpr>(name, std::move(args));
         }
-        
-        // Variable reference
+        // 否则作为普通变量处理
         return std::make_unique<VarExpr>(name);
-    } else if (tokens[i].type == TokenType::LParen) {
+    }
+    else if (tokens[i].type == TokenType::LParen) {
         ++i; // Skip '('
         auto expr = parse_expression(tokens, i);
         
@@ -640,54 +640,7 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         }
         ++i;
         return std::make_unique<AssignStmt>(name, std::move(expr));
-    } else if (tokens[i].type == TokenType::Print) {
-        ++i;  // Skip print token
-        
-        if (i < tokens.size() && tokens[i].type == TokenType::LParen) {
-            ++i;  // Skip opening parenthesis
-            
-            std::vector<std::unique_ptr<Expression>> exprs;
-            
-            if (i < tokens.size() && tokens[i].type != TokenType::RParen && tokens[i].type != TokenType::EndOfFile) {
-                // Parse multiple comma-separated expressions
-                while (true) {
-                    auto expr = parse_expression(tokens, i);
-                    if (!expr) {
-                        std::cerr << "Error: Invalid expression in print statement" << std::endl;
-                        return nullptr;
-                    }
-                    exprs.push_back(std::move(expr));
-                    
-                    if (i < tokens.size() && tokens[i].type == TokenType::Comma) {
-                        ++i; // consume comma
-                    } else if (i < tokens.size() && tokens[i].type == TokenType::RParen) {
-                        break;
-                    } else {
-                        std::cerr << "Error: Expected ',' or ')' in print statement" << std::endl;
-                        return nullptr;
-                    }
-                }
-            }
-            
-            if (i < tokens.size() && tokens[i].type == TokenType::RParen) {
-                ++i;  // Skip closing parenthesis
-            }
-            
-            if (i < tokens.size() && tokens[i].type == TokenType::Semicolon) {
-                ++i;  // Skip semicolon
-            }
-            
-            if (exprs.empty()) {
-                // Empty print()
-                auto emptyExpr = std::make_unique<LiteralExpr>("");
-                return std::make_unique<PrintStmt>(std::move(emptyExpr));
-            } else {
-                return std::make_unique<PrintStmt>(std::move(exprs));
-            }
-        } else {
-            std::cerr << "Error: Expected '(' after 'print'" << std::endl;
-            return nullptr;
-        }
+
     } else if (tokens[i].type == TokenType::Return) {
         ++i;
         auto expr = parse_expression(tokens, i);
