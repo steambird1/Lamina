@@ -41,24 +41,28 @@ public:
 class ReturnException : public std::exception {
 public:
     Value value;
-    ReturnException(const Value& v) : value(v) {}
+    explicit ReturnException(const Value& v) : value(v) {}
 };
+
 
 // Exception for break statements
 class BreakException : public std::exception {
 public:
-    BreakException() {}
+    BreakException() = default;
 };
+
 
 // Exception for continue statements
 class ContinueException : public std::exception {
 public:
-    ContinueException() {}
+    ContinueException() = default;
 };
 
 class Interpreter {
 public:
-    Interpreter() { register_builtin_functions(); }
+    Interpreter() {
+        register_builtin_functions();
+    }
     void execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
     // Print all variables in current scope
@@ -80,9 +84,15 @@ public:
     std::unordered_map<std::string, BuiltinFunction> builtin_functions;
     using EntryFunction = void(*)(Interpreter&);
     static void register_entry(EntryFunction func);
-private:
+    // Variable assignment
+    void set_variable(const std::string& name, const Value& val);
+    // built global variable in interpreter
+    void set_global_variable(const std::string& name, const Value& val);
+    // Variable lookup
+    Value get_variable(const std::string& name) const;
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };
+private:
     // Store function definitions
     std::unordered_map<std::string, FuncDefStmt*> functions;
     // List of loaded modules to prevent circular imports
@@ -95,10 +105,6 @@ private:
     // Recursion depth tracking
     int recursion_depth = 0;
     int max_recursion_depth = 100;  // 可变的递归深度限制
-    // Variable lookup
-    Value get_variable(const std::string& name) const;
-    // Variable assignment
-    void set_variable(const std::string& name, const Value& val);
     // Enter/exit scope
     void push_scope();
     void pop_scope();

@@ -35,11 +35,10 @@ inline Value print(const std::vector<Value>& args) {
         std::cout << args[i].to_string();
         if (i != args.size() - 1) {
             std::cout << " ";
-            LAMINA_INT(1);
         }
     }
     std::cout << std::endl;
-    return LAMINA_INT(1);
+    return Value();
 }
 
 namespace lamina {
