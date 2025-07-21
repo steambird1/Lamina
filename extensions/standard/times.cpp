@@ -7,7 +7,7 @@
 #include <chrono>
 #include <sstream>
 
-Value TIMES_HPP get_time(const std::vector<Value> &args) {
+Value TIMES_HPP get_time(const std::vector<Value>& args) {
      auto now = std::chrono::system_clock::now();
      auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
      return LAMINA_INT(timestamp);
