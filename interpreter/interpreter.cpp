@@ -38,7 +38,7 @@ Value Interpreter::get_variable(const std::string& name) const {
         auto found = it->find(name);
         if (found != it->end()) return found->second;
     }
-    
+
     // 如果变量找不到，检查是否是函数名
     auto func_it = functions.find(name);
     if (func_it != functions.end()) {
@@ -46,7 +46,7 @@ Value Interpreter::get_variable(const std::string& name) const {
         // 暂时返回一个特殊的字符串值表示函数
         return Value("__function_" + name);
     }
-    
+
     RuntimeError error("Undefined variable '" + name + "'");
     error.stack_trace = get_stack_trace();
     throw error;
@@ -56,6 +56,12 @@ Value Interpreter::get_variable(const std::string& name) const {
 void Interpreter::set_variable(const std::string& name, const Value& val) {
     if (!variable_stack.empty()) {
         (*variable_stack.rbegin())[name] = val;
+    }
+}
+
+void Interpreter::set_global_variable(const std::string& name, const Value& val) {
+    if (!variable_stack.empty()) {
+        variable_stack.front()[name] = val;
     }
 }
 
@@ -250,17 +256,17 @@ Value Interpreter::eval(const ASTNode* node) {
             // Otherwise it's a string
             return Value(lit->value);
         }
-    } 
+    }
     else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
         return get_variable(id->name);
-    } 
+    }
     else if (auto* var = dynamic_cast<const VarExpr*>(node)) {
         return get_variable(var->name);
-    } 
+    }
     else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         Value l = eval(bin->left.get());
         Value r = eval(bin->right.get());
-        
+
         // Handle arithmetic operations
         if (bin->op == "+") {
             // String concatenation
@@ -283,7 +289,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     ::Rational result = l.as_rational() + r.as_rational();
                     return Value(result);
                 }
-                
+
                 double result = l.as_number() + r.as_number();                // Return int if both operands are int and result is whole
                 if (l.is_int() && r.is_int()) {
                     return Value(static_cast<int>(result));
@@ -294,9 +300,9 @@ Value Interpreter::eval(const ASTNode* node) {
                 error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
             }
         }        // Arithmetic operations (require numeric operands or vector operations)
-        if (bin->op == "-" || bin->op == "*" || bin->op == "/" || 
+        if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
             bin->op == "%" || bin->op == "^") {
-            
+
             // Special handling for multiplication
             if (bin->op == "*") {
                 // Vector and matrix operations
@@ -331,19 +337,19 @@ Value Interpreter::eval(const ASTNode* node) {
                         ::Rational result = l.as_rational() * r.as_rational();
                         return Value(result);
                     }
-                    
+
                     double result = l.as_number() * r.as_number();
                     return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
                 }
                 // Error case
                 error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
             }
-            
+
             // Other arithmetic operations require both operands to be numeric
             if (!l.is_numeric() || !r.is_numeric()) {
                 error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
             }
-            
+
             // For division, always use rational arithmetic for precise results
             if (bin->op == "/") {
                 // If either operand is irrational, use irrational arithmetic
@@ -355,7 +361,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     }
                     return Value(lr / rr);
                 }
-                
+
                 ::Rational lr = l.as_rational();
                 ::Rational rr = r.as_rational();
                 if (rr.is_zero()) {
@@ -363,24 +369,24 @@ Value Interpreter::eval(const ASTNode* node) {
                 }
                 return Value(lr / rr);
             }
-            
+
             // Use irrational arithmetic if either operand is irrational
             if (l.is_irrational() || r.is_irrational()) {
                 ::Irrational lr = l.as_irrational();
                 ::Irrational rr = r.as_irrational();
-                
+
                 if (bin->op == "-") {
                     return Value(lr - rr);
                 }
                 // Note: Other operations (%, ^) may fall back to double arithmetic
                 // for irrational numbers as they're complex to handle exactly
             }
-            
+
             // Use rational arithmetic if either operand is rational
             if (l.is_rational() || r.is_rational()) {
                 ::Rational lr = l.as_rational();
                 ::Rational rr = r.as_rational();
-                
+
                 if (bin->op == "-") {
                     return Value(lr - rr);
                 }
@@ -405,11 +411,11 @@ Value Interpreter::eval(const ASTNode* node) {
                     return Value(std::pow(lr.to_double(), rr.to_double()));
                 }
             }
-            
+
             // Fall back to double arithmetic
             double ld = l.as_number();
             double rd = r.as_number();
-            
+
             if (bin->op == "-") {
                 double result = ld - rd;
                 return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
@@ -425,16 +431,16 @@ Value Interpreter::eval(const ASTNode* node) {
                 return Value(std::pow(ld, rd));
             }
         }
-        
+
         // Comparison operators
-        if (bin->op == "==" || bin->op == "!=" || bin->op == "<" || 
+        if (bin->op == "==" || bin->op == "!=" || bin->op == "<" ||
             bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
-            
+
             // Handle different type combinations
             if (l.is_numeric() && r.is_numeric()) {
                 double ld = l.as_number();
                 double rd = r.as_number();
-                
+
                 if (bin->op == "==") return Value(ld == rd);
                 if (bin->op == "!=") return Value(ld != rd);
                 if (bin->op == "<") return Value(ld < rd);
@@ -445,7 +451,7 @@ Value Interpreter::eval(const ASTNode* node) {
             else if (l.is_string() && r.is_string()) {
                 std::string ls = std::get<std::string>(l.data);
                 std::string rs = std::get<std::string>(r.data);
-                
+
                 if (bin->op == "==") return Value(ls == rs);
                 if (bin->op == "!=") return Value(ls != rs);
                 if (bin->op == "<") return Value(ls < rs);
@@ -456,7 +462,7 @@ Value Interpreter::eval(const ASTNode* node) {
             else if (l.is_bool() && r.is_bool()) {
                 bool lb = std::get<bool>(l.data);
                 bool rb = std::get<bool>(r.data);
-                
+
                 if (bin->op == "==") return Value(lb == rb);
                 if (bin->op == "!=") return Value(lb != rb);
                 // For booleans, false < true
@@ -469,15 +475,15 @@ Value Interpreter::eval(const ASTNode* node) {
                 // Type mismatch - only equality/inequality make sense
                 if (bin->op == "==") return Value(false); // Different types are never equal
                 if (bin->op == "!=") return Value(true); // Different types are always not equal
-                
+
                 error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
                 return Value();
             }
         }
-        
+
         error_and_exit("Unknown binary operator '" + bin->op + "'");
 
-    } 
+    }
     else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
           if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
@@ -485,7 +491,7 @@ Value Interpreter::eval(const ASTNode* node) {
             error.stack_trace = get_stack_trace();
             throw error;
         }
-        
+
         if (unary->op == "-") {
             if (v.type == Value::Type::Int) {
                 int vi = std::get<int>(v.data);
@@ -497,7 +503,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 return Value(-big_val.to_int());
             }
         }
-        
+
         if (unary->op == "!") {
             int vi;
             if (v.type == Value::Type::Int) {
@@ -505,13 +511,13 @@ Value Interpreter::eval(const ASTNode* node) {
             } else {
                 vi = std::get<::BigInt>(v.data).to_int();
             }
-            
+
             if (vi < 0) {
                 RuntimeError error("Cannot calculate factorial of negative number");
                 error.stack_trace = get_stack_trace();
                 throw error;
             }
-            
+
             // Use BigInt for factorial if the number is large or result would be large
             if (vi > 20) {
                 ::BigInt result(1);
@@ -526,13 +532,13 @@ Value Interpreter::eval(const ASTNode* node) {
                 return Value(res);
             }
         }
-        
+
         std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;
         return Value("<unknown op>");
     }    // Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         std::string actual_callee = call->callee;
-        
+
         // 检查调用的名称是否是一个参数，如果是，获取其实际值
         try {
             Value callee_value = get_variable(actual_callee);
@@ -543,7 +549,7 @@ Value Interpreter::eval(const ASTNode* node) {
         } catch (const RuntimeError&) {
             // 如果不是变量，保持原名称
         }
-        
+
         // Check builtin functions first
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
@@ -558,7 +564,7 @@ Value Interpreter::eval(const ASTNode* node) {
             }
             return builtin_it->second(args);
         }
-        
+
         // Check user-defined functions
         auto it = functions.find(actual_callee);
         if (it != functions.end()) {
@@ -567,25 +573,25 @@ Value Interpreter::eval(const ASTNode* node) {
                 std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
                 return Value("<func error>");
             }
-            
+
             // Check recursion depth
             if (recursion_depth >= max_recursion_depth) {
                 RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
                 error.stack_trace = get_stack_trace();
                 throw error;
             }
-            
+
             recursion_depth++;
             push_scope();
             push_frame(actual_callee, "<script>", 0); // Add to call stack
-            
+
             // Check parameter count
             if (call->args.size() > func->params.size()) {
-                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee + 
-                                          "'. Expected " + std::to_string(func->params.size()) + 
+                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
+                                          "'. Expected " + std::to_string(func->params.size()) +
                                           ", got " + std::to_string(call->args.size()), true);
             }
-              
+
             // Pass arguments
             for (size_t j = 0; j < func->params.size(); ++j) {
                 if (j < call->args.size()) {
@@ -600,7 +606,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     set_variable(func->params[j], Value("<undefined>"));
                 }
             }
-              
+
             // Execute function body, capture return
             try {
                 for (const auto& stmt : func->body->statements) {
@@ -616,7 +622,7 @@ Value Interpreter::eval(const ASTNode* node) {
                         // If the error doesn't have a stack trace yet, capture current state
                         RuntimeError enriched(re.message);
                         if (re.stack_trace.empty()) {
-                            enriched.stack_trace = get_stack_trace(); 
+                            enriched.stack_trace = get_stack_trace();
                         } else {
                             enriched.stack_trace = re.stack_trace; // Preserve existing trace
                         }
@@ -641,13 +647,13 @@ Value Interpreter::eval(const ASTNode* node) {
                 recursion_depth--;
                 return re.value;
             }
-            
+
             pop_frame();
             pop_scope();
             recursion_depth--;
             return Value(); // Default value when no return
         }
-        
+
         std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
         return Value("<undefined function>");
     }
@@ -662,7 +668,7 @@ Value Interpreter::eval(const ASTNode* node) {
             }
         }
         return Value(elements);
-    }    
+    }
     std::cerr << "Error: Unsupported expression type" << std::endl;
     return Value("<type error>");
 }
@@ -673,7 +679,7 @@ bool Interpreter::load_module(const std::string& module_name) {
     if (loaded_modules.find(module_name) != loaded_modules.end()) {
         return true;  // Already loaded
     }
-    
+
     // Handle built-in hidden library "splash"
     if (module_name == "splash") {
         // Output ASCII art logo
@@ -683,12 +689,12 @@ bool Interpreter::load_module(const std::string& module_name) {
         std::cout << "/ /___/ /_/ / / / / / / / / / / /_/ / \n";
         std::cout << "/_____/\\__,_/_/ /_/ /_/_/_/ /_/\\__,_/  \n";
         std::cout << "                                       \n";
-        
+
         // Mark as loaded to avoid multiple outputs
         loaded_modules.insert(module_name);
         return true;
     }
-    
+
     // Handle built-in hidden library "them" (credits)
     if (module_name == "them") {
         // Output credits and developer information
@@ -704,7 +710,7 @@ bool Interpreter::load_module(const std::string& module_name) {
         loaded_modules.insert(module_name);
         return true;
     }
-    
+
     // Build possible file paths
     std::string filename = module_name;
     if (filename.find(".lm") == std::string::npos) {
@@ -713,7 +719,7 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Try different paths: current directory, examples directory, etc.
     std::vector<std::string> search_paths = {"", "./", "./include/"};
-    
+
     std::ifstream file;
     std::string full_path;
     for (const auto& path : search_paths) {
@@ -745,7 +751,7 @@ bool Interpreter::load_module(const std::string& module_name) {
     // Lexical and syntax analysis
     auto tokens = Lexer::tokenize(source);
     auto ast = Parser::parse(tokens);
-    
+
     if (!ast) {
         std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;
         loaded_modules.erase(module_name); // Remove from loaded modules on failure
@@ -763,7 +769,7 @@ bool Interpreter::load_module(const std::string& module_name) {
             std::cerr << "Error: Exception while executing module '" << module_name << "': " << e.what() << std::endl;
             return false;
         }
-        
+
         // Store the AST to keep function pointers valid
         loaded_module_asts.push_back(std::move(ast));
         return true;
@@ -803,10 +809,10 @@ void Interpreter::printVariables() const {
         std::cout << "No variables defined." << std::endl;
         return;
     }
-    
+
     std::cout << "\nCurrent variable list:" << std::endl;
     std::cout << "--------------------" << std::endl;
-    
+
     // 从最内层作用域开始打印
     bool hasVars = false;
     for (auto it = variable_stack.rbegin(); it != variable_stack.rend(); ++it) {
@@ -816,11 +822,11 @@ void Interpreter::printVariables() const {
             hasVars = true;
         }
     }
-    
+
     if (!hasVars) {
         std::cout << "No variables defined." << std::endl;
     }
-    
+
     // 打印函数列表
     if (!functions.empty()) {
         std::cout << "\nDefined functions:" << std::endl;
@@ -848,10 +854,10 @@ std::vector<StackFrame> Interpreter::get_stack_trace() const {
 
 void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) const {
     bool colors_enabled = supports_colors() && use_colors;
-    
+
     // Use stack trace from error if available, otherwise use current call stack
     const auto& trace = error.stack_trace.empty() ? call_stack : error.stack_trace;
-    
+
     // Print error header only if we have stack frames to show
     if (!trace.empty()) {
         if (colors_enabled) {
@@ -859,19 +865,19 @@ void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) 
         } else {
             std::cerr << "Traceback (most recent call last):\n";
         }
-        
+
         // Print stack frames
         for (const auto& frame : trace) {
             if (colors_enabled) {
-                std::cerr << "  File \"\033[1;34m" << frame.file_name << "\033[0m\", line " 
+                std::cerr << "  File \"\033[1;34m" << frame.file_name << "\033[0m\", line "
                           << frame.line_number << ", in \033[1;33m" << frame.function_name << "\033[0m\n";
             } else {
-                std::cerr << "  File \"" << frame.file_name << "\", line " 
+                std::cerr << "  File \"" << frame.file_name << "\", line "
                           << frame.line_number << ", in " << frame.function_name << "\n";
             }
         }
     }
-    
+
     // Print error message
     if (colors_enabled) {
         std::cerr << "\033[1;31mRuntimeError: " << error.message << "\033[0m\n";
@@ -883,16 +889,16 @@ void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) 
 bool Interpreter::supports_colors() {
     static bool checked = false;
     static bool colors_supported = false;
-    
+
     if (!checked) {
         checked = true;
-        
+
         // Check for NO_COLOR environment variable (universal standard)
         if (getenv("NO_COLOR") != nullptr) {
             colors_supported = false;
             return colors_supported;
         }
-        
+
         #ifdef _WIN32
         // On Windows, check if we're in a modern terminal that supports ANSI escape codes
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -908,7 +914,7 @@ bool Interpreter::supports_colors() {
                 }
             }
         }
-        
+
         // Also check if output is redirected
         if (colors_supported && _isatty(_fileno(stderr)) == 0) {
             colors_supported = false; // Output is redirected, don't use colors
@@ -916,7 +922,7 @@ bool Interpreter::supports_colors() {
         #else
         // On Unix-like systems, check if stderr is a terminal and TERM is set
         colors_supported = isatty(STDERR_FILENO) && getenv("TERM") != nullptr;
-        
+
         // Additional check for specific terminal types that don't support colors
         const char* term = getenv("TERM");
         if (term && (strcmp(term, "dumb") == 0 || strcmp(term, "unknown") == 0)) {
@@ -924,13 +930,13 @@ bool Interpreter::supports_colors() {
         }
         #endif
     }
-    
+
     return colors_supported;
 }
 
 void Interpreter::print_error(const std::string& message, bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
-    
+
     if (colors_enabled) {
         std::cerr << "\033[1;31mError: " << message << "\033[0m\n";
     } else {
@@ -940,7 +946,7 @@ void Interpreter::print_error(const std::string& message, bool use_colors) {
 
 void Interpreter::print_warning(const std::string& message, bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
-    
+
     if (colors_enabled) {
         std::cerr << "\033[1;33mWarning: " << message << "\033[0m\n";
     } else {

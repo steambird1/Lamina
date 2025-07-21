@@ -8,6 +8,9 @@
     对LAMINA核心资源操作的头文件
  */
 
+template<class> constexpr bool always_false = false;
+
+
 #define LAMINA_BOOL(value) Value((bool) value)
 #define LAMINA_INT(value) Value((int) value)
 #define LAMINA_DOUBLE(value) Value((double) value)
@@ -17,6 +20,7 @@
 #define LAMINA_IRRATIONAL(value) Value((const ::Irrational&)value)
 #define LAMINA_ARR(value) Value(value)
 #define LAMINA_MATRIX(value) Value(value)
+#define LAMINA_NULL Value()
 
 #define LAMINA_FUNC_WIT_ANY_ARGS(func_name, func) \
 void func##_any_args_entry(Interpreter& interpreter); \
@@ -71,24 +75,38 @@ void func##_entry(Interpreter& interpreter) { \
     }; \
 }
 
+#define LAMINA_GET_VAR(interpreter, var) \
+   interpreter.get_variable(#var)
 
-#define var(name, value) \
-    do { \
-        auto _v = (value); \
-        Value name##_value; \
-        if constexpr (std::is_integral_v<decltype(_v)>) { \
-            if constexpr (std::is_same_v<decltype(_v), int>) { \
-                name##_value = Value(static_cast<int>(_v)); \
-            } else { \
-                name##_value = Value(::BigInt(_v)); \
-            } \
-        } else if constexpr (std::is_floating_point_v<decltype(_v)>) { \
-            name##_value = Value(static_cast<double>(_v)); \
-        } else if constexpr (std::is_convertible_v<decltype(_v), std::string>) { \
-            name##_value = Value(static_cast<std::string>(_v)); \
-        } \
-        interpreter.set_variable(#name, name##_value); \
-    } while(0)
+#define L_ERR(msg)\
+    error_and_exit(msg); \
 
+#define LAMINA_VAR(interpreter, name, value) \
+do { \
+    auto&& _v = (value); \
+    Value name##_value; \
+    if constexpr (std::is_same_v<std::decay_t<decltype(_v)>, bool>) { \
+        name##_value = Value(static_cast<bool>(_v)); \
+    } else if constexpr (std::is_integral_v<std::decay_t<decltype(_v)>>) { \
+        name##_value = Value(static_cast<int>(_v)); \
+    } else if constexpr (std::is_floating_point_v<std::decay_t<decltype(_v)>>) { \
+        name##_value = Value(static_cast<double>(_v)); \
+    } else if constexpr (std::is_convertible_v<decltype(_v), std::string>) { \
+        name##_value = Value(std::to_string(_v)); \
+    } else { \
+        name##_value = Value(std::to_string(_v)); \
+    } \
+    (interpreter).set_variable(#name, value); \
+} while(0)
 
-
+#define LAMINA_GLOBAL_VAR(name, value) \
+void global_var_##name##_entry(Interpreter& interpreter) { \
+    interpreter.set_global_variable(#name, Value(value)); \
+} \
+namespace { \
+struct global_var_##name##_registrar { \
+    global_var_##name##_registrar() { \
+        Interpreter::register_entry(&global_var_##name##_entry); \
+    } \
+} global_var_##name##_instance; \
+}

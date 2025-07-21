@@ -22,4 +22,8 @@ add_executable(Lamina
         interpreter/lamina.hpp
         extensions/standard/math.cpp
         extensions/standard/stdio.cpp
+        extensions/standard/random.cpp
+        extensions/standard/random.hpp
+        extensions/standard/times.cpp
+        extensions/standard/times.hpp
 )

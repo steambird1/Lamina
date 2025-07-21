@@ -12,9 +12,12 @@ class Value {
 public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigInt, Rational, Irrational };
     Type type;
     std::variant<std::nullptr_t, bool, int, double, std::string, std::vector<Value>, std::vector<std::vector<Value>>, ::BigInt, ::Rational, ::Irrational> data;
-    
+
+    virtual ~Value() = default;
+
     // Constructors
     Value() : type(Type::Null), data(nullptr) {}
+
     Value(std::nullptr_t) : type(Type::Null), data(nullptr) {}
     Value(bool b) : type(Type::Bool), data(b) {}
     Value(int i) : type(Type::Int), data(i) {}
@@ -46,8 +49,10 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
             data = arr;
         }
     }
+
+
     Value(const std::vector<std::vector<Value>>& mat) : type(Type::Matrix), data(mat) {}
-    
+
     // Type checking helpers
     bool is_null() const { return type == Type::Null; }
     bool is_bool() const { return type == Type::Bool; }
@@ -116,7 +121,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         if (type == Type::Array) return !std::get<std::vector<Value>>(data).empty();
         return false;
     }
-    
+
     // String conversion
     std::string to_string() const {
         switch (type) {
