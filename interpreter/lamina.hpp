@@ -1,4 +1,9 @@
 #pragma once
+#ifdef __GNUC__
+#define LAMINA_EXPORT __attribute__((visibility("default")))
+#else
+#define LAMINA_EXPORT
+#endif
 
 #include <string>
 #include "interpreter.hpp"
@@ -38,7 +43,7 @@ void func##_any_args_entry(Interpreter& interpreter) { \
 }
 
 #define LAMINA_FUNC(func_name, func, arg_count) \
-void func##_entry(Interpreter& interpreter); \
+void func##_entry(Interpreter& interpreter) LAMINA_EXPORT; \
 namespace { \
 struct func##_registrar { \
     func##_registrar() { \
