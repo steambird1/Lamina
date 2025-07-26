@@ -1,9 +1,35 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.16.3)
 project(Lamina)
 
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(interpreter)
+add_library(lamina_core SHARED
+        interpreter/ast.hpp
+        interpreter/bigint.hpp
+        interpreter/interpreter.cpp
+        interpreter/interpreter.hpp
+        interpreter/irrational.hpp
+        interpreter/lexer.cpp
+        interpreter/lexer.hpp
+        interpreter/main.cpp
+        interpreter/parser.cpp
+        interpreter/parser.hpp
+        interpreter/rational.hpp
+        interpreter/trackback.hpp
+        interpreter/value.hpp
+        interpreter/lamina.hpp
+        extensions/standard/math.cpp
+        extensions/standard/stdio.cpp
+        extensions/standard/random.cpp
+        extensions/standard/random.hpp
+        extensions/standard/times.cpp
+        extensions/standard/times.hpp
+)
+
+target_compile_options(lamina_core PRIVATE
+        -fvisibility=hidden
+)
 
 add_executable(Lamina
         interpreter/ast.hpp
@@ -27,3 +53,35 @@ add_executable(Lamina
         extensions/standard/times.cpp
         extensions/standard/times.hpp
 )
+
+target_include_directories(lamina_core PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+)
+
+target_link_libraries(Lamina PRIVATE
+        lamina_core
+        dl
+)
+
+if(UNIX AND NOT APPLE)
+    message(STATUS "Building on Linux system.")
+
+    file(GLOB_RECURSE EXTENSION_SOURCE_FILES
+            "extensions/*.cpp"
+            "extensions/*/*.cpp"
+            "extensions/*/*/*.cpp"
+    )
+
+    foreach(SOURCE_FILE ${EXTENSION_SOURCE_FILES})
+        if(NOT SOURCE_FILE MATCHES "extensions/standard")
+            get_filename_component(SOURCE_NAME ${SOURCE_FILE} NAME_WE)
+            add_library(${SOURCE_NAME} SHARED ${SOURCE_FILE})
+            target_link_libraries(${SOURCE_NAME} lamina_core)
+            set_target_properties(${SOURCE_NAME} PROPERTIES
+                    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/extensions
+                    POSITION_INDEPENDENT_CODE ON
+            )
+            message(STATUS "Building extension: ${SOURCE_NAME} with core library")
+        endif()
+    endforeach()
+endif()
