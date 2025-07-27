@@ -771,8 +771,8 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Record module as loaded
     if (is_shared_lib && file) {
-        char abs_path[PATH_MAX];
-        if (realpath(full_path.c_str(), abs_path) == nullptr) {
+        char abs_path[_MAX_PATH];
+        if (_fullpath(abs_path, full_path.c_str(), _MAX_PATH) == nullptr) {
             std::cerr << "Error resolving path: " << full_path << std::endl;
             return false;
         }

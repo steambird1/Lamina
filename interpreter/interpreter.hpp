@@ -90,7 +90,7 @@ public:
     // Store builtin functions
     std::unordered_map<std::string, BuiltinFunction> builtin_functions;
     using EntryFunction = void(*)(Interpreter&);
-    static LAMINA_EXPORT void register_entry(EntryFunction func);
+    static void register_entry(EntryFunction func);
     // Variable assignment
     void set_variable(const std::string& name, const Value& val);
     // built global variable in interpreter
