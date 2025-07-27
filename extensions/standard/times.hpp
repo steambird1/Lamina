@@ -1,8 +1,3 @@
-/* 
-     CopyRight Shizuku Technologies
-     2025.07.20 23:14
-     @Dev Ange1PlsGreet
-*/
 #ifndef TIMES_HPP
 #define TIMES_HPP
 #include "lamina.hpp"

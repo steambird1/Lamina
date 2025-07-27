@@ -2,7 +2,7 @@
 #define RANDOM_HPP
 
 #include "lamina.hpp"
-#include <random>
+#include <vector>
 
 Value randint(const std::vector<Value>& args);
 Value randstr(const std::vector<Value>& args);
@@ -15,5 +15,4 @@ namespace lamina {
 
 
 
-
-#endif //RANDOM_HPP
+#endif // RANDOM_HPP

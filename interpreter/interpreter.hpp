@@ -1,9 +1,5 @@
 #pragma once
-#ifdef _WIN32
-#define LAMINA_EXPORT __declspec(dllexport)
-#else
-#define LAMINA_EXPORT __attribute__((visibility("default")))
-#endif
+#include "lamina.hpp"
 
 
 #include "ast.hpp"
@@ -66,6 +62,11 @@ public:
 };
 
 class LAMINA_EXPORT Interpreter {
+    // 禁止拷贝，允许移动
+    Interpreter(const Interpreter&) = delete;
+    Interpreter& operator=(const Interpreter&) = delete;
+    Interpreter(Interpreter&&) = default;
+    Interpreter& operator=(Interpreter&&) = default;
 public:
     Interpreter() {
         register_builtin_functions();

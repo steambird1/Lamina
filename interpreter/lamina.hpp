@@ -1,8 +1,10 @@
 #pragma once
+#ifndef LAMINA_EXPORT
 #ifdef __GNUC__
 #define LAMINA_EXPORT __attribute__((visibility("default")))
 #else
 #define LAMINA_EXPORT
+#endif
 #endif
 
 #include <string>

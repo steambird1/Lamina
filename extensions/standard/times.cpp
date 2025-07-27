@@ -1,19 +1,14 @@
-/* 
-     CopyRight Shizuku Technologies
-     2025.07.20 23:14
-     @Dev Ange1PlsGreet
-*/
 #include "times.hpp"
 #include <chrono>
 #include <sstream>
 
-Value TIMES_HPP get_time(const std::vector<Value>& args) {
+Value get_time(const std::vector<Value>& args) {
      auto now = std::chrono::system_clock::now();
      auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
      return LAMINA_INT(timestamp);
 }
 
-Value TIMES_HPP get_date(const std::vector<Value>& args) {
+Value get_date(const std::vector<Value>& args) {
      auto now = std::chrono::system_clock::now();
      auto time = std::chrono::system_clock::to_time_t(now);
      std::tm* localTime = std::localtime(&time);
@@ -25,7 +20,7 @@ Value TIMES_HPP get_date(const std::vector<Value>& args) {
      return Value(dateStr);
 }
 
-Value TIMES_HPP get_format_date(const std::vector<Value>& args) {
+Value get_format_date(const std::vector<Value>& args) {
      if (args.empty() || !args[0].is_string()) {
           L_ERR("get_format_date() requires exactly one string argument");
           return LAMINA_NULL;

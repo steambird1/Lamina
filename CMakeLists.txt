@@ -27,9 +27,13 @@ add_library(lamina_core SHARED
         extensions/standard/times.hpp
 )
 
-target_compile_options(lamina_core PRIVATE
-        -fvisibility=hidden
-)
+if(MSVC)
+    # MSVC specific options
+    target_compile_options(lamina_core PRIVATE /W4)
+else()
+    # GCC/Clang options
+    target_compile_options(lamina_core PRIVATE -fvisibility=hidden)
+endif()
 
 add_executable(Lamina
         interpreter/ast.hpp
@@ -51,17 +55,22 @@ add_executable(Lamina
         extensions/standard/random.cpp
         extensions/standard/random.hpp
         extensions/standard/times.cpp
-        extensions/standard/times.hpp
-)
+        extensions/standard/times.hpp)
 
 target_include_directories(lamina_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
 )
 
-target_link_libraries(Lamina PRIVATE
+if(UNIX)
+    target_link_libraries(Lamina PRIVATE
         lamina_core
         dl
-)
+    )
+else()
+    target_link_libraries(Lamina PRIVATE
+        lamina_core
+    )
+endif()
 
 if(UNIX AND NOT APPLE)
     message(STATUS "Building on Linux system.")

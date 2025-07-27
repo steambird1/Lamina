@@ -1,6 +1,7 @@
 #include "random.hpp"
+#include <random>
 
-Value RANDOM_HPP randint(const std::vector<Value> &args) {
+Value randint(const std::vector<Value> &args) {
      int min;
      int max;
 
