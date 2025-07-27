@@ -11,8 +11,18 @@
 #include <cstdlib> // For std::exit
 #include <cstring> // For strcmp
 #ifdef _WIN32
+// 平台相关头文件
+#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
+#include <direct.h>
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+#else
+#include <limits.h>
+#include <unistd.h>
+#endif
 #else
 #include <unistd.h> // For isatty
 #include <cstdlib>  // For getenv
@@ -771,11 +781,18 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Record module as loaded
     if (is_shared_lib && file) {
-        char abs_path[_MAX_PATH];
-        if (_fullpath(abs_path, full_path.c_str(), _MAX_PATH) == nullptr) {
+        char abs_path[PATH_MAX];
+#ifdef _WIN32
+        if (_fullpath(abs_path, full_path.c_str(), PATH_MAX) == nullptr) {
             std::cerr << "Error resolving path: " << full_path << std::endl;
             return false;
         }
+#else
+        if (realpath(full_path.c_str(), abs_path) == nullptr) {
+            std::cerr << "Error resolving path: " << full_path << std::endl;
+            return false;
+        }
+#endif
         const char* func_symbol;
 #ifdef _WIN32
     HMODULE handle = LoadLibraryA(full_path.c_str());
