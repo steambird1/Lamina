@@ -22,6 +22,12 @@
 #include <cstdlib>  // For getenv
 #include <dlfcn.h>
 #include <link.h>
+#else
+#include <limits.h>
+#include <unistd.h>
+#include <unistd.h> // For isatty
+#include <cstdlib>  // For getenv
+#include <dlfcn.h>
 #endif
 
 

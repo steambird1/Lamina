@@ -22,22 +22,20 @@ ModuleLoader::~ModuleLoader() {
 }
 
 void* ModuleLoader::findSymbol(const std::string& symbolName) {
+    void* symbol = nullptr;
 #ifdef __linux__
     if (!m_handle) {
         return nullptr;
     }
     dlerror();
-    void* symbol = dlsym(m_handle, symbolName.c_str());
+    symbol = dlsym(m_handle, symbolName.c_str());
     const char* dlsym_error = dlerror();
     if (dlsym_error) {
         std::cerr << "Error looking up symbol '" << symbolName << "': " << dlsym_error << std::endl;
         return nullptr;
     }
-    return symbol;
-
-#else
-    return nullptr;
 #endif
+    return symbol;
 }
 
 bool ModuleLoader::isLoaded() const {
@@ -45,8 +43,8 @@ bool ModuleLoader::isLoaded() const {
 }
 
 std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
-#ifdef __linux__
     std::vector<EntryFunction> entryFunctions;
+#ifdef __linux__
     if (!m_handle) {
         return entryFunctions;
     }
@@ -88,7 +86,6 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
         }
     }
     return entryFunctions;
-#else
-    return nullptr;
 #endif
+    return entryFunctions;
 }
