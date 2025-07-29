@@ -1,11 +1,6 @@
-/* 
-     CopyRight Shizuku Technologies
-     2025.07.24 22:39
-     @Dev Ange1PlsGreet
-*/
 #include "sockets.hpp"
 
-SOCKETS_HPP int create_socket(uv_stream_t *server, int status) {
+int create_socket(uv_stream_t *server, int status) {
 #ifdef __linux__
      if (status < 0) {
           return -1;
@@ -23,7 +18,7 @@ SOCKETS_HPP int create_socket(uv_stream_t *server, int status) {
 #endif
 }
 
-SOCKETS_HPP Value runnable(const std::vector<Value> &args) {
+Value runnable(const std::vector<Value> &args) {
      std::string address = args[0].to_string();
      if (!args[1].is_numeric()) {
           L_ERR("Second Arg Must Be Number!");

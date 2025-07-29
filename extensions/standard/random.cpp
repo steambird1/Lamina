@@ -21,6 +21,7 @@ Value randint(const std::vector<Value> &args) {
 }
 
 Value randstr(const std::vector<Value> &args) {
+
      if (args.size() != 1 || !args[0].is_numeric()) {
           L_ERR("randstr() requires exactly one numeric argument");
           return LAMINA_NULL;
