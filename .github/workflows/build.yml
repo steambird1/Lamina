@@ -72,7 +72,6 @@ jobs:
           echo "Building with ${{ matrix.compiler }}..."
           ${{ matrix.compiler }} --version
           
-          # 编译命令中添加了module.cpp
           ${{ matrix.compiler }} -std=c++17 -O2 -Wall -Wextra \
             main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp \
             -o lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}

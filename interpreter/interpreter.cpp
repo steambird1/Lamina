@@ -12,22 +12,18 @@
 #include <cstdlib> // For std::exit
 #include <cstring> // For strcmp
 #ifdef _WIN32
-// 平台相关头文件
-#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #include <direct.h>
-
-#else
+#elif __linux__
 #include <limits.h>
 #include <unistd.h>
-#endif
-#else
 #include <unistd.h> // For isatty
 #include <cstdlib>  // For getenv
 #include <dlfcn.h>
 #include <link.h>
 #endif
+
 
 
 // 这些异常类已经移到了 interpreter.hpp

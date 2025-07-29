@@ -33,8 +33,8 @@ void* ModuleLoader::findSymbol(const std::string& symbolName) {
         std::cerr << "Error looking up symbol '" << symbolName << "': " << dlsym_error << std::endl;
         return nullptr;
     }
-    return symbol;
 #endif
+    return symbol;
 }
 
 bool ModuleLoader::isLoaded() const {
@@ -84,7 +84,7 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
             }
         }
     }
-
-    return entryFunctions;
 #endif
+    return entryFunctions;
+
 }
