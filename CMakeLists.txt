@@ -50,12 +50,15 @@ add_executable(Lamina
         interpreter/trackback.hpp
         interpreter/value.hpp
         interpreter/lamina.hpp
+        interpreter/module.cpp
+        interpreter/module.hpp
         extensions/standard/math.cpp
         extensions/standard/stdio.cpp
         extensions/standard/random.cpp
         extensions/standard/random.hpp
         extensions/standard/times.cpp
-        extensions/standard/times.hpp)
+        extensions/standard/times.hpp
+)
 
 target_include_directories(lamina_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
