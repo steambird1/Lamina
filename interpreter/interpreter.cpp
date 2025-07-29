@@ -749,13 +749,12 @@ bool Interpreter::load_module(const std::string& module_name) {
     }
 
     if (!file) {
-        std::string filename = "lib" + clean_name + ".so";
+        std::string lib_filename = "lib" + clean_name + ".so";
         is_shared_lib = true;
+        bool found = false;
 
-        // 重新搜索文件路径
         for (const auto& path : search_paths) {
-            full_path = path + filename;
-          //  std::cout << "Current Full Path: " << full_path << std::endl;
+            full_path = path + lib_filename;
             file.open(full_path);
 
             if (file) {
@@ -768,24 +767,34 @@ bool Interpreter::load_module(const std::string& module_name) {
                         entryFunc(*this);
                     }
                     loaded_modules.insert(module_name);
-                    return true;
+                    found = true;
+                    break;
                 } else {
                     std::cerr << "Failed to load shared library: " << full_path << std::endl;
+                    file.clear();
                 }
-#endif
+#else
+                // Windows TODO!
+                found = true;
                 break;
-            }
-            if (!file) {
-                std::cerr << "Error: Cannot load module '" << module_name << "'\n";
-                std::cerr << "  Searched in: ";
-                for (const auto& path : search_paths) {
-                    std::cerr << path + filename << " ";
-                }
-                std::cerr << "\n";
-                return false;
+#endif
+            } else {
+                file.clear();
             }
         }
+
+            if (!found) {
+            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
+            std::cerr << "  Searched in: ";
+            for (const auto& path : search_paths) {
+                std::cerr << path + lib_filename << " ";
+            }
+            std::cerr << "\n";
+            return false;
+        }
+        return true;
     }
+
 
     // Read file into string
     std::stringstream buffer;
