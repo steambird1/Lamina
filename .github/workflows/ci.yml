@@ -9,97 +9,97 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential g++
-        
-    - name: Compile Lamina
-      working-directory: interpreter
-      run: |
-        echo "Compiling Lamina interpreter..."
-        g++ -std=c++17 -Wall -Wextra -O2 \
-          main.cpp lexer.cpp parser.cpp interpreter.cpp \
-          -o lamina
-        echo " Compilation successful!"
-        
-    - name: Basic functionality test
-      working-directory: interpreter
-      run: |
-        echo "Running basic tests..."
-        
-        # Test 1: Hello World
-        echo 'print("Hello, Lamina!");' > test1.lm
-        ./lamina test1.lm
-        
-        # Test 2: Basic arithmetic
-        echo 'var x = 2 + 3 * 4;' > test2.lm
-        echo 'print("2 + 3 * 4 =", x);' >> test2.lm
-        ./lamina test2.lm
-        
-        # Test 3: Precise fractions
-        echo 'var fraction = 16 / 9;' > test3.lm
-        echo 'print("16/9 =", fraction);' >> test3.lm
-        ./lamina test3.lm
-        
-        # Test 4: Functions
-        echo 'func add(a, b) { return a + b; }' > test4.lm
-        echo 'var result = add(10, 20);' >> test4.lm
-        echo 'print("add(10, 20) =", result);' >> test4.lm
-        ./lamina test4.lm
-        
-        # Test 5: Include statement syntax (should show error for old syntax)
-        echo 'include test_module;' > test5.lm
-        echo 'print("This should not execute");' >> test5.lm
-        if ./lamina test5.lm 2>&1 | grep -q "Include statement requires a quoted string"; then
-          echo " Include syntax enforcement working correctly"
-        else
-          echo "❌ Include syntax enforcement failed"
-          exit 1
-        fi
-        
-        # Test 6: Correct include syntax (should parse correctly)
-        echo 'print("Testing correct include syntax");' > test6.lm
-        echo 'include "nonexistent";' >> test6.lm
-        if ./lamina test6.lm 2>&1 | grep -q "Cannot load module"; then
-          echo " Correct include syntax parsing working"
-        else
-          echo "❌ Correct include syntax parsing failed"
-          exit 1
-        fi
-        
-        echo " All basic tests passed!"
-        
-    - name: Test example programs
-      working-directory: interpreter
-      run: |
-        echo "Testing example programs..."
-        
-        if [ -d "examples" ]; then
-          for example in examples/*.lm; do
-            if [ -f "$example" ]; then
-              echo "Testing $(basename "$example")..."
-              ./lamina "$example" || echo "⚠️  Warning: $example execution failed"
-            fi
-          done
-        else
-          echo "ℹ️  No examples directory found"
-        fi
-        
-    - name: Check for memory leaks (with valgrind)
-      working-directory: interpreter
-      run: |
-        echo "Installing valgrind for memory leak detection..."
-        sudo apt-get install -y valgrind
-        
-        echo "Running memory leak test..."
-        echo 'var x = 42; print("x =", x);' > memtest.lm
-        
-        if valgrind --leak-check=full --error-exitcode=1 ./lamina memtest.lm 2>&1; then
-          echo " No memory leaks detected"
-        else
-          echo "⚠️  Memory leaks detected, but continuing..."
-        fi
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++
+
+      - name: Compile Lamina
+        working-directory: interpreter
+        run: |
+          echo "Compiling Lamina interpreter..."
+          g++ -std=c++17 -Wall -Wextra -O2 \
+            main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp \
+            -o lamina
+          echo " Compilation successful!"
+
+      - name: Basic functionality test
+        working-directory: interpreter
+        run: |
+          echo "Running basic tests..."
+          
+          # Test 1: Hello World
+          echo 'print("Hello, Lamina!");' > test1.lm
+          ./lamina test1.lm
+          
+          # Test 2: Basic arithmetic
+          echo 'var x = 2 + 3 * 4;' > test2.lm
+          echo 'print("2 + 3 * 4 =", x);' >> test2.lm
+          ./lamina test2.lm
+          
+          # Test 3: Precise fractions
+          echo 'var fraction = 16 / 9;' > test3.lm
+          echo 'print("16/9 =", fraction);' >> test3.lm
+          ./lamina test3.lm
+          
+          # Test 4: Functions
+          echo 'func add(a, b) { return a + b; }' > test4.lm
+          echo 'var result = add(10, 20);' >> test4.lm
+          echo 'print("add(10, 20) =", result);' >> test4.lm
+          ./lamina test4.lm
+          
+          # Test 5: Include statement syntax (should show error for old syntax)
+          echo 'include test_module;' > test5.lm
+          echo 'print("This should not execute");' >> test5.lm
+          if ./lamina test5.lm 2>&1 | grep -q "Include statement requires a quoted string"; then
+            echo " Include syntax enforcement working correctly"
+          else
+            echo "❌ Include syntax enforcement failed"
+            exit 1
+          fi
+          
+          # Test 6: Correct include syntax (should parse correctly)
+          echo 'print("Testing correct include syntax");' > test6.lm
+          echo 'include "nonexistent";' >> test6.lm
+          if ./lamina test6.lm 2>&1 | grep -q "Cannot load module"; then
+            echo " Correct include syntax parsing working"
+          else
+            echo "❌ Correct include syntax parsing failed"
+            exit 1
+          fi
+          
+          echo " All basic tests passed!"
+
+      - name: Test example programs
+        working-directory: interpreter
+        run: |
+          echo "Testing example programs..."
+          
+          if [ -d "examples" ]; then
+            for example in examples/*.lm; do
+              if [ -f "$example" ]; then
+                echo "Testing $(basename "$example")..."
+                ./lamina "$example" || echo "⚠️  Warning: $example execution failed"
+              fi
+            done
+          else
+            echo "ℹ️  No examples directory found"
+          fi
+
+      - name: Check for memory leaks (with valgrind)
+        working-directory: interpreter
+        run: |
+          echo "Installing valgrind for memory leak detection..."
+          sudo apt-get install -y valgrind
+          
+          echo "Running memory leak test..."
+          echo 'var x = 42; print("x =", x);' > memtest.lm
+          
+          if valgrind --leak-check=full --error-exitcode=1 ./lamina memtest.lm 2>&1; then
+            echo " No memory leaks detected"
+          else
+            echo "⚠️  Memory leaks detected, but continuing..."
+          fi
