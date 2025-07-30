@@ -93,6 +93,10 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
     if (i >= tokens.size()) return nullptr;
       if (tokens[i].type == TokenType::Number) {
         return std::make_unique<LiteralExpr>(tokens[i++].text);
+    } else if (tokens[i].type == TokenType::ComplexNumber) {
+        return std::make_unique<LiteralExpr>(tokens[i++].text);
+    } else if (tokens[i].type == TokenType::ImaginaryUnit) {
+        return std::make_unique<LiteralExpr>("i");
     } else if (tokens[i].type == TokenType::String) {
         return std::make_unique<LiteralExpr>(tokens[i++].text);
     } else if (tokens[i].type == TokenType::True) {
