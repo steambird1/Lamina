@@ -1,5 +1,6 @@
 #include "interpreter.hpp"
 #include "lexer.hpp"
+#include "module.hpp"
 #include "lamina.hpp"
 #include "parser.hpp"
 #include "bigint.hpp"
@@ -11,23 +12,24 @@
 #include <cstdlib> // For std::exit
 #include <cstring> // For strcmp
 #ifdef _WIN32
-// 平台相关头文件
-#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #include <direct.h>
-#ifndef PATH_MAX
-#define PATH_MAX MAX_PATH
-#endif
+#elif __linux__
+#include <limits.h>
+#include <unistd.h>
+#include <unistd.h> // For isatty
+#include <cstdlib>  // For getenv
+#include <dlfcn.h>
+#include <link.h>
 #else
 #include <limits.h>
 #include <unistd.h>
-#endif
-#else
 #include <unistd.h> // For isatty
 #include <cstdlib>  // For getenv
 #include <dlfcn.h>
 #endif
+
 
 
 // 这些异常类已经移到了 interpreter.hpp
@@ -749,29 +751,52 @@ bool Interpreter::load_module(const std::string& module_name) {
     }
 
     if (!file) {
-        std::string filename = "lib" + clean_name + ".so";
+        std::string lib_filename = "lib" + clean_name + ".so";
         is_shared_lib = true;
+        bool found = false;
 
-        // 重新搜索文件路径
         for (const auto& path : search_paths) {
-            full_path = path + filename;
-          //  std::cout << "Current Full Path: " << full_path << std::endl;
+            full_path = path + lib_filename;
             file.open(full_path);
-            if (file) {
-                break;
-            } else {
-                std::cerr << "Error: Cannot load module '" << module_name << "'" << std::endl;
-                std::cerr << "  Searched in: ";
-                for (size_t i = 0; i < search_paths.size(); ++i) {
-                    std::cerr << search_paths[i] + filename;
-                    if (i < search_paths.size() - 1) std::cerr << ", ";
-                }
 
-                std::cerr << std::endl;
-                return false;
+            if (file) {
+                file.close();
+#ifdef __linux__
+                ModuleLoader loader(full_path);
+                if (loader.isLoaded()) {
+                    std::vector<ModuleLoader::EntryFunction> entryFunctions = loader.findEntryFunctions();
+                    for (auto& entryFunc : entryFunctions) {
+                        entryFunc(*this);
+                    }
+                    loaded_modules.insert(module_name);
+                    found = true;
+                    break;
+                } else {
+                    std::cerr << "Failed to load shared library: " << full_path << std::endl;
+                    file.clear();
+                }
+#else
+                // Windows TODO!
+                found = true;
+                break;
+#endif
+            } else {
+                file.clear();
             }
         }
+
+            if (!found) {
+            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
+            std::cerr << "  Searched in: ";
+            for (const auto& path : search_paths) {
+                std::cerr << path + lib_filename << " ";
+            }
+            std::cerr << "\n";
+            return false;
+        }
+        return true;
     }
+
 
     // Read file into string
     std::stringstream buffer;
@@ -779,102 +804,6 @@ bool Interpreter::load_module(const std::string& module_name) {
     std::string source = buffer.str();
     file.close();
 
-    // Record module as loaded
-    if (is_shared_lib && file) {
-        char abs_path[PATH_MAX];
-#ifdef _WIN32
-        if (_fullpath(abs_path, full_path.c_str(), PATH_MAX) == nullptr) {
-            std::cerr << "Error resolving path: " << full_path << std::endl;
-            return false;
-        }
-#else
-        if (realpath(full_path.c_str(), abs_path) == nullptr) {
-            std::cerr << "Error resolving path: " << full_path << std::endl;
-            return false;
-        }
-#endif
-        const char* func_symbol;
-#ifdef _WIN32
-    HMODULE handle = LoadLibraryA(full_path.c_str());
-    if (!handle) {
-        DWORD err_code = GetLastError();
-        char err_msg[256] = {0};
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err_code,
-                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                      err_msg, sizeof(err_msg)-1, NULL);
-        std::cerr << "Failed to load DLL (" << full_path << "): "
-                  << err_msg << " (Code: " << err_code << ")" << std::endl;
-        return false;
-    }
-    func_symbol = ""; // I Don't Know Windows Platform's symbol
-#else
-    void* handle = dlopen(full_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (!handle) {
-        std::cerr << "Failed to load SO (" << full_path << "): " << dlerror() << std::endl;
-        return false;
-    }
-    func_symbol = "_ZN11Interpreter14register_entryEPFvRS_E";
-#endif
-
-#ifdef _WIN32
-#else
-    dlerror();
-#endif
-
-    using RegisterFunc = Interpreter::EntryFunction;
-    auto register_entry = reinterpret_cast<RegisterFunc>(
-#ifdef _WIN32
-        GetProcAddress(handle, func_symbol)
-#else
-        dlsym(handle, func_symbol)
-#endif
-    );
-
-    if (!register_entry) {
-#ifdef _WIN32
-        DWORD err_code = GetLastError();
-        std::cerr << "Failed to find function " << func_symbol << " in "
-                  << full_path << " (Code: " << err_code << ")" << std::endl;
-#else
-        std::cerr << "Failed to find function " << func_symbol << " in "
-                  << full_path << ": " << dlerror() << std::endl;
-#endif
-#ifdef _WIN32
-        FreeLibrary(handle);
-#else
-        dlclose(handle);
-#endif
-        return false;
-    }
-
-    try {
-        register_entry(*this);
-
-        for (const auto& entry_func : Interpreter::entry_functions) {
-            if (entry_func) {
-                try {
-                    entry_func(*this);
-                } catch (const std::exception& e) {
-                    std::cerr << "Failed to register an entry function: " << e.what() << std::endl;
-                }
-            } else {
-                std::cerr << "Skipped a null entry function" << std::endl;
-            }
-        }
-
-        loaded_modules.insert(module_name);
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Error when calling register_entry for "
-                  << module_name << ": " << e.what() << std::endl;
-#ifdef _WIN32
-            FreeLibrary(handle);
-#else
-            dlclose(handle);
-#endif
-            return false;
-        }
-    }
 
     // Lexical and syntax analysis
     auto tokens = Lexer::tokenize(source);

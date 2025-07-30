@@ -16,12 +16,14 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
     virtual ~Value() = default;
 
     // Constructors
-    Value() : type(Type::Null), data(nullptr) {}
+    Value() : type(Type::Null), data(std::in_place_index<0>, nullptr) {}  // 0对应std::nullptr_t类型
 
-    Value(std::nullptr_t) : type(Type::Null), data(nullptr) {}
-    Value(bool b) : type(Type::Bool), data(b) {}
-    Value(int i) : type(Type::Int), data(i) {}
-    Value(double f) : type(Type::Float), data(f) {}    Value(const std::string& s) : type(Type::String), data(s) {}
+    // 其他构造函数需要同步修改初始化方式
+    Value(std::nullptr_t) : type(Type::Null), data(std::in_place_index<0>, nullptr) {}
+    Value(bool b) : type(Type::Bool), data(std::in_place_index<1>, b) {}
+    Value(int i) : type(Type::Int), data(std::in_place_index<2>, i) {}
+    Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {}
+    Value(const std::string& s) : type(Type::String), data(s) {}
     Value(const char* s) : type(Type::String), data(std::string(s)) {}
     Value(const ::BigInt& bi) : type(Type::BigInt), data(bi) {}
     Value(const ::Rational& r) : type(Type::Rational), data(r) {}

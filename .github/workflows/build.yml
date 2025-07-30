@@ -24,120 +24,120 @@ jobs:
             compiler: msvc
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up build environment (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential
-        if [ "${{ matrix.compiler }}" = "clang++" ]; then
-          sudo apt-get install -y clang
-        fi
+      - name: Set up build environment (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+          if [ "${{ matrix.compiler }}" = "clang++" ]; then
+            sudo apt-get install -y clang
+          fi
 
-    - name: Set up build environment (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        if [ "${{ matrix.compiler }}" = "clang++" ]; then
-          # clang++ is already available on macOS
-          echo "Using system clang++"
-        else
-          # Install GCC if needed
-          brew install gcc
-        fi
+      - name: Set up build environment (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang++" ]; then
+            # clang++ is already available on macOS
+            echo "Using system clang++"
+          else
+            # Install GCC if needed
+            brew install gcc
+          fi
 
-    - name: Set up MSVC (Windows)
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
-      uses: ilammy/msvc-dev-cmd@v1
+      - name: Set up MSVC (Windows)
+        if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Set up MinGW (Windows)
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'g++'
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        install: mingw-w64-x86_64-gcc
+      - name: Set up MinGW (Windows)
+        if: matrix.os == 'windows-latest' && matrix.compiler == 'g++'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
 
-    - name: Build with GCC/Clang (Unix)
-      if: matrix.os != 'windows-latest' || matrix.compiler == 'g++'
-      working-directory: interpreter
-      shell: bash
-      run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          # Use MSYS2 environment for MinGW
-          export PATH="/c/msys64/mingw64/bin:$PATH"
-        fi
-        
-        echo "Building with ${{ matrix.compiler }}..."
-        ${{ matrix.compiler }} --version
-        
-        # Compile the interpreter
-        ${{ matrix.compiler }} -std=c++17 -O2 -Wall -Wextra \
-          main.cpp lexer.cpp parser.cpp interpreter.cpp \
-          -o lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-        
-        echo "Build completed successfully!"
+      - name: Build with GCC/Clang (Unix)
+        if: matrix.os != 'windows-latest' || matrix.compiler == 'g++'
+        working-directory: interpreter
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Use MSYS2 environment for MinGW
+            export PATH="/c/msys64/mingw64/bin:$PATH"
+          fi
+          
+          echo "Building with ${{ matrix.compiler }}..."
+          ${{ matrix.compiler }} --version
+          
+          ${{ matrix.compiler }} -std=c++17 -O2 -Wall -Wextra \
+            main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp \
+            -o lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          
+          echo "Build completed successfully!"
 
-    - name: Build with MSVC (Windows)
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
-      working-directory: interpreter
-      run: |
-        echo "Building with MSVC..."
-        cl /EHsc /std:c++17 /O2 main.cpp lexer.cpp parser.cpp interpreter.cpp /Fe:lamina.exe
-        echo "Build completed successfully!"
+      - name: Build with MSVC (Windows)
+        if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
+        working-directory: interpreter
+        run: |
+          echo "Building with MSVC..."
+          # 编译命令中添加了module.cpp
+          cl /EHsc /std:c++17 /O2 main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp /Fe:lamina.exe
+          echo "Build completed successfully!"
 
-    - name: Test basic functionality
-      working-directory: interpreter
-      shell: bash
-      run: |
-        echo "Testing basic functionality..."
-        
-        # Create a simple test file
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          echo 'print("Hello, Lamina!");' > test.lm
-          echo 'var x = 2 + 3;' >> test.lm
-          echo 'print("2 + 3 =", x);' >> test.lm
-          ./lamina.exe test.lm
-        else
-          echo 'print("Hello, Lamina!");' > test.lm
-          echo 'var x = 2 + 3;' >> test.lm
-          echo 'print("2 + 3 =", x);' >> test.lm
-          ./lamina test.lm
-        fi
-        
-        echo "Basic test passed!"
+      - name: Test basic functionality
+        working-directory: interpreter
+        shell: bash
+        run: |
+          echo "Testing basic functionality..."
+          
+          # Create a simple test file
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            echo 'print("Hello, Lamina!");' > test.lm
+            echo 'var x = 2 + 3;' >> test.lm
+            echo 'print("2 + 3 =", x);' >> test.lm
+            ./lamina.exe test.lm
+          else
+            echo 'print("Hello, Lamina!");' > test.lm
+            echo 'var x = 2 + 3;' >> test.lm
+            echo 'print("2 + 3 =", x);' >> test.lm
+            ./lamina test.lm
+          fi
+          
+          echo "Basic test passed!"
 
-    - name: Run example programs
-      working-directory: interpreter
-      shell: bash
-      run: |
-        echo "Running example programs..."
-        
-        # Test all example files if they exist
-        if [ -d "examples" ]; then
-          for example in examples/*.lm; do
-            if [ -f "$example" ]; then
-              echo "Testing $example..."
-              if [ "${{ matrix.os }}" = "windows-latest" ]; then
-                ./lamina.exe "$example" || echo "Warning: $example failed"
-              else
-                ./lamina "$example" || echo "Warning: $example failed"
+      - name: Run example programs
+        working-directory: interpreter
+        shell: bash
+        run: |
+          echo "Running example programs..."
+          
+          # Test all example files if they exist
+          if [ -d "examples" ]; then
+            for example in examples/*.lm; do
+              if [ -f "$example" ]; then
+                echo "Testing $example..."
+                if [ "${{ matrix.os }}" = "windows-latest" ]; then
+                  ./lamina.exe "$example" || echo "Warning: $example failed"
+                else
+                  ./lamina "$example" || echo "Warning: $example failed"
+                fi
               fi
-            fi
-          done
-        else
-          echo "No examples directory found, skipping example tests"
-        fi
+            done
+          else
+            echo "No examples directory found, skipping example tests"
+          fi
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: lamina-${{ matrix.os }}-${{ matrix.compiler }}
-        path: |
-          interpreter/lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-          interpreter/examples/
-        retention-days: 30
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lamina-${{ matrix.os }}-${{ matrix.compiler }}
+          path: |
+            interpreter/lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+            interpreter/examples/
+          retention-days: 30
 
   release:
     needs: build
@@ -145,44 +145,44 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-        
-    - name: Create release assets
-      run: |
-        mkdir -p release
-        
-        # Package Linux build
-        if [ -f "artifacts/lamina-ubuntu-latest-g++/lamina" ]; then
-          cd artifacts/lamina-ubuntu-latest-g++
-          tar -czf ../../release/lamina-linux-x64.tar.gz lamina examples/
-          cd ../..
-        fi
-        
-        # Package Windows build
-        if [ -f "artifacts/lamina-windows-latest-g++/lamina.exe" ]; then
-          cd artifacts/lamina-windows-latest-g++
-          zip -r ../../release/lamina-windows-x64.zip lamina.exe examples/
-          cd ../..
-        fi
-        
-        # Package macOS build
-        if [ -f "artifacts/lamina-macos-latest-g++/lamina" ]; then
-          cd artifacts/lamina-macos-latest-g++
-          tar -czf ../../release/lamina-macos-x64.tar.gz lamina examples/
-          cd ../..
-        fi
-        
-        ls -la release/
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Upload release assets
-      uses: actions/upload-artifact@v4
-      with:
-        name: lamina-release-packages
-        path: release/
-        retention-days: 90
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release assets
+        run: |
+          mkdir -p release
+          
+          # Package Linux build
+          if [ -f "artifacts/lamina-ubuntu-latest-g++/lamina" ]; then
+            cd artifacts/lamina-ubuntu-latest-g++
+            tar -czf ../../release/lamina-linux-x64.tar.gz lamina examples/
+            cd ../..
+          fi
+          
+          # Package Windows build
+          if [ -f "artifacts/lamina-windows-latest-g++/lamina.exe" ]; then
+            cd artifacts/lamina-windows-latest-g++
+            zip -r ../../release/lamina-windows-x64.zip lamina.exe examples/
+            cd ../..
+          fi
+          
+          # Package macOS build
+          if [ -f "artifacts/lamina-macos-latest-g++/lamina" ]; then
+            cd artifacts/lamina-macos-latest-g++
+            tar -czf ../../release/lamina-macos-x64.tar.gz lamina examples/
+            cd ../..
+          fi
+          
+          ls -la release/
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: lamina-release-packages
+          path: release/
+          retention-days: 90
