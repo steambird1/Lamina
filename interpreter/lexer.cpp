@@ -86,25 +86,15 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i; ++col;        } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i+1]))) {
             size_t j = i;
             bool has_dot = false;
-
+            
             // Handle decimal numbers
             while (j < src.size() && (isdigit(src[j]) || (src[j] == '.' && !has_dot))) {
                 if (src[j] == '.') has_dot = true;
                 ++j;
             }
-
-            // Check if followed by 'i' for complex number
-            if (j < src.size() && src[j] == 'i') {
-                tokens.push_back(Token(TokenType::ComplexNumber, src.substr(i, j-i+1), line, start_col));
-                col += (j-i+1); i = j+1;
-            } else {
-                tokens.push_back(Token(TokenType::Number, src.substr(i, j-i), line, start_col));
-                col += (j-i); i = j;
-            }
-        } else if (src[i] == 'i' && (i == 0 || !isalnum(src[i-1]))) {
-            // Standalone 'i' as imaginary unit
-            tokens.push_back(Token(TokenType::ImaginaryUnit, "i", line, start_col));
-            ++i; ++col;
+            
+            tokens.push_back(Token(TokenType::Number, src.substr(i, j-i), line, start_col));
+            col += (j-i); i = j;
         } else if (src[i] == '(') {
             tokens.push_back(Token(TokenType::LParen, "(", line, start_col));
             ++i; ++col;
@@ -113,23 +103,23 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i; ++col;
         } else if (src[i] == ';') {
             tokens.push_back(Token(TokenType::Semicolon, ";", line, start_col));
-            ++i; ++col;        } else if (src[i] == '"' || src[i] == ''') {
+            ++i; ++col;        } else if (src[i] == '"' || src[i] == '\'') {
             char quote_type = src[i];
             size_t j = i + 1;
             std::string str_content;
-
+            
             while (j < src.size() && src[j] != quote_type) {
-                if (src[j] == '\' && j + 1 < src.size()) {
+                if (src[j] == '\\' && j + 1 < src.size()) {
                     // Handle escape sequences
                     char next = src[j + 1];
                     switch (next) {
                         case 'n': str_content += '\n'; break;
                         case 't': str_content += '\t'; break;
                         case 'r': str_content += '\r'; break;
-                        case '\': str_content += '\\'; break;
+                        case '\\': str_content += '\\'; break;
                         case '"': str_content += '"'; break;
-                        case ''': str_content += '''; break;
-                        default:
+                        case '\'': str_content += '\''; break;
+                        default: 
                             str_content += '\\';
                             str_content += next;
                             break;

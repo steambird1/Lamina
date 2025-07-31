@@ -256,25 +256,9 @@ Value Interpreter::eval(const ASTNode* node) {
         try {
             // Check if it contains a decimal point for float
             if (lit->value.find('.') != std::string::npos) {
-                // Check if it ends with 'i' for complex number
-                if (lit->value.back() == 'i') {
-                    std::string num_str = lit->value.substr(0, lit->value.size() - 1);
-                    double imag = std::stod(num_str);
-                    return Value(::lamina::Complex(0.0, imag));
-                }
                 double d = std::stod(lit->value);
                 return Value(d);
             } else {
-                // Check if it's just 'i' for imaginary unit
-                if (lit->value == "i") {
-                    return Value(::lamina::Complex(0.0, 1.0));
-                }
-                // Check if it ends with 'i' for complex number
-                if (lit->value.back() == 'i') {
-                    std::string num_str = lit->value.substr(0, lit->value.size() - 1);
-                    double imag = std::stod(num_str);
-                    return Value(::lamina::Complex(0.0, imag));
-                }
                 int i = std::stoi(lit->value);
                 return Value(i);
             }
@@ -307,12 +291,6 @@ Value Interpreter::eval(const ASTNode* node) {
             else if (l.is_array() && r.is_array()) {
                 return l.vector_add(r);
             }
-            // Complex number addition
-            else if (l.is_complex() || r.is_complex()) {
-                ::lamina::Complex left_complex = l.is_complex() ? std::get<::lamina::Complex>(l.data) : ::lamina::Complex(l.as_number(), 0.0);
-                ::lamina::Complex right_complex = r.is_complex() ? std::get<::lamina::Complex>(r.data) : ::lamina::Complex(r.as_number(), 0.0);
-                return Value(left_complex + right_complex);
-            }
             // Numeric addition with irrational and rational number support
             else if (l.is_numeric() && r.is_numeric()) {
                 // If either operand is irrational, use irrational arithmetic
@@ -341,12 +319,6 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // Special handling for multiplication
             if (bin->op == "*") {
-                // Complex number multiplication
-                if (l.is_complex() || r.is_complex()) {
-                    ::lamina::Complex left_complex = l.is_complex() ? std::get<::lamina::Complex>(l.data) : ::lamina::Complex(l.as_number(), 0.0);
-                    ::lamina::Complex right_complex = r.is_complex() ? std::get<::lamina::Complex>(r.data) : ::lamina::Complex(r.as_number(), 0.0);
-                    return Value(left_complex * right_complex);
-                }
                 // Vector and matrix operations
                 if (l.is_array() && r.is_array()) {
                     // Try dot product for same-size vectors
@@ -394,16 +366,6 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // For division, always use rational arithmetic for precise results
             if (bin->op == "/") {
-                // Complex number division
-                if (l.is_complex() || r.is_complex()) {
-                    ::lamina::Complex left_complex = l.is_complex() ? std::get<::lamina::Complex>(l.data) : ::lamina::Complex(l.as_number(), 0.0);
-                    ::lamina::Complex right_complex = r.is_complex() ? std::get<::lamina::Complex>(r.data) : ::lamina::Complex(r.as_number(), 0.0);
-                    try {
-                        return Value(left_complex / right_complex);
-                    } catch (const std::runtime_error& e) {
-                        error_and_exit(e.what());
-                    }
-                }
                 // If either operand is irrational, use irrational arithmetic
                 if (l.is_irrational() || r.is_irrational()) {
                     ::Irrational lr = l.as_irrational();
@@ -469,12 +431,6 @@ Value Interpreter::eval(const ASTNode* node) {
             double rd = r.as_number();
 
             if (bin->op == "-") {
-                // Complex number subtraction
-                if (l.is_complex() || r.is_complex()) {
-                    ::lamina::Complex left_complex = l.is_complex() ? std::get<::lamina::Complex>(l.data) : ::lamina::Complex(l.as_number(), 0.0);
-                    ::lamina::Complex right_complex = r.is_complex() ? std::get<::lamina::Complex>(r.data) : ::lamina::Complex(r.as_number(), 0.0);
-                    return Value(left_complex - right_complex);
-                }
                 double result = ld - rd;
                 return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
             }

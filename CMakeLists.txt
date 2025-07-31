@@ -19,16 +19,13 @@ add_library(lamina_core SHARED
         interpreter/trackback.hpp
         interpreter/value.hpp
         interpreter/lamina.hpp
-        interpreter/complex_funcs.cpp
         extensions/standard/math.cpp
         extensions/standard/stdio.cpp
         extensions/standard/random.cpp
         extensions/standard/random.hpp
         extensions/standard/times.cpp
         extensions/standard/times.hpp
-        extensions/standard/complex.cpp
-        extensions/standard/complex.hpp
-        extensions/standard/complex_funcs.cpp
+        extensions/standard/array.cpp
 )
 
 if(MSVC)
@@ -56,16 +53,13 @@ add_executable(Lamina
         interpreter/lamina.hpp
         interpreter/module.cpp
         interpreter/module.hpp
-        interpreter/complex_funcs.cpp
         extensions/standard/math.cpp
+        extensions/standard/array.cpp
         extensions/standard/stdio.cpp
         extensions/standard/random.cpp
         extensions/standard/random.hpp
         extensions/standard/times.cpp
         extensions/standard/times.hpp
-        extensions/standard/complex.cpp
-        extensions/standard/complex.hpp
-        extensions/standard/complex_funcs.cpp
 )
 
 target_include_directories(lamina_core PUBLIC
