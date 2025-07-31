@@ -1,6 +1,7 @@
-## 代码提交规范 -- 中文
+## 代码提交规范
 
-- 请先阅读 <https://bgithub.xyz/Ziyang-Bai/Lamina/blob/main/README.md> 了解项目的基本情况，在继续进行开发！
+- This document has a English version. Please refer to [CONTRIBUTING](CONTRIBUTING-EN.md) for the English version.
+- 请先阅读 <https://github.com/Ziyang-Bai/Lamina/blob/main/README.md> 了解项目的基本情况，在继续进行开发！
 - 本项目使用GPL-3.0协议，请严格遵守本协议！
 
 ## 项目结构：

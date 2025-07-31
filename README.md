@@ -7,10 +7,9 @@
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
-[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码)
+[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](compile-cn.md) • [贡献指南](CONTRIBUTING-CN.md) • [Wiki](https://github.com/Ziyang-Bai/Lamina/wiki)
 
 ---
-
 ##  目录
 
 - [概述](#概述)
@@ -95,7 +94,7 @@ var result = 1/10 + 2/10;        // 结果：3/10（完全精确）
 
 ```bash
 # 编译
-g++ main.cpp lexer.cpp parser.cpp interpreter.cpp -o lamina.exe
+# 请参考编译指南
 
 # 交互式模式
 ./lamina
@@ -298,6 +297,9 @@ print(2 * v1);                  // 标量乘法：[2, 4, 6]
 | `size(x)` | 获取大小 | `size([1,2,3]) → 3` |
 | `fraction(x)` | 小数转分数 | `fraction(0.75) → 3/4` |
 | `decimal(x)` | 分数转小数 | `decimal(3/4) → 0.75` |
+| `visit()` | 访问 | `visit(a, 3, 0)`|
+|`visit_by_str()`| 访问 | `visit_by_str(b, "name")` |
+
 
 ---
 

@@ -1,7 +1,7 @@
-# Code Submission Guidelines -- English
+# Code Submission Guidelines
 
-*   Please read [https://bgithub.xyz/Ziyang-Bai/Lamina/blob/main/README.md](https://bgithub.xyz/Ziyang-Bai/Lamina/blob/main/README.md) first to understand the basic information of the project before proceeding with development!
-
+*   本文档有一个中文版本，转到 [贡献指南](CONTRIBUTING-CN.md) 查看中文版本。
+*   Please read [https://github.com/Ziyang-Bai/Lamina/blob/main/README.md](https://github.com/Ziyang-Bai/Lamina/blob/main/README.md) first to understand the basic information of the project before proceeding with development!
 *   This project uses the GPL-3.0 license; please strictly abide by this license!
 
 ## Project Structure:
