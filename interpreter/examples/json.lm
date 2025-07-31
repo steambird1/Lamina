@@ -1,0 +1,14 @@
+include "json";
+
+a = [1, 2, 3, [4, 5, 6]];
+print("Original Array:", a);
+print("Parsed:", visit(a, 3, 0));
+b = json_decode("{'name':10}");
+print("Original Array:", b);
+print("Parsed:", visit_by_str(b, "name"));
+// Complex Array
+c = json_decode("{'name':10,'age':20, 'a': [1,2,3]}");
+print("Original Array:", c);
+print("Parsed:", visit_by_str(c, "a"));
+print("Parsed:", visit_by_str(c, "age"));
+

@@ -25,6 +25,7 @@ template<class> constexpr bool always_false = false;
 #define LAMINA_BIGINT(value) Value((const ::BigInt&)value)
 #define LAMINA_RATIONAL(value) Value((const ::Rational&)value)
 #define LAMINA_IRRATIONAL(value) Value((const ::Irrational&)value)
+#define LAMINA_COMPLEX(real, imag) Value(::lamina::Complex(real, imag))
 #define LAMINA_ARR(value) Value(value)
 #define LAMINA_MATRIX(value) Value(value)
 #define LAMINA_NULL Value()

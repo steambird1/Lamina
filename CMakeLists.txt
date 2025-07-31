@@ -25,6 +25,7 @@ add_library(lamina_core SHARED
         extensions/standard/random.hpp
         extensions/standard/times.cpp
         extensions/standard/times.hpp
+        extensions/standard/array.cpp
 )
 
 if(MSVC)
@@ -53,6 +54,7 @@ add_executable(Lamina
         interpreter/module.cpp
         interpreter/module.hpp
         extensions/standard/math.cpp
+        extensions/standard/array.cpp
         extensions/standard/stdio.cpp
         extensions/standard/random.cpp
         extensions/standard/random.hpp
