@@ -7,7 +7,7 @@
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
-[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](compile-cn.md) • [贡献指南](CONTRIBUTING-CN.md) • [Wiki](https://github.com/Ziyang-Bai/Lamina/wiki)
+[快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](/documents/compile-cn.md) • [贡献指南](/documents/CONTRIBUTING-CN.md) • [Wiki](https://github.com/Ziyang-Bai/Lamina/wiki)
 
 ---
 ##  目录

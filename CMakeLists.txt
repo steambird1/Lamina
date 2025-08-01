@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.16.3)
 project(Lamina)
 
 set(CMAKE_CXX_STANDARD 20)
+set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
+
+include_directories(${LIBUV_ROOT}/include)
+link_directories(${LIBUV_ROOT}/lib)
 
 include_directories(interpreter)
 add_library(lamina_core SHARED
@@ -26,6 +30,8 @@ add_library(lamina_core SHARED
         extensions/standard/times.cpp
         extensions/standard/times.hpp
         extensions/standard/array.cpp
+        extensions/standard/sockets.hpp
+        extensions/standard/sockets.cpp
 )
 
 if(MSVC)
@@ -60,6 +66,8 @@ add_executable(Lamina
         extensions/standard/random.hpp
         extensions/standard/times.cpp
         extensions/standard/times.hpp
+        extensions/standard/sockets.hpp
+        extensions/standard/sockets.cpp
 )
 
 target_include_directories(lamina_core PUBLIC
