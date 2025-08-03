@@ -13,7 +13,7 @@
 #include <stack>
 
 // Forward declaration for error handling
-void error_and_exit(const std::string& msg);
+void LAMINA_EXPORT error_and_exit(const std::string& msg);
 
 // Stack frame for function call tracking
 struct StackFrame {

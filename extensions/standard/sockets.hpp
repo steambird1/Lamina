@@ -22,14 +22,6 @@
 
 constexpr int DEFAULT_BACKLOG = 128;
 
-Value runnable(const std::vector<Value>& args);
-Value socket_send(const std::vector<Value>& args);
-
-namespace lamina {
-    LAMINA_FUNC("socket_create", runnable, 4);
-    LAMINA_FUNC("socket_send", socket_send, 2);
-}
-
 #ifdef USE_LIBUV
 namespace lamina::net {
     extern uv_loop_t* loop;
@@ -42,6 +34,11 @@ namespace lamina::net {
     int create_socket(uv_stream_t* server, int status);
 
     void call_lamina_callback(int64_t cbid, uint64_t client_id, const std::string& data);
+
+    Value runnable(const std::vector<Value>& args);
+    Value socket_send(const std::vector<Value>& args);
+    LAMINA_FUNC("socket_create", runnable, 4);
+    LAMINA_FUNC("socket_send", socket_send, 2);
 }
 #endif
 
