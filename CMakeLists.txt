@@ -2,9 +2,39 @@ cmake_minimum_required(VERSION 3.16.3)
 project(Lamina)
 
 set(CMAKE_CXX_STANDARD 20)
-set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
 
-include_directories(${LIBUV_ROOT}/include)
+if(NOT LIBUV_ROOT)
+    find_path(LIBUV_INCLUDE_DIR NAMES uv.h)
+    find_library(LIBUV_LIBRARY NAMES uv uv1)
+
+    if(NOT LIBUV_INCLUDE_DIR OR NOT LIBUV_LIBRARY)
+        set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv CACHE PATH "Path to libuv library")
+        message(STATUS "Using default libuv path: ${LIBUV_ROOT}")
+    endif()
+else()
+    message(STATUS "Using user-specified libuv path: ${LIBUV_ROOT}")
+endif()
+
+find_path(LIBUV_INCLUDE_DIR
+        NAMES uv.h
+        PATHS ${LIBUV_ROOT}/include
+        NO_DEFAULT_PATH
+)
+
+find_library(LIBUV_LIBRARY
+        NAMES uv uv1
+        PATHS ${LIBUV_ROOT}/lib
+        NO_DEFAULT_PATH
+)
+
+if(NOT LIBUV_INCLUDE_DIR OR NOT LIBUV_LIBRARY)
+    message(FATAL_ERROR "libuv not found! Please specify LIBUV_ROOT using -DLIBUV_ROOT=/path/to/libuv")
+endif()
+
+message(STATUS "Found libuv headers: ${LIBUV_INCLUDE_DIR}")
+message(STATUS "Found libuv library: ${LIBUV_LIBRARY}")
+
+include_directories(${LIBUV_INCLUDE_DIR})
 link_directories(${LIBUV_ROOT}/lib)
 
 include_directories(interpreter)
@@ -33,6 +63,8 @@ add_library(lamina_core SHARED
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp
 )
+
+target_link_libraries(lamina_core PRIVATE ${LIBUV_LIBRARY})
 
 if(MSVC)
     # MSVC specific options
@@ -70,18 +102,21 @@ add_executable(Lamina
         extensions/standard/sockets.cpp
 )
 
+# 链接LIBUV到可执行文件
+target_link_libraries(Lamina PRIVATE ${LIBUV_LIBRARY})
+
 target_include_directories(lamina_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
 )
 
 if(UNIX)
     target_link_libraries(Lamina PRIVATE
-        lamina_core
-        dl
+            lamina_core
+            dl
     )
 else()
     target_link_libraries(Lamina PRIVATE
-        lamina_core
+            lamina_core
     )
 endif()
 
@@ -98,12 +133,13 @@ if(UNIX AND NOT APPLE)
         if(NOT SOURCE_FILE MATCHES "extensions/standard")
             get_filename_component(SOURCE_NAME ${SOURCE_FILE} NAME_WE)
             add_library(${SOURCE_NAME} SHARED ${SOURCE_FILE})
-            target_link_libraries(${SOURCE_NAME} lamina_core)
+            # 为扩展也链接LIBUV
+            target_link_libraries(${SOURCE_NAME} lamina_core ${LIBUV_LIBRARY})
             set_target_properties(${SOURCE_NAME} PROPERTIES
-                    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/extensions
+                    LIBRARY_OUTPUT_DIRECTory ${CMAKE_SOURCE_DIR}/extensions
                     POSITION_INDEPENDENT_CODE ON
             )
-            message(STATUS "Building extension: ${SOURCE_NAME} with core library")
+            message(STATUS "Building extension: ${SOURCE_NAME} with core library and LIBUV")
         endif()
     endforeach()
 endif()

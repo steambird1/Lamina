@@ -1,0 +1,6 @@
+include "type";
+// test decl
+declare(1);
+type('boolean', true);
+a = boolean(1);
+print(a);
