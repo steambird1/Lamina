@@ -34,7 +34,7 @@ namespace lamina::net {
         CLOSED = 0,
         LISTENING = 1,
         CONNECTED = 2,
-        ERROR = 3
+        ERR_STATE = 3
     };
     struct SocketError {
         int code;
@@ -63,7 +63,7 @@ namespace lamina::net {
         void set_error(int code, const std::string& msg) {
             last_error.code = code;
             last_error.message = msg;
-            state = ERROR;
+            state = ERR_STATE;
         }
         void queue_data(const std::string& data) {
             std::lock_guard<std::mutex> lock(recv_mutex);

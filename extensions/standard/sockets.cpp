@@ -32,7 +32,8 @@ struct Socket {
     uv_udp_t udp_handle;
     std::queue<std::string> recv_queue;
     std::mutex recv_mutex;
-    
+    std::function<void(Socket*, const std::string&)> on_receive;
+
     explicit Socket(uint64_t id, SocketType type) 
         : id(id), type(type), state(CLOSED) {
         if (type == TCP) {
@@ -45,7 +46,7 @@ struct Socket {
     void set_error(int code, const std::string& msg) {
         last_error.code = code;
         last_error.message = msg;
-        state = lamina::net::SocketState::ERROR;
+        state = lamina::net::SocketState::ERR_STATE;
     }
 
     void queue_data(const std::string& data) {
@@ -86,6 +87,7 @@ struct Socket {
     uv_tcp_t server;
     std::atomic<uint64_t> next_client_id{1};
     int64_t on_receive_callback_id = 0;
+    std::unordered_map<uint64_t, Socket*> clients;
 
     // 错误信息映射
     std::unordered_map<int, std::string> error_messages = {
