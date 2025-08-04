@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.16.3)
 project(Lamina)
 
 set(CMAKE_CXX_STANDARD 20)
-<<<<<<< Updated upstream
 
 if(NOT LIBUV_ROOT)
     find_path(LIBUV_INCLUDE_DIR NAMES uv.h)
@@ -37,7 +36,6 @@ message(STATUS "Found libuv library: ${LIBUV_LIBRARY}")
 
 include_directories(${LIBUV_INCLUDE_DIR})
 link_directories(${LIBUV_ROOT}/lib)
-=======
 
 # 设置libuv子模块路径
 set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
@@ -54,7 +52,6 @@ add_subdirectory(${LIBUV_ROOT})
 set(LIBUV_LIBRARIES uv_a)
 set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
 include_directories(${LIBUV_INCLUDE_DIRS})
->>>>>>> Stashed changes
 
 include_directories(interpreter)
 add_library(lamina_core SHARED
@@ -130,23 +127,14 @@ target_include_directories(lamina_core PUBLIC
 
 if(UNIX)
     target_link_libraries(Lamina PRIVATE
-<<<<<<< Updated upstream
             lamina_core
             dl
     )
 else()
     target_link_libraries(Lamina PRIVATE
-            lamina_core
-=======
         lamina_core
         dl
         uv
-    )
-else()
-    target_link_libraries(Lamina PRIVATE
-        lamina_core
-        uv
->>>>>>> Stashed changes
     )
 endif()
 
