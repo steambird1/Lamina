@@ -79,7 +79,11 @@
         "string_view": "cpp",
         "numbers": "cpp",
         "span": "cpp",
-        "text_encoding": "cpp"
+        "text_encoding": "cpp",
+        "mutex": "cpp",
+        "queue": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     },
     "markdown.validate.enabled": true
 }
