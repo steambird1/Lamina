@@ -65,10 +65,7 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B build ${{ matrix.cmake_arch }} \
-          -DCMAKE_BUILD_TYPE=Release \
-          -G "${{ matrix.cmake_generator }}" \
-          .
+        cmake -B build ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release -G "${{ matrix.cmake_generator }}" .
 
     - name: Build with CMake
       run: |
