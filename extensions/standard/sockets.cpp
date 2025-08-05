@@ -17,7 +17,14 @@
 #include <system_error>
 
 namespace lamina::net {
-// 链接修复：补充未定义函数的空实现
+// 全局变量定义
+uv_loop_t* loop = nullptr;
+std::atomic<uint64_t> next_client_id{1};
+int64_t on_receive_callback_id = 0;
+std::unordered_map<uint64_t, Socket*> clients;
+int64_t server_socket_id = 0; // 记录服务器socket ID
+std::unordered_map<int64_t, std::function<void(uint64_t, const std::string&)>> callback_table;
+
 Value socket_register_receive_callback(const std::vector<Value>& args) {
     // args[0]: socket_id, args[1]: callback_id
     if (args.size() < 2) {
@@ -34,7 +41,6 @@ Value socket_register_receive_callback(const std::vector<Value>& args) {
         call_lamina_callback(cbid, s->id, data);
     };
     callback_table[cbid] = [cbid](uint64_t client_id, const std::string& data) {
-        // 这里可以扩展为调用 Lamina 虚拟机的回调，不过那是很久之后的事了，*笑
     };
     return Value(0);
 }
@@ -108,11 +114,7 @@ void Socket::alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
         return Value(0);
     }
     // 全局变量定义
-    uv_loop_t* loop = nullptr;
-    std::atomic<uint64_t> next_client_id{1};
-    int64_t on_receive_callback_id = 0;
-    std::unordered_map<uint64_t, Socket*> clients;
-    int64_t server_socket_id = 0; // 记录服务器socket ID
+
 
     // 错误信息映射
     std::unordered_map<int, std::string> error_messages = {
@@ -124,8 +126,6 @@ void Socket::alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
         {UV_ETIMEDOUT, "Operation timed out"}
     };
 
-// 全局回调表
-std::unordered_map<int64_t, std::function<void(uint64_t, const std::string&)>> callback_table;
 
 void call_lamina_callback(int64_t cbid, uint64_t client_id, const std::string& data) {
     auto it = callback_table.find(cbid);
