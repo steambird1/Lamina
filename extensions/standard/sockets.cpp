@@ -17,6 +17,91 @@
 #include <system_error>
 
 namespace lamina::net {
+// 链接修复：补充未定义函数的空实现
+Value socket_register_receive_callback(const std::vector<Value>& args) {
+    // args[0]: socket_id, args[1]: callback_id
+    if (args.size() < 2) {
+        L_ERR("socket_register_receive_callback requires 2 arguments (socket_id, callback_id)");
+    }
+    uint64_t id = static_cast<uint64_t>(args[0].as_number());
+    int64_t cbid = static_cast<int64_t>(args[1].as_number());
+    auto it = clients.find(id);
+    if (it == clients.end()) {
+        L_ERR("Invalid socket ID");
+    }
+    Socket* socket = it->second;
+    socket->on_receive = [cbid](Socket* s, const std::string& data) {
+        call_lamina_callback(cbid, s->id, data);
+    };
+    callback_table[cbid] = [cbid](uint64_t client_id, const std::string& data) {
+        // 这里可以扩展为调用 Lamina 虚拟机的回调，不过那是很久之后的事了，*笑
+    };
+    return Value(0);
+}
+Value socket_bind(const std::vector<Value>& args) {
+    // args[0]: socket_id, args[1]: address, args[2]: port
+    if (args.size() < 3) {
+        L_ERR("socket_bind requires 3 arguments (socket_id, address, port)");
+    }
+    uint64_t id = static_cast<uint64_t>(args[0].as_number());
+    std::string address = args[1].to_string();
+    int port = static_cast<int>(args[2].as_number());
+    auto it = clients.find(id);
+    if (it == clients.end()) {
+        L_ERR("Invalid socket ID");
+    }
+    Socket* socket = it->second;
+    sockaddr_in addr;
+    uv_ip4_addr(address.c_str(), port, &addr);
+    int r = uv_tcp_bind(&socket->tcp_handle, reinterpret_cast<const sockaddr*>(&addr), 0);
+    if (r < 0) {
+        socket->set_error(r, uv_strerror(r));
+        return Value(-1);
+    }
+    return Value(0);
+}
+Value socket_listen(const std::vector<Value>& args) {
+    // args[0]: socket_id, args[1]: backlog
+    if (args.size() < 2) {
+        L_ERR("socket_listen requires 2 arguments (socket_id, backlog)");
+    }
+    uint64_t id = static_cast<uint64_t>(args[0].as_number());
+    int backlog = static_cast<int>(args[1].as_number());
+    auto it = clients.find(id);
+    if (it == clients.end()) {
+        L_ERR("Invalid socket ID");
+    }
+    Socket* socket = it->second;
+    int r = uv_listen(reinterpret_cast<uv_stream_t*>(&socket->tcp_handle), backlog, [](uv_stream_t* server, int status) {
+        create_socket(server, status);
+    });
+    if (r < 0) {
+        socket->set_error(r, uv_strerror(r));
+        return Value(-1);
+    }
+    socket->state = CONNECTED;
+    return Value(0);
+}
+Value socket_accept(const std::vector<Value>& args) {
+    // args[0]: server_socket_id
+    if (args.size() < 1) {
+        L_ERR("socket_accept requires 1 argument (server_socket_id)");
+    }
+    uint64_t id = static_cast<uint64_t>(args[0].as_number());
+    auto it = clients.find(id);
+    if (it == clients.end()) {
+        L_ERR("Invalid socket ID");
+    }
+    Socket* server = it->second;
+    // 这里只能异步等待 create_socket 回调，直接返回 0
+    return Value(0);
+}
+void Socket::alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
+    // libuv 推荐的分配方式
+    buf->base = static_cast<char*>(malloc(suggested_size));
+    buf->len = static_cast<unsigned int>(suggested_size);
+}
+    
     Value runnable(const std::vector<Value>& args) {
         loop = uv_default_loop();
         uv_run(loop, UV_RUN_DEFAULT);
@@ -24,10 +109,10 @@ namespace lamina::net {
     }
     // 全局变量定义
     uv_loop_t* loop = nullptr;
-    uv_tcp_t server;
     std::atomic<uint64_t> next_client_id{1};
     int64_t on_receive_callback_id = 0;
     std::unordered_map<uint64_t, Socket*> clients;
+    int64_t server_socket_id = 0; // 记录服务器socket ID
 
     // 错误信息映射
     std::unordered_map<int, std::string> error_messages = {
@@ -83,32 +168,47 @@ void call_lamina_callback(int64_t cbid, uint64_t client_id, const std::string& d
 
         if (protocol == 4 && type == 0) {
             loop = uv_default_loop();
-            uv_tcp_init(loop, &server);
-            uv_tcp_nodelay(&server, 1);
+
+            uint64_t id = next_client_id++;
+            Socket* socket = new Socket(id, TCP);
+
+            uv_tcp_init(loop, &socket->tcp_handle);
+            uv_tcp_nodelay(&socket->tcp_handle, 1);
 
             sockaddr_in addr{};
             uv_ip4_addr(address.c_str(), port, &addr);
-            uv_tcp_bind(&server, reinterpret_cast<const sockaddr*>(&addr), 0);
 
-            int r = uv_listen(reinterpret_cast<uv_stream_t*>(&server), DEFAULT_BACKLOG,
-                              [](uv_stream_t* server, int status) {
-                                  create_socket(server, status);
-                              });
-
-            if (r) {
-                L_ERR("Listen error: " + std::string(uv_strerror(r)));
+            int bind_result = uv_tcp_bind(&socket->tcp_handle, reinterpret_cast<const sockaddr*>(&addr), 0);
+            if (bind_result < 0) {
+                delete socket;
+                L_ERR("Bind error: " + std::string(uv_strerror(bind_result)));
             }
 
-            std::cout << "Listening on " << address << ":" << port << std::endl;
-            uv_run(loop, UV_RUN_DEFAULT);
-            return Value(0);
+            int listen_result = uv_listen(reinterpret_cast<uv_stream_t*>(&socket->tcp_handle), DEFAULT_BACKLOG,
+                                     [](uv_stream_t* server, int status) {
+                                         create_socket(server, status);
+                                     });
+            if (listen_result < 0) {
+                delete socket;
+                L_ERR("Listen error: " + std::string(uv_strerror(listen_result)));
+            }
+
+            socket->state = CONNECTED;
+            clients[id] = socket;
+            server_socket_id = id;
+
+            std::cout << "Server listening on " << address << ":" << port << std::endl;
+
+            // uv_run放到外层或单独启动，避免阻塞这里
+            // uv_run(loop, UV_RUN_DEFAULT);
+
+            return Value(static_cast<double>(id));
         } else {
             L_ERR("Only IPv4 + TCP is supported currently.");
         }
 
         return Value(-1);
     }
-
     Value socket_send(const std::vector<Value>& args) {
         if (args.size() < 2) {
             L_ERR("socket_send requires 2 arguments (socket_id, data)");
@@ -271,96 +371,99 @@ void call_lamina_callback(int64_t cbid, uint64_t client_id, const std::string& d
         clients.erase(it);
         return Value(0);
     }
-
-    Value socket_bind(const std::vector<Value>& args) {
-        if (args.size() < 2) {
-            L_ERR("socket_bind requires 2 arguments (address, port)");
+    static void udp_read_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf,
+                        const struct sockaddr* addr, unsigned flags) {
+        Socket* socket = static_cast<Socket*>(handle->data);
+        if (nread > 0) {
+            socket->push_data(buf->base, nread);
+            if (socket->on_receive) {
+                socket->on_receive(socket, std::string(buf->base, nread));
+            }
+        } else if (nread < 0) {
+            socket->set_error(nread, uv_strerror(nread));
+            uv_close((uv_handle_t*)handle, [](uv_handle_t* h){
+                delete static_cast<Socket*>(h->data);
+            });
+            socket->state = CLOSED;
         }
+        delete[] buf->base;
+    }
 
+    Value socket_udp_create(const std::vector<Value>& args) {
+        if (args.size() < 2) {
+            L_ERR("socket_udp_create requires 2 arguments (address, port)");
+        }
         std::string address = args[0].to_string();
         int port = static_cast<int>(args[1].as_number());
+
+        uint64_t id = next_client_id++;
+        Socket* socket = new Socket(id, UDP);
+        uv_udp_init(loop, &socket->udp_handle);
 
         sockaddr_in addr;
         uv_ip4_addr(address.c_str(), port, &addr);
 
-        int result = uv_tcp_bind(&server, reinterpret_cast<const sockaddr*>(&addr), 0);
-        if (result < 0) {
-            L_ERR("Bind error: " + std::string(uv_strerror(result)));
+        int r = uv_udp_bind(&socket->udp_handle, reinterpret_cast<const sockaddr*>(&addr), UV_UDP_REUSEADDR);
+        if (r < 0) {
+            delete socket;
+            L_ERR("UDP bind failed: " + std::string(uv_strerror(r)));
         }
 
-        return Value(0);
+        uv_udp_recv_start(&socket->udp_handle, Socket::alloc_cb, udp_read_cb);
+
+
+        socket->state = CONNECTED;
+        clients[id] = socket;
+
+        return Value(static_cast<double>(id));
     }
 
-    Value socket_listen(const std::vector<Value>& args) {
-        if (args.size() < 1 || !args[0].is_numeric()) {
-            L_ERR("socket_listen requires 1 argument (backlog)");
-        }
-
-        int backlog = static_cast<int>(args[0].as_number());
-
-        int result = uv_listen(reinterpret_cast<uv_stream_t*>(&server), backlog, [](uv_stream_t* server, int status) {
-        create_socket(server, status);
-    });
-
-    if (result < 0) {
-        L_ERR("Listen error: " + std::string(uv_strerror(result)));
-    }
-
-    return Value(0);
-}
-
-    Value socket_accept(const std::vector<Value>& args) {
-        if (args.size() < 1 || !args[0].is_numeric()) {
-            L_ERR("socket_accept requires 1 argument (socket_id)");
+    Value socket_udp_send(const std::vector<Value>& args) {
+        if (args.size() < 3) {
+            L_ERR("socket_udp_send requires 3 arguments (socket_id, address, data)");
         }
 
         uint64_t id = static_cast<uint64_t>(args[0].as_number());
+        std::string address = args[1].to_string();
+        std::string data = args[2].to_string();
+
         auto it = clients.find(id);
         if (it == clients.end()) {
             L_ERR("Invalid socket ID");
         }
 
         Socket* socket = it->second;
-        uv_read_start(reinterpret_cast<uv_stream_t*>(&socket->tcp_handle), Socket::alloc_cb, Socket::read_cb);
+        if (socket->type != UDP) {
+            L_ERR("Socket is not UDP");
+        }
 
-        return Value(0);
-    }
+        sockaddr_in dest;
+        uv_ip4_addr(address.c_str(), 0, &dest); // 端口0表示不指定端口，或者需要另外传端口
 
-    // 供脚本注册回调接口，传入回调id
-    Value socket_register_receive_callback(const std::vector<Value>& args) {
-        if (args.size() < 2) {
-            L_ERR("socket_register_receive_callback requires 2 arguments (socket_id, callback_id)");
-        }
-        if (!args[0].is_numeric() || !args[1].is_numeric()) {
-            L_ERR("Both socket_id and callback_id must be numeric");
-        }
-        
-        uint64_t socket_id = static_cast<uint64_t>(args[0].as_number());
-        int64_t callback_id = static_cast<int64_t>(args[1].as_number());
-        
-        auto it = clients.find(socket_id);
-        if (it == clients.end()) {
-            L_ERR("Invalid socket ID");
-        }
-        
-        Socket* socket = it->second;
-        socket->on_receive = [callback_id](Socket* s, const std::string& data) {
-            auto cb_it = callback_table.find(callback_id);
-            if (cb_it != callback_table.end()) {
-                cb_it->second(s->id, data);
+        uv_buf_t buf = uv_buf_init(const_cast<char*>(data.c_str()), (unsigned int)data.size());
+
+        uv_udp_send_t* send_req = new uv_udp_send_t;
+        send_req->data = socket;
+
+        int r = uv_udp_send(send_req, &socket->udp_handle, &buf, 1, reinterpret_cast<const sockaddr*>(&dest),
+        [](uv_udp_send_t* req, int status) {
+            Socket* s = static_cast<Socket*>(req->data);
+            if (status < 0) {
+                s->set_error(status, uv_strerror(status));
             }
-        };
-        
-        std::cout << "Registered receive callback for socket " << socket_id 
-                  << " with callback id = " << callback_id << std::endl;
+            delete req;
+        });
+
+        if (r < 0) {
+            socket->set_error(r, uv_strerror(r));
+            delete send_req;
+            return Value(-1);
+        }
+
         return Value(0);
     }
-    void lamina::net::Socket::alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
-    buf->base = new char[suggested_size];
-    buf->len = suggested_size;
-}
 
-void lamina::net::Socket::read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
+    void lamina::net::Socket::read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
     Socket* socket = static_cast<Socket*>(stream->data);
     if (nread > 0) {
         socket->incoming_data.push(std::string(buf->base, nread));
@@ -381,9 +484,6 @@ void lamina::net::Socket::read_cb(uv_stream_t* stream, ssize_t nread, const uv_b
         };
         interpreter.builtin_functions["socket_connect"] = [](const std::vector<Value>& args) -> Value {
             return socket_connect(args);
-        };
-        interpreter.builtin_functions["socket_bind"] = [](const std::vector<Value>& args) -> Value {
-            return socket_bind(args);
         };
         interpreter.builtin_functions["socket_listen"] = [](const std::vector<Value>& args) -> Value {
             return socket_listen(args);

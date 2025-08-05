@@ -9,7 +9,9 @@ struct ASTNode {
 };
 
 // 表达式基类
-struct Expression : public ASTNode {};
+struct Expression : public ASTNode {
+    std::string source; // 保存表达式源码
+};
 
 // 语句基类
 struct Statement : public ASTNode {};

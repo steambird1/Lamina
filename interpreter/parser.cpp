@@ -16,8 +16,16 @@ std::unique_ptr<Expression> Parser::parse_expression(const std::vector<Token>& t
         std::cerr << "Error: Attempting to parse expression at end of input" << std::endl;
         return nullptr;
     }
-    
-    return parse_comparison(tokens, i);
+
+    size_t expr_start = i;
+    auto expr = parse_comparison(tokens, i);
+    size_t expr_end = i;
+    if (expr) {
+        std::string src;
+        for (size_t j = expr_start; j < expr_end; ++j) src += tokens[j].text;
+        expr->source = src;
+    }
+    return expr;
 }
 
 std::unique_ptr<Expression> Parser::parse_comparison(const std::vector<Token>& tokens, size_t& i) {

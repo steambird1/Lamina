@@ -35,7 +35,9 @@ namespace lamina::net {
         CLOSED = 0,
         LISTENING = 1,
         CONNECTED = 2,
-        ERR_STATE = 3
+        ERR_STATE = 3,
+        DISCONNECTED = 4,
+        CONNECTING = 5,
     };
     struct SocketError {
         int code;
@@ -70,6 +72,9 @@ namespace lamina::net {
         void queue_data(const std::string& data) {
             std::lock_guard<std::mutex> lock(recv_mutex);
             recv_queue.push(data);
+        }
+        void push_data(const char* data, size_t len) {
+            queue_data(std::string(data, len));
         }
         std::string get_queued_data() {
             std::lock_guard<std::mutex> lock(recv_mutex);
