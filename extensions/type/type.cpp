@@ -1,26 +1,26 @@
 #include "type.hpp"
 
 namespace lamina::type {
-    state State;
+    State state_instance;
     // 开启检查
     Value enable(const std::vector<Value> &args) {
         if (!args[0].is_int()) {
             L_ERR("mode declare must be int!");
         }
-        State.mode = 0;
+        state_instance.mode = 0;
 
         int mode = args[0].as_number();
         if (mode == 1) {
-            State.mode = 1;
+            state_instance.mode = 1;
         } else {
-            State.mode = 0;
+            state_instance.mode = 0;
         }
         return Value(nullptr);
     }
 
     // 判断是否允许使用Maybe
     bool is_allow_maybe() {
-        if (State.mode == 1) {
+        if (state_instance.mode == 1) {
             return true;
         } else {
             return false;
