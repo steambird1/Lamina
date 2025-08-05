@@ -47,7 +47,7 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
     if (!m_handle) return entryFunctions;
 
 #ifdef __ANDROID__
-    // Android 专用实现
+    // Android跳过
     void* sym = dlsym(m_handle, "_entry");
     if (sym) {
         auto entryFunc = reinterpret_cast<void (*)(Interpreter&)>(sym);
@@ -55,7 +55,7 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
             entryFunc(interpreter);
         });
     }    
-#else __linux__
+#elif __linux__
     if (!m_handle) {
         return entryFunctions;
     }
