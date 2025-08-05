@@ -2,41 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 project(Lamina)
 
 set(CMAKE_CXX_STANDARD 20)
-
-if(NOT LIBUV_ROOT)
-    find_path(LIBUV_INCLUDE_DIR NAMES uv.h)
-    find_library(LIBUV_LIBRARY NAMES uv uv1)
-
-    if(NOT LIBUV_INCLUDE_DIR OR NOT LIBUV_LIBRARY)
-        set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv CACHE PATH "Path to libuv library")
-        message(STATUS "Using default libuv path: ${LIBUV_ROOT}")
-    endif()
-else()
-    message(STATUS "Using user-specified libuv path: ${LIBUV_ROOT}")
-endif()
-
-find_path(LIBUV_INCLUDE_DIR
-        NAMES uv.h
-        PATHS ${LIBUV_ROOT}/include
-        NO_DEFAULT_PATH
-)
-
-find_library(LIBUV_LIBRARY
-        NAMES uv uv1
-        PATHS ${LIBUV_ROOT}/lib
-        NO_DEFAULT_PATH
-)
-
-if(NOT LIBUV_INCLUDE_DIR OR NOT LIBUV_LIBRARY)
-    message(FATAL_ERROR "libuv not found! Please specify LIBUV_ROOT using -DLIBUV_ROOT=/path/to/libuv")
-endif()
-
-message(STATUS "Found libuv headers: ${LIBUV_INCLUDE_DIR}")
-message(STATUS "Found libuv library: ${LIBUV_LIBRARY}")
-
-include_directories(${LIBUV_INCLUDE_DIR})
-link_directories(${LIBUV_ROOT}/lib)
-
+set(LIBUV_LIBRARY uv_a)
 # 设置libuv子模块路径
 set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
 
@@ -133,7 +99,6 @@ if(UNIX)
 else()
     target_link_libraries(Lamina PRIVATE
         lamina_core
-        dl
         uv
     )
 endif()

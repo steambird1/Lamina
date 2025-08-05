@@ -26,6 +26,7 @@ constexpr int DEFAULT_BACKLOG = 128;
 #include <queue>
 #include <mutex>
 namespace lamina::net {
+    
     enum SocketType {
         TCP = 0,
         UDP = 1
@@ -41,6 +42,7 @@ namespace lamina::net {
         std::string message;
     };
     struct Socket {
+        std::queue<std::string> incoming_data;
         uint64_t id;
         SocketType type;
         SocketState state;
