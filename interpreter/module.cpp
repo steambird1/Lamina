@@ -44,7 +44,18 @@ bool ModuleLoader::isLoaded() const {
 
 std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
     std::vector<EntryFunction> entryFunctions;
-#ifdef __linux__
+    if (!m_handle) return entryFunctions;
+
+#ifdef __ANDROID__
+    // Android跳过
+    void* sym = dlsym(m_handle, "_entry");
+    if (sym) {
+        auto entryFunc = reinterpret_cast<void (*)(Interpreter&)>(sym);
+        entryFunctions.push_back([entryFunc](Interpreter& interpreter) {
+            entryFunc(interpreter);
+        });
+    }    
+#elif __linux__
     if (!m_handle) {
         return entryFunctions;
     }
