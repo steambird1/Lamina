@@ -1,10 +1,19 @@
 /*
      @Dev Ange1PlsGreet
 */
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "module.hpp"
 
 ModuleLoader::ModuleLoader(const std::string& soPath) {
-#ifdef  __linux__
+#ifdef _WIN32
+    m_handle = (void*)LoadLibraryA(soPath.c_str());
+    if (!m_handle) {
+        std::cerr << "Failed to load library: " << soPath << std::endl;
+    }
+#elif  __linux__
     m_handle = dlopen(soPath.c_str(), RTLD_LAZY);
     if (!m_handle) {
         std::cerr << "Failed to load library: " << dlerror() << std::endl;
@@ -13,7 +22,12 @@ ModuleLoader::ModuleLoader(const std::string& soPath) {
 }
 
 ModuleLoader::~ModuleLoader() {
-#ifdef  __linux__
+#ifdef _WIN32
+    if (m_handle) {
+        FreeLibrary((HMODULE)m_handle);
+        m_handle = nullptr;
+    }
+#elif  __linux__
     if (m_handle) {
         dlclose(m_handle);
         m_handle = nullptr;
@@ -23,7 +37,16 @@ ModuleLoader::~ModuleLoader() {
 
 void* ModuleLoader::findSymbol(const std::string& symbolName) {
     void* symbol = nullptr;
-#ifdef __linux__
+#ifdef _WIN32
+    if (!m_handle) {
+        return nullptr;
+    }
+    symbol = (void*)GetProcAddress((HMODULE)m_handle, symbolName.c_str());
+    if (!symbol) {
+        std::cerr << "Error looking up symbol '" << symbolName << "' in DLL." << std::endl;
+        return nullptr;
+    }
+#elif __linux__
     if (!m_handle) {
         return nullptr;
     }
@@ -46,7 +69,16 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
     std::vector<EntryFunction> entryFunctions;
     if (!m_handle) return entryFunctions;
 
-#ifdef __ANDROID__
+#ifdef _WIN32
+    // 只查找 _entry 符号
+    void* sym = findSymbol("_entry");
+    if (sym) {
+        auto entryFunc = reinterpret_cast<void (*)(Interpreter&)>(sym);
+        entryFunctions.push_back([entryFunc](Interpreter& interpreter) {
+            entryFunc(interpreter);
+        });
+    }
+#elif __ANDROID__
     // Android跳过
     void* sym = dlsym(m_handle, "_entry");
     if (sym) {

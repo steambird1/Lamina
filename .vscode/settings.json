@@ -84,7 +84,9 @@
         "queue": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "condition_variable": "cpp",
+        "semaphore": "cpp"
     },
     "markdown.validate.enabled": true
 }

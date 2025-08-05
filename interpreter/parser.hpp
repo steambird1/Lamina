@@ -3,7 +3,17 @@
 #include "ast.hpp"
 #include <vector>
 
-class Parser {
+#ifdef _WIN32
+#  ifdef LAMINA_CORE_EXPORTS
+#    define LAMINA_API __declspec(dllexport)
+#  else
+#    define LAMINA_API __declspec(dllimport)
+#  endif
+#else
+#  define LAMINA_API
+#endif
+
+class LAMINA_API Parser {
 public:
     static std::unique_ptr<ASTNode> parse(const std::vector<Token>& tokens);
     static std::unique_ptr<Expression> parse_expression(const std::vector<Token>& tokens, size_t& i);

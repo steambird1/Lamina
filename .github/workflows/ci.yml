@@ -11,51 +11,63 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.16.3'
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential g++
+          sudo apt-get install -y build-essential cmake ninja-build
 
-      - name: Compile Lamina
-        working-directory: interpreter
+      - name: Initialize Git submodules
         run: |
-          echo "Compiling Lamina interpreter..."
-          g++ -std=c++17 -Wall -Wextra -O2 \
-            main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp \
-            -o lamina
-          echo " Compilation successful!"
+          git submodule update --init --recursive
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" .
+
+      - name: Build Lamina
+        run: |
+          echo "Building Lamina interpreter with CMake..."
+          cmake --build build --parallel
+          echo "✅ Build successful!"
 
       - name: Basic functionality test
-        working-directory: interpreter
+        working-directory: build
         run: |
           echo "Running basic tests..."
           
           # Test 1: Hello World
           echo 'print("Hello, Lamina!");' > test1.lm
-          ./lamina test1.lm
+          ./Lamina test1.lm
           
           # Test 2: Basic arithmetic
           echo 'var x = 2 + 3 * 4;' > test2.lm
           echo 'print("2 + 3 * 4 =", x);' >> test2.lm
-          ./lamina test2.lm
+          ./Lamina test2.lm
           
           # Test 3: Precise fractions
           echo 'var fraction = 16 / 9;' > test3.lm
           echo 'print("16/9 =", fraction);' >> test3.lm
-          ./lamina test3.lm
+          ./Lamina test3.lm
           
           # Test 4: Functions
           echo 'func add(a, b) { return a + b; }' > test4.lm
           echo 'var result = add(10, 20);' >> test4.lm
           echo 'print("add(10, 20) =", result);' >> test4.lm
-          ./lamina test4.lm
+          ./Lamina test4.lm
           
           # Test 5: Include statement syntax (should show error for old syntax)
           echo 'include test_module;' > test5.lm
           echo 'print("This should not execute");' >> test5.lm
-          if ./lamina test5.lm 2>&1 | grep -q "Include statement requires a quoted string"; then
-            echo " Include syntax enforcement working correctly"
+          if ./Lamina test5.lm 2>&1 | grep -q "Include statement requires a quoted string"; then
+            echo "✅ Include syntax enforcement working correctly"
           else
             echo "❌ Include syntax enforcement failed"
             exit 1
@@ -64,25 +76,25 @@ jobs:
           # Test 6: Correct include syntax (should parse correctly)
           echo 'print("Testing correct include syntax");' > test6.lm
           echo 'include "nonexistent";' >> test6.lm
-          if ./lamina test6.lm 2>&1 | grep -q "Cannot load module"; then
-            echo " Correct include syntax parsing working"
+          if ./Lamina test6.lm 2>&1 | grep -q "Cannot load module"; then
+            echo "✅ Correct include syntax parsing working"
           else
             echo "❌ Correct include syntax parsing failed"
             exit 1
           fi
           
-          echo " All basic tests passed!"
+          echo "✅ All basic tests passed!"
 
       - name: Test example programs
-        working-directory: interpreter
+        working-directory: build
         run: |
           echo "Testing example programs..."
           
-          if [ -d "examples" ]; then
-            for example in examples/*.lm; do
+          if [ -d "../interpreter/examples" ]; then
+            for example in ../interpreter/examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $(basename "$example")..."
-                ./lamina "$example" || echo "⚠️  Warning: $example execution failed"
+                ./Lamina "$example" || echo "⚠️  Warning: $example execution failed"
               fi
             done
           else
@@ -90,7 +102,7 @@ jobs:
           fi
 
       - name: Check for memory leaks (with valgrind)
-        working-directory: interpreter
+        working-directory: build
         run: |
           echo "Installing valgrind for memory leak detection..."
           sudo apt-get install -y valgrind
@@ -98,8 +110,8 @@ jobs:
           echo "Running memory leak test..."
           echo 'var x = 42; print("x =", x);' > memtest.lm
           
-          if valgrind --leak-check=full --error-exitcode=1 ./lamina memtest.lm 2>&1; then
-            echo " No memory leaks detected"
+          if valgrind --leak-check=full --error-exitcode=1 ./Lamina memtest.lm 2>&1; then
+            echo "✅ No memory leaks detected"
           else
             echo "⚠️  Memory leaks detected, but continuing..."
           fi

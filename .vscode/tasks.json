@@ -2,6 +2,94 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "cmake-configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "build",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "."
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "detail": "配置 CMake 项目"
+        },
+        {
+            "label": "cmake-build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--config", "Debug",
+                "--parallel"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "cmake-configure",
+            "detail": "使用 CMake 构建项目"
+        },
+        {
+            "label": "cmake-build-release",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--config", "Release",
+                "--parallel"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "cmake-configure-release",
+            "detail": "使用 CMake 构建发布版本"
+        },
+        {
+            "label": "cmake-configure-release",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "build",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "."
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "detail": "配置 CMake 项目 (Release)"
+        },
+        {
+            "label": "cmake-clean",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "build",
+                "--target", "clean"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "detail": "清理 CMake 构建"
+        },
+        {
             "label": "build-lamina",
             "type": "shell",
             "command": "g++ main.cpp lexer.cpp parser.cpp interpreter.cpp -o lamina.exe",
@@ -11,7 +99,8 @@
             ],
             "options": {
                 "cwd": "${workspaceFolder}/interpreter"
-            }
+            },
+            "detail": "使用传统方式构建 (已弃用，建议使用 CMake)"
         },
         {
             "type": "cppbuild",
@@ -30,10 +119,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "detail": "调试器生成的任务。"
         }
     ]

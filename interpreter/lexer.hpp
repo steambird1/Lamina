@@ -2,6 +2,16 @@
 #include <string>
 #include <vector>
 
+#ifdef _WIN32
+#  ifdef LAMINA_CORE_EXPORTS
+#    define LAMINA_API __declspec(dllexport)
+#  else
+#    define LAMINA_API __declspec(dllimport)
+#  endif
+#else
+#  define LAMINA_API
+#endif
+
 enum class TokenType {
     Var,
     Func,      
@@ -56,7 +66,7 @@ struct Token {
         : type(t), text(txt), line(l), column(c) {}
 };
 
-class Lexer {
+class LAMINA_API Lexer {
 public:
     static std::vector<Token> tokenize(const std::string& src);
 };

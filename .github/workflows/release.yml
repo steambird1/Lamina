@@ -18,154 +18,104 @@ jobs:
         include:
           - os: ubuntu-latest
             name: linux
-            executable: lamina
+            executable: Lamina
             archive: tar.gz
+            cmake_generator: "Unix Makefiles"
           - os: windows-latest
             name: windows
-            executable: lamina.exe
+            executable: Lamina.exe
             archive: zip
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_arch: "-A x64"
           - os: macos-latest
             name: macos
-            executable: lamina
+            executable: Lamina
             archive: tar.gz
+            cmake_generator: "Unix Makefiles"
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.16.3'
 
     - name: Setup build environment (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential
-
-    - name: Setup build environment (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        install: mingw-w64-x86_64-gcc
-        path-type: inherit
+        sudo apt-get install -y build-essential cmake ninja-build
 
     - name: Setup build environment (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        # Xcode command line tools should be available
-        xcode-select --install || true
+        brew install cmake ninja
 
-    - name: Build (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      working-directory: interpreter
-      shell: bash
+    - name: Setup MSVC (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Initialize Git submodules
       run: |
-        echo "Building Lamina for ${{ matrix.name }}..."
-        
-        # Use different compiler flags for different platforms
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          # macOS doesn't support -static-libgcc
-          g++ -std=c++17 -O3 -DNDEBUG \
-            main.cpp lexer.cpp parser.cpp interpreter.cpp \
-            -o ${{ matrix.executable }}
-        else
-          # Linux supports static linking
-          g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
-            main.cpp lexer.cpp parser.cpp interpreter.cpp \
-            -o ${{ matrix.executable }}
-        fi
-          
-        # Verify the build
-        ./${{ matrix.executable }} --help || echo "No help option available"
-        
+        git submodule update --init --recursive
+
+    - name: Configure CMake
+      run: |
+        cmake -B build ${{ matrix.cmake_arch }} \
+          -DCMAKE_BUILD_TYPE=Release \
+          -G "${{ matrix.cmake_generator }}" \
+          .
+
+    - name: Build with CMake
+      run: |
+        echo "Building Lamina for ${{ matrix.name }} using CMake..."
+        cmake --build build --config Release --parallel
         echo "Build completed successfully!"
-
-    - name: Build (Windows)
-      if: matrix.os == 'windows-latest'
-      working-directory: interpreter
+        
+    - name: Prepare release package
       shell: bash
       run: |
-        # Use MSYS2 environment for MinGW
-        export PATH="/c/msys64/mingw64/bin:$PATH"
+        mkdir -p release-temp
         
-        echo "Building Lamina for ${{ matrix.name }}..."
-        
-        # Windows with MSYS2 supports static linking
-        g++ -std=c++17 -O3 -DNDEBUG -static-libgcc -static-libstdc++ \
-          main.cpp lexer.cpp parser.cpp interpreter.cpp \
-          -o ${{ matrix.executable }}
-          
-        # Verify the build
-        if [ -f "${{ matrix.executable }}" ]; then
-            echo "Build completed successfully!"
+        # Copy executable from build directory
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cp build/Release/${{ matrix.executable }} release-temp/
+          # Copy DLLs
+          cp build/Release/*.dll release-temp/ 2>/dev/null || echo "No DLLs to copy"
         else
-            echo "Build failed - executable not found"
-            exit 1
+          cp build/${{ matrix.executable }} release-temp/
+          # Copy shared libraries
+          cp build/*.so release-temp/ 2>/dev/null || echo "No .so files to copy"
+          cp build/*.dylib release-temp/ 2>/dev/null || echo "No .dylib files to copy"
         fi
-
-    - name: Prepare release package (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      working-directory: interpreter
-      shell: bash
-      run: |
-        mkdir -p ../release-temp
-        cp ${{ matrix.executable }} ../release-temp/
         
         # Copy examples if they exist
-        if [ -d "examples" ]; then
-          cp -r examples ../release-temp/
+        if [ -d "interpreter/examples" ]; then
+          cp -r interpreter/examples release-temp/
         fi
         
         # Copy documentation
-        cp ../README.md ../release-temp/
-        cp ../LICENSE ../release-temp/
+        cp README.md release-temp/ 2>/dev/null || echo "README.md not found"
+        cp LICENSE release-temp/ 2>/dev/null || echo "LICENSE not found"
         
         # Create version info
-        echo "Lamina Interpreter" > ../release-temp/VERSION.txt
-        echo "Build date: $(date)" >> ../release-temp/VERSION.txt
-        echo "Platform: ${{ matrix.name }}" >> ../release-temp/VERSION.txt
-        echo "Compiler: g++" >> ../release-temp/VERSION.txt
+        echo "Lamina Interpreter" > release-temp/VERSION.txt
+        echo "Build date: $(date)" >> release-temp/VERSION.txt
+        echo "Platform: ${{ matrix.name }}" >> release-temp/VERSION.txt
+        echo "Build system: CMake" >> release-temp/VERSION.txt
         
         if [ "${{ github.ref_type }}" = "tag" ]; then
-          echo "Version: ${{ github.ref_name }}" >> ../release-temp/VERSION.txt
+          echo "Version: ${{ github.ref_name }}" >> release-temp/VERSION.txt
         else
-          echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
+          echo "Version: ${{ github.sha }}" >> release-temp/VERSION.txt
         fi
-
-    - name: Prepare release package (Windows)
-      if: matrix.os == 'windows-latest'
-      working-directory: interpreter
-      shell: bash
-      run: |
-        # Use MSYS2 environment for MinGW
-        export PATH="/c/msys64/mingw64/bin:$PATH"
-        
-        mkdir -p ../release-temp
-        cp ${{ matrix.executable }} ../release-temp/
-        
-        # Copy examples if they exist
-        if [ -d "examples" ]; then
-          cp -r examples ../release-temp/
-        fi
-        
-        # Copy documentation
-        cp ../README.md ../release-temp/ 2>/dev/null || echo "README.md not found"
-        cp ../LICENSE ../release-temp/ 2>/dev/null || echo "LICENSE not found"
-        
-        # Create version info
-        echo "Lamina Interpreter" > ../release-temp/VERSION.txt
-        echo "Build date: $(date)" >> ../release-temp/VERSION.txt
-        echo "Platform: ${{ matrix.name }}" >> ../release-temp/VERSION.txt
-        echo "Compiler: g++" >> ../release-temp/VERSION.txt
-        
-        if [ "${{ github.ref_type }}" = "tag" ]; then
-          echo "Version: ${{ github.ref_name }}" >> ../release-temp/VERSION.txt
-        else
-          echo "Version: ${{ github.sha }}" >> ../release-temp/VERSION.txt
-        fi
-        
         # List contents for debugging
         echo "Release package contents:"
-        ls -la ../release-temp/
+        ls -la release-temp/
 
     - name: Create archive (Linux/macOS)
       if: matrix.archive == 'tar.gz'
@@ -234,7 +184,7 @@ jobs:
           
           ###  新版本发布
           
-          这是 Lamina 解释器的 {0} 版本。
+          这是 Lamina 解释器的 {0} 版本。使用 CMake 构建系统编译。
           
           ###  下载说明
           
@@ -248,11 +198,17 @@ jobs:
           2. 运行解释器:
              ```bash
              # 交互模式
-             ./lamina
+             ./Lamina
              
              # 执行脚本
-             ./lamina script.lm
+             ./Lamina script.lm
              ```
+          
+          ###  系统要求
+          
+          - **Linux**: glibc 2.17+ (大多数现代发行版)
+          - **Windows**: Windows 10+ (包含所需的 Visual C++ 运行时)
+          - **macOS**: macOS 10.15+ (Catalina)
           ', github.ref_name, github.ref_name) }}
         draft: false
         prerelease: false

@@ -8,7 +8,17 @@
 #include <cmath>
 #include <iostream>
 
-class Value {
+#ifdef _WIN32
+#  ifdef LAMINA_CORE_EXPORTS
+#    define LAMINA_API __declspec(dllexport)
+#  else
+#    define LAMINA_API __declspec(dllimport)
+#  endif
+#else
+#  define LAMINA_API
+#endif
+
+class LAMINA_API Value {
 public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigInt, Rational, Irrational };
     Type type;
     std::variant<std::nullptr_t, bool, int, double, std::string, std::vector<Value>, std::vector<std::vector<Value>>, ::BigInt, ::Rational, ::Irrational> data;

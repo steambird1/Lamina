@@ -1,6 +1,47 @@
+# Build artifacts
 *.exe
 *.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.pdb
+*.ilk
+*.exp
+
+# Build directories
 /build/
 /out/
+**/build/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/compile_commands.json
+**/Makefile
+**/*.vcxproj*
+**/*.sln
+**/*.dir/
+
+# IDE and editor files
 /.vs/
 /.vscode/
+**/.vscode/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Test files
+test_*.lm
+**/test_*

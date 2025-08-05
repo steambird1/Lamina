@@ -700,6 +700,15 @@ bool Interpreter::load_module(const std::string& module_name) {
         clean_name = clean_name.substr(3);
     }
 
+    // 平台相关动态库扩展名
+    #if defined(_WIN32)
+    const std::string lib_ext = ".dll";
+    #elif defined(__APPLE__)
+    const std::string lib_ext = ".dylib";
+    #else
+    const std::string lib_ext = ".so";
+    #endif
+
     // Handle built-in hidden library "splash"
     if (module_name == "splash") {
         // Output ASCII art logo
@@ -734,34 +743,20 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Build possible file paths
     std::string filename = module_name;
-    if (filename.find(".lm") == std::string::npos &&
-    filename.find(".so") == std::string::npos) {
-        filename += ".lm";
-    }
-
+    bool has_lm = filename.find(".lm") != std::string::npos;
+    bool has_lib = filename.find(lib_ext) != std::string::npos;
+    
     // Try different paths: current directory, examples directory, etc.
     std::vector<std::string> search_paths = {"", "./", "include/", "extensions/"};
-
-    std::ifstream file;
     std::string full_path;
-    for (const auto& path : search_paths) {
-        full_path = path + filename;
-        file.open(full_path);
-        if (file) break;
-    }
 
-    if (!file) {
-        std::string lib_filename = "lib" + clean_name + ".so";
-        is_shared_lib = true;
-        bool found = false;
-
+    // 如果指定了动态库扩展名，直接尝试加载动态库
+    if (has_lib) {
         for (const auto& path : search_paths) {
-            full_path = path + lib_filename;
-            file.open(full_path);
-
-            if (file) {
-                file.close();
-#ifdef __linux__
+            full_path = path + filename;
+            std::ifstream testfile(full_path, std::ios::binary);
+            if (testfile) {
+                testfile.close();
                 ModuleLoader loader(full_path);
                 if (loader.isLoaded()) {
                     std::vector<ModuleLoader::EntryFunction> entryFunctions = loader.findEntryFunctions();
@@ -769,27 +764,66 @@ bool Interpreter::load_module(const std::string& module_name) {
                         entryFunc(*this);
                     }
                     loaded_modules.insert(module_name);
-                    found = true;
-                    break;
+                    return true;
                 } else {
                     std::cerr << "Failed to load shared library: " << full_path << std::endl;
-                    file.clear();
                 }
-#else
-                // Windows TODO!
-                found = true;
-                break;
-#endif
-            } else {
-                file.clear();
             }
         }
+        // 如果指定了.dll/.so/.dylib但没找到，直接返回失败
+        std::cerr << "Error: Cannot load module '" << module_name << "'" << std::endl;
+        return false;
+    }
 
-            if (!found) {
+    // 如果没有指定扩展名，默认添加.lm
+    if (!has_lm && !has_lib) {
+        filename += ".lm";
+    }
+
+    std::ifstream file;
+    for (const auto& path : search_paths) {
+        full_path = path + filename;
+        file.open(full_path);
+        if (file) break;
+    }
+
+    // 如果没找到脚本文件，尝试查找动态库（lib前缀和无前缀，自动适配扩展名）
+    if (!file) {
+        std::vector<std::string> lib_names = {
+            "lib" + clean_name + lib_ext,
+            clean_name + lib_ext
+        };
+        is_shared_lib = true;
+        bool found = false;
+        for (const auto& libfile : lib_names) {
+            for (const auto& path : search_paths) {
+                full_path = path + libfile;
+                std::ifstream testfile(full_path, std::ios::binary);
+                if (testfile) {
+                    testfile.close();
+                    ModuleLoader loader(full_path);
+                    if (loader.isLoaded()) {
+                        std::vector<ModuleLoader::EntryFunction> entryFunctions = loader.findEntryFunctions();
+                        for (auto& entryFunc : entryFunctions) {
+                            entryFunc(*this);
+                        }
+                        loaded_modules.insert(module_name);
+                        found = true;
+                        break;
+                    } else {
+                        std::cerr << "Failed to load shared library: " << full_path << std::endl;
+                    }
+                }
+            }
+            if (found) break;
+        }
+        if (!found) {
             std::cerr << "Error: Cannot load module '" << module_name << "'\n";
             std::cerr << "  Searched in: ";
-            for (const auto& path : search_paths) {
-                std::cerr << path + lib_filename << " ";
+            for (const auto& libfile : lib_names) {
+                for (const auto& path : search_paths) {
+                    std::cerr << path + libfile << " ";
+                }
             }
             std::cerr << "\n";
             return false;

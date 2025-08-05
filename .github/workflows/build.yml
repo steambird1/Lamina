@@ -13,116 +13,94 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        compiler: [g++, clang++]
-        exclude:
-          # Windows doesn't have clang++ by default
-          - os: windows-latest
-            compiler: clang++
+        build_type: [Release, Debug]
         include:
-          # Add MSVC for Windows
+          - os: ubuntu-latest
+            compiler: gcc
+            cmake_generator: "Unix Makefiles"
           - os: windows-latest
             compiler: msvc
+            cmake_generator: "Visual Studio 17 2022"
+            cmake_arch: "-A x64"
+          - os: macos-latest
+            compiler: clang
+            cmake_generator: "Unix Makefiles"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.16.3'
 
       - name: Set up build environment (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential
-          if [ "${{ matrix.compiler }}" = "clang++" ]; then
-            sudo apt-get install -y clang
-          fi
+          sudo apt-get install -y build-essential cmake ninja-build
 
       - name: Set up build environment (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          if [ "${{ matrix.compiler }}" = "clang++" ]; then
-            # clang++ is already available on macOS
-            echo "Using system clang++"
-          else
-            # Install GCC if needed
-            brew install gcc
-          fi
+          brew install cmake ninja
 
       - name: Set up MSVC (Windows)
-        if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
+        if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Set up MinGW (Windows)
-        if: matrix.os == 'windows-latest' && matrix.compiler == 'g++'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: mingw-w64-x86_64-gcc
-
-      - name: Build with GCC/Clang (Unix)
-        if: matrix.os != 'windows-latest' || matrix.compiler == 'g++'
-        working-directory: interpreter
-        shell: bash
+      - name: Initialize Git submodules
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Use MSYS2 environment for MinGW
-            export PATH="/c/msys64/mingw64/bin:$PATH"
-          fi
-          
-          echo "Building with ${{ matrix.compiler }}..."
-          ${{ matrix.compiler }} --version
-          
-          ${{ matrix.compiler }} -std=c++17 -O2 -Wall -Wextra \
-            main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp \
-            -o lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-          
-          echo "Build completed successfully!"
+          git submodule update --init --recursive
 
-      - name: Build with MSVC (Windows)
-        if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
-        working-directory: interpreter
+      - name: Configure CMake
         run: |
-          echo "Building with MSVC..."
-          # 编译命令中添加了module.cpp
-          cl /EHsc /std:c++17 /O2 main.cpp lexer.cpp parser.cpp interpreter.cpp module.cpp /Fe:lamina.exe
-          echo "Build completed successfully!"
+          cmake -B build ${{ matrix.cmake_arch }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -G "${{ matrix.cmake_generator }}" \
+            .
+
+      - name: Build with CMake
+        run: |
+          cmake --build build --config ${{ matrix.build_type }} --parallel
 
       - name: Test basic functionality
-        working-directory: interpreter
+        working-directory: build
         shell: bash
         run: |
           echo "Testing basic functionality..."
           
           # Create a simple test file
+          echo 'print("Hello, Lamina!");' > test.lm
+          echo 'var x = 2 + 3;' >> test.lm
+          echo 'print("2 + 3 =", x);' >> test.lm
+          
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            echo 'print("Hello, Lamina!");' > test.lm
-            echo 'var x = 2 + 3;' >> test.lm
-            echo 'print("2 + 3 =", x);' >> test.lm
-            ./lamina.exe test.lm
+            ./${{ matrix.build_type }}/Lamina.exe test.lm
           else
-            echo 'print("Hello, Lamina!");' > test.lm
-            echo 'var x = 2 + 3;' >> test.lm
-            echo 'print("2 + 3 =", x);' >> test.lm
-            ./lamina test.lm
+            ./Lamina test.lm
           fi
           
           echo "Basic test passed!"
 
       - name: Run example programs
-        working-directory: interpreter
+        working-directory: build
         shell: bash
         run: |
           echo "Running example programs..."
           
           # Test all example files if they exist
-          if [ -d "examples" ]; then
-            for example in examples/*.lm; do
+          if [ -d "../interpreter/examples" ]; then
+            for example in ../interpreter/examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $example..."
                 if [ "${{ matrix.os }}" = "windows-latest" ]; then
-                  ./lamina.exe "$example" || echo "Warning: $example failed"
+                  ./${{ matrix.build_type }}/Lamina.exe "$example" || echo "Warning: $example failed"
                 else
-                  ./lamina "$example" || echo "Warning: $example failed"
+                  ./Lamina "$example" || echo "Warning: $example failed"
                 fi
               fi
             done
@@ -133,9 +111,10 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lamina-${{ matrix.os }}-${{ matrix.compiler }}
+          name: lamina-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
-            interpreter/lamina${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+            build/${{ matrix.os == 'windows-latest' && format('{0}/Lamina.exe', matrix.build_type) || 'Lamina' }}
+            build/${{ matrix.os == 'windows-latest' && format('{0}/*.dll', matrix.build_type) || '*.so' }}
             interpreter/examples/
           retention-days: 30
 
@@ -158,23 +137,23 @@ jobs:
           mkdir -p release
           
           # Package Linux build
-          if [ -f "artifacts/lamina-ubuntu-latest-g++/lamina" ]; then
-            cd artifacts/lamina-ubuntu-latest-g++
-            tar -czf ../../release/lamina-linux-x64.tar.gz lamina examples/
+          if [ -d "artifacts/lamina-ubuntu-latest-Release" ]; then
+            cd artifacts/lamina-ubuntu-latest-Release
+            tar -czf ../../release/lamina-linux-x64.tar.gz Lamina *.so examples/ 2>/dev/null || tar -czf ../../release/lamina-linux-x64.tar.gz Lamina examples/
             cd ../..
           fi
           
           # Package Windows build
-          if [ -f "artifacts/lamina-windows-latest-g++/lamina.exe" ]; then
-            cd artifacts/lamina-windows-latest-g++
-            zip -r ../../release/lamina-windows-x64.zip lamina.exe examples/
+          if [ -d "artifacts/lamina-windows-latest-Release" ]; then
+            cd artifacts/lamina-windows-latest-Release
+            zip -r ../../release/lamina-windows-x64.zip Lamina.exe *.dll examples/ 2>/dev/null || zip -r ../../release/lamina-windows-x64.zip Lamina.exe examples/
             cd ../..
           fi
           
           # Package macOS build
-          if [ -f "artifacts/lamina-macos-latest-g++/lamina" ]; then
-            cd artifacts/lamina-macos-latest-g++
-            tar -czf ../../release/lamina-macos-x64.tar.gz lamina examples/
+          if [ -d "artifacts/lamina-macos-latest-Release" ]; then
+            cd artifacts/lamina-macos-latest-Release
+            tar -czf ../../release/lamina-macos-x64.tar.gz Lamina *.dylib examples/ 2>/dev/null || tar -czf ../../release/lamina-macos-x64.tar.gz Lamina examples/
             cd ../..
           fi
           

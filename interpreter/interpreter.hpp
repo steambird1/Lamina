@@ -1,7 +1,14 @@
 #pragma once
 #include "lamina.hpp"
-
-
+#ifdef _WIN32
+#  ifdef LAMINA_CORE_EXPORTS
+#    define LAMINA_API __declspec(dllexport)
+#  else
+#    define LAMINA_API __declspec(dllimport)
+#  endif
+#else
+#  define LAMINA_API
+#endif
 #include "ast.hpp"
 #include "value.hpp"
 #include <unordered_map>
@@ -61,7 +68,7 @@ public:
     ContinueException() = default;
 };
 
-class LAMINA_EXPORT Interpreter {
+class LAMINA_API Interpreter {
     // 禁止拷贝，允许移动
     Interpreter(const Interpreter&) = delete;
     Interpreter& operator=(const Interpreter&) = delete;
