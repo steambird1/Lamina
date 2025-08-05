@@ -49,6 +49,7 @@ namespace lamina::maybe {
             return Value(args[1]);
         } else {
             L_ERR("Type not match! Cannot Force Convert Type!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
     }
 
@@ -170,6 +171,7 @@ namespace lamina::force_convert {
             // 可以则转换
             return Value(std::stoi(args[0].to_string()));
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_float(const std::vector<Value> &args) {
@@ -196,6 +198,7 @@ namespace lamina::force_convert {
             // 可以则转换
             return Value(std::stof(args[0].to_string()));
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_string(const std::vector<Value> &args) {
@@ -206,6 +209,7 @@ namespace lamina::force_convert {
             // 可以则转换
             return Value(args[0].to_string().c_str());
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_bigint(const std::vector<Value> &args) {
@@ -232,6 +236,7 @@ namespace lamina::force_convert {
         } else {
             return Value(args[0].as_number());
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_boolean(const std::vector<Value> &args) {
@@ -245,7 +250,9 @@ namespace lamina::force_convert {
             }
         } else {
             L_ERR("Boolean Convert Only Support Int!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_array(const std::vector<Value> &args) {
@@ -259,7 +266,9 @@ namespace lamina::force_convert {
             }
         } else {
             L_ERR("Only Support Matrix To Array!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_matrix(const std::vector<Value> &args) {
@@ -273,7 +282,9 @@ namespace lamina::force_convert {
             }
         } else {
             L_ERR("Only Support Array To Matrix!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_irrational(const std::vector<Value> &args) {
@@ -281,7 +292,9 @@ namespace lamina::force_convert {
             return Value(args[0].as_irrational());
         } else {
             L_ERR("Float Cannot Convert to Irrational!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
     Value to_rational(const std::vector<Value> &args) {
@@ -289,7 +302,9 @@ namespace lamina::force_convert {
             return Value(args[0].as_rational());
         } else {
             L_ERR("Float Cannot Convert to Rational!");
+            return Value(); // 永远不会执行，但消除编译器警告
         }
+        return Value(); // 永远不会执行，但消除编译器警告
     }
 
 }

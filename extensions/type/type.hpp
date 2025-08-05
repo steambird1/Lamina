@@ -3,7 +3,7 @@
 #include "lamina.hpp"
 
 namespace lamina::type {
-    typedef struct state{
+    struct State {
         int mode;
     };
 

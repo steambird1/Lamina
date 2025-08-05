@@ -2,13 +2,13 @@
 #include <chrono>
 #include <sstream>
 
-Value get_time(const std::vector<Value>& args) {
+Value get_time(const std::vector<Value>& /* args */) {
      auto now = std::chrono::system_clock::now();
      auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
      return LAMINA_INT(timestamp);
 }
 
-Value get_date(const std::vector<Value>& args) {
+Value get_date(const std::vector<Value>& /* args */) {
      auto now = std::chrono::system_clock::now();
      auto time = std::chrono::system_clock::to_time_t(now);
      std::tm* localTime = std::localtime(&time);

@@ -37,11 +37,11 @@ inline Value sqrt(const std::vector<Value>& args) {
      return Value(std::sqrt(val));
 }
 
-inline Value pi(const std::vector<Value>& args) {
+inline Value pi(const std::vector<Value>& /* args */) {
      return Value(::Irrational::pi());
 }
 
-inline Value e(const std::vector<Value>& args) {
+inline Value e(const std::vector<Value>& /* args */) {
      return Value(::Irrational::e());
 }
 
