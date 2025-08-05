@@ -13,6 +13,8 @@ endif()
 
 # 添加libuv子目录
 add_subdirectory(${LIBUV_ROOT})
+# 只针对 libuv 启用 PIC
+set_target_properties(uv uv_a PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # 设置libuv库和包含目录
 set(LIBUV_LIBRARIES uv_a)
