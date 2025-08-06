@@ -43,6 +43,10 @@ void Interpreter::add_function(const std::string& name, FuncDefStmt* func) {
     functions[name] = func;
 }
 
+void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
+    repl_asts.push_back(std::move(ast));
+}
+
 void Interpreter::pop_scope() {
     if (variable_stack.size() > 1) variable_stack.pop_back();
 }

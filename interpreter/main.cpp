@@ -69,12 +69,27 @@ int main(int argc, char* argv[]) {
                     // Only support BlockStmt
                     auto* block = dynamic_cast<BlockStmt*>(ast.get());
                     if (block) {
+                        // Save AST to keep function pointers valid
+                        interpreter.save_repl_ast(std::move(ast));
+                        
                         try {
                             for (auto& stmt : block->statements) {
                                 try {
                                     interpreter.execute(stmt);
                                 } catch (const RuntimeError& re) {
                                     interpreter.print_stack_trace(re, true);
+                                    break;
+                                } catch (const ReturnException&) {
+                                    // Catch and show meaningful info (return outside function causes this exception)
+                                    Interpreter::print_warning("Return statement used outside function (line " + std::to_string(lineno) + ")", true);
+                                    break;
+                                } catch (const BreakException&) {
+                                    // Catch and show meaningful info
+                                    Interpreter::print_warning("Break statement used outside loop (line " + std::to_string(lineno) + ")", true);
+                                    break;
+                                } catch (const ContinueException&) {
+                                    // Catch and show meaningful info
+                                    Interpreter::print_warning("Continue statement used outside loop (line " + std::to_string(lineno) + ")", true);
                                     break;
                                 } catch (const std::exception& e) {
                                     Interpreter::print_error(e.what(), true);
@@ -83,6 +98,9 @@ int main(int argc, char* argv[]) {
                             }
                         } catch (const RuntimeError& re) {
                             interpreter.print_stack_trace(re, true);
+                        } catch (const ReturnException&) {
+                            // Catch return exceptions that escape the inner loop
+                            Interpreter::print_warning("Return statement used outside function", true);
                         } catch (...) {
                             Interpreter::print_error("Unknown error occurred", true);
                         }

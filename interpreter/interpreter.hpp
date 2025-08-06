@@ -83,6 +83,8 @@ public:
     // Print all variables in current scope
     void printVariables() const;
     void add_function(const std::string& name, FuncDefStmt* func);
+    // Save AST in REPL mode to keep function pointers valid
+    void save_repl_ast(std::unique_ptr<ASTNode> ast);
     // Stack trace management
     void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
     void pop_frame();
@@ -114,6 +116,8 @@ private:
     std::set<std::string> loaded_modules;
     // Store loaded module ASTs to keep function pointers valid
     std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
+    // Store REPL ASTs to keep function pointers valid in interactive mode
+    std::vector<std::unique_ptr<ASTNode>> repl_asts;
 
     // Stack trace for function calls
     std::vector<StackFrame> call_stack;
