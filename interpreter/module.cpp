@@ -18,6 +18,12 @@ ModuleLoader::ModuleLoader(const std::string& soPath) {
     if (!m_handle) {
         std::cerr << "Failed to load library: " << dlerror() << std::endl;
     }
+#else
+    // 对于其他 Unix-like 系统（如 macOS）
+    m_handle = dlopen(soPath.c_str(), RTLD_LAZY);
+    if (!m_handle) {
+        std::cerr << "Failed to load library: " << dlerror() << std::endl;
+    }
 #endif
 }
 
@@ -28,6 +34,12 @@ ModuleLoader::~ModuleLoader() {
         m_handle = nullptr;
     }
 #elif  __linux__
+    if (m_handle) {
+        dlclose(m_handle);
+        m_handle = nullptr;
+    }
+#else
+    // 对于其他 Unix-like 系统（如 macOS）
     if (m_handle) {
         dlclose(m_handle);
         m_handle = nullptr;
@@ -47,6 +59,18 @@ void* ModuleLoader::findSymbol(const std::string& symbolName) {
         return nullptr;
     }
 #elif __linux__
+    if (!m_handle) {
+        return nullptr;
+    }
+    dlerror();
+    symbol = dlsym(m_handle, symbolName.c_str());
+    const char* dlsym_error = dlerror();
+    if (dlsym_error) {
+        std::cerr << "Error looking up symbol '" << symbolName << "': " << dlsym_error << std::endl;
+        return nullptr;
+    }
+#else
+    // 对于其他 Unix-like 系统（如 macOS）
     if (!m_handle) {
         return nullptr;
     }
@@ -129,6 +153,15 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
         }
     }
     return entryFunctions;
+#else
+    // 对于其他 Unix-like 系统（如 macOS），使用简单的 dlsym 查找
+    void* sym = dlsym(m_handle, "_entry");
+    if (sym) {
+        auto entryFunc = reinterpret_cast<void (*)(Interpreter&)>(sym);
+        entryFunctions.push_back([entryFunc](Interpreter& interpreter) {
+            entryFunc(interpreter);
+        });
+    }
 #endif
     return entryFunctions;
 }
