@@ -1,0 +1,47 @@
+# 根据文件路径自动添加标签
+
+# 核心解释器相关
+"core":
+  - changed-files:
+    - any-glob-to-any-file: 'interpreter/**'
+
+# 扩展/插件相关
+"extensions":
+  - changed-files:
+    - any-glob-to-any-file: 'extensions/**'
+
+# 文档相关
+"documentation":
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'documents/**'
+      - '*.md'
+      - 'README*'
+
+# 构建系统相关
+"build":
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'CMakeLists.txt'
+      - '**/CMakeLists.txt'
+      - '.github/workflows/**'
+
+# 示例相关
+"examples":
+  - changed-files:
+    - any-glob-to-any-file: 'examples/**'
+
+# 测试相关
+"tests":
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'tests/**'
+      - '**/*test*'
+
+# 配置文件相关
+"config":
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.gitignore'
+      - '.github/**'
+      - 'scripts/**'

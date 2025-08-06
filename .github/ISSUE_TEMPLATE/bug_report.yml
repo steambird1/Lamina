@@ -1,0 +1,145 @@
+name: 🐛 Bug报告
+description: 报告Lamina中的错误或问题
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您报告Bug！请填写以下信息帮助我们快速定位和修复问题。
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认事项
+      description: 在提交Bug报告前，请确认以下事项
+      options:
+        - label: 我已经搜索了现有的issues，确认这不是重复问题
+          required: true
+        - label: 我使用的是最新版本的Lamina
+          required: true
+        - label: 我已经阅读了相关文档
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Lamina版本
+      description: 请提供您使用的Lamina版本
+      placeholder: "例如: v1.0.0 或 commit hash"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      description: 您在哪个操作系统上遇到了这个问题？
+      options:
+        - Windows 10
+        - Windows 11
+        - Ubuntu 20.04
+        - Ubuntu 22.04
+        - macOS
+        - 其他 Linux 发行版
+        - 其他 (请在描述中说明)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: compiler
+    attributes:
+      label: 编译器
+      description: 您使用的编译器类型
+      options:
+        - GCC
+        - Clang
+        - MSVC (Visual Studio)
+        - MinGW
+        - 其他 (请在描述中说明)
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug描述
+      description: 请详细描述您遇到的问题
+      placeholder: |
+        清晰简洁地描述bug的具体表现...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 重现步骤
+      description: 请提供详细的重现步骤
+      placeholder: |
+        1. 执行命令 '...'
+        2. 点击 '....'
+        3. 滚动到 '....'
+        4. 看到错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: 期望行为
+      description: 请描述您期望发生的行为
+      placeholder: 清晰简洁地描述您期望应该发生什么...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: 实际行为
+      description: 请描述实际发生的行为
+      placeholder: 清晰简洁地描述实际发生了什么...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-sample
+    attributes:
+      label: 相关代码
+      description: 请提供相关的Lamina代码示例
+      render: lamina
+      placeholder: |
+        // 请提供能重现问题的最小代码示例
+        func main() {
+            // 您的代码
+        }
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: 错误输出
+      description: 请提供完整的错误信息和堆栈跟踪
+      render: shell
+      placeholder: |
+        错误信息或程序输出...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 额外信息
+      description: 添加任何其他有助于理解问题的信息
+      placeholder: |
+        - 截图
+        - 相关配置文件
+        - 其他相关信息
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: 愿意协助
+      description: 您是否愿意帮助修复这个bug？
+      options:
+        - label: 我愿意提交PR来修复这个bug
+        - label: 我可以提供更多测试用例
+        - label: 我可以帮助测试修复方案

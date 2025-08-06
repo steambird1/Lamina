@@ -1,0 +1,121 @@
+name: Issue Management
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  welcome-new-issues:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Welcome new issue
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const issue = context.payload.issue;
+          
+          // 为新issue添加欢迎消息
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issue.number,
+            body: `👋 感谢您提交issue！\n\n我们已经收到您的反馈，维护者会尽快查看并回复。\n\n在等待回复期间，您可以：\n- 📖 查看[项目文档](https://github.com/lamina-dev/Lamina/wiki)\n- 💬 加入[QQ交流群](https://qm.qq.com/q/QwPXCgsJea)进行实时讨论\n- 🔍 搜索[现有issues](https://github.com/lamina-dev/Lamina/issues)看是否有类似问题\n\n如果这是您的第一次贡献，欢迎阅读我们的[贡献指南](https://github.com/lamina-dev/Lamina/blob/main/documents/CONTRIBUTING-CN.md)。`
+          });
+
+  auto-assign-labels:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Auto assign labels
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const issue = context.payload.issue;
+          const title = issue.title.toLowerCase();
+          const body = issue.body || '';
+          const labels = [];
+          
+          // 根据标题和内容自动添加标签
+          if (title.includes('bug') || title.includes('错误') || title.includes('问题')) {
+            labels.push('bug');
+          }
+          
+          if (title.includes('feature') || title.includes('功能') || title.includes('特性')) {
+            labels.push('enhancement');
+          }
+          
+          if (title.includes('docs') || title.includes('文档') || title.includes('documentation')) {
+            labels.push('documentation');
+          }
+          
+          if (title.includes('help') || title.includes('帮助') || title.includes('问题')) {
+            labels.push('question');
+          }
+          
+          // 根据内容判断优先级
+          if (body.includes('紧急') || body.includes('urgent') || body.includes('critical')) {
+            labels.push('priority:high');
+          }
+          
+          // 根据内容判断难度
+          if (body.includes('good first issue') || title.includes('简单')) {
+            labels.push('good first issue');
+          }
+          
+          if (labels.length > 0) {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: labels
+            });
+          }
+
+  handle-help-wanted:
+    if: contains(github.event.issue.labels.*.name, 'question')
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Add help resources
+      uses: actions/github-script@v6
+      with:
+        script: |
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.issue.number,
+            body: `🆘 需要帮助？\n\n这里有一些可能对您有用的资源：\n\n📚 **文档资源**\n- [语法指南](https://github.com/lamina-dev/Lamina/wiki)\n- [编译指南](https://github.com/lamina-dev/Lamina/blob/main/documents/compile-cn.md)\n- [插件开发指南](https://github.com/lamina-dev/Lamina/blob/main/documents/PLUGIN_GUIDE.md)\n\n🔍 **常见问题**\n- 搜索[已关闭的issues](https://github.com/lamina-dev/Lamina/issues?q=is%3Aissue+is%3Aclosed)\n- 查看[示例代码](https://github.com/lamina-dev/Lamina/tree/main/examples)\n\n💬 **即时帮助**\n- 加入QQ群：https://qm.qq.com/q/QwPXCgsJea\n\n如果以上资源无法解决您的问题，请提供更多详细信息，我们会尽快为您解答！`
+          });
+
+  stale-issues:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    
+    steps:
+    - name: Mark stale issues
+      uses: actions/stale@v8
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-issue-message: |
+          这个issue已经30天没有活动了。
+
+          如果这个问题仍然存在，请回复此评论说明当前状态。
+          否则，这个issue将在7天后自动关闭。
+          
+          您可以随时重新打开已关闭的issue。
+        stale-pr-message: |
+          这个PR已经30天没有活动了。
+          
+          如果您仍在处理这个PR，请回复此评论。
+          否则，这个PR将在7天后自动关闭。
+        days-before-stale: 30
+        days-before-close: 7
+        stale-issue-label: 'stale'
+        stale-pr-label: 'stale'
+        exempt-issue-labels: 'pinned,enhancement,priority:high'
+        exempt-pr-labels: 'pinned,priority:high'

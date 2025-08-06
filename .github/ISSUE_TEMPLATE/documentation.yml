@@ -1,0 +1,96 @@
+name: 📚 文档改进
+description: 建议改进Lamina的文档
+title: "[Docs] "
+labels: ["documentation"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您帮助改进Lamina的文档！好的文档对项目的成功至关重要。
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认事项
+      options:
+        - label: 我已经搜索了现有的issues，确认这不是重复请求
+          required: true
+        - label: 我已经查看了相关的现有文档
+          required: true
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: 文档类型
+      description: 请选择需要改进的文档类型
+      options:
+        - README.md
+        - 编译指南
+        - 语法参考
+        - API文档
+        - 教程/示例
+        - 贡献指南
+        - 插件开发指南
+        - Wiki页面
+        - 代码注释
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-issue
+    attributes:
+      label: 当前问题
+      description: 请描述现有文档的问题
+      placeholder: |
+        - 文档缺失的内容
+        - 错误或过时的信息
+        - 难以理解的表述
+        - 组织结构问题
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-improvement
+    attributes:
+      label: 建议的改进
+      description: 请详细描述您建议的改进方案
+      placeholder: |
+        - 需要添加什么内容？
+        - 如何重新组织信息？
+        - 需要什么样的示例？
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-audience
+    attributes:
+      label: 目标读者
+      description: 这个文档改进主要针对哪类用户？
+      placeholder: |
+        - 初学者
+        - 有经验的开发者
+        - 贡献者
+        - 插件开发者
+        - 其他特定群体
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 额外信息
+      description: 提供任何其他有助于改进文档的信息
+      placeholder: |
+        - 相关的参考资料
+        - 其他项目的优秀文档示例
+        - 具体的页面链接
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: 参与意愿
+      options:
+        - label: 我愿意提交PR来改进文档
+        - label: 我可以提供更多示例
+        - label: 我可以帮助翻译文档

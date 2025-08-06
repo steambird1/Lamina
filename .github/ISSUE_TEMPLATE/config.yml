@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 QQ交流群
+    url: https://qm.qq.com/q/QwPXCgsJea
+    about: 加入QQ群进行实时交流和讨论
+  - name: 📖 项目Wiki
+    url: https://github.com/lamina-dev/Lamina/wiki
+    about: 查看详细的项目文档和教程
+  - name: 🔧 插件开发指南
+    url: https://github.com/lamina-dev/Lamina/blob/main/documents/PLUGIN_GUIDE.md
+    about: 学习如何为Lamina开发插件
+  - name: 🤝 贡献指南
+    url: https://github.com/lamina-dev/Lamina/blob/main/documents/CONTRIBUTING-CN.md
+    about: 了解如何为项目做出贡献
