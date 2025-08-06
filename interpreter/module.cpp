@@ -4,6 +4,12 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <dlfcn.h>
+#ifdef __linux__
+#include <link.h>
+#include <elf.h>
+#endif
 #endif
 #include "module.hpp"
 

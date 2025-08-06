@@ -66,6 +66,7 @@ set_target_properties(lamina_core PROPERTIES
 
 # 定义导出宏
 target_compile_definitions(lamina_core PRIVATE LAMINA_CORE_EXPORTS)
+target_compile_definitions(lamina_core PRIVATE USE_LIBUV)
 
 # 链接 libuv
 target_link_libraries(lamina_core PRIVATE ${LIBUV_LIBRARY} uv)

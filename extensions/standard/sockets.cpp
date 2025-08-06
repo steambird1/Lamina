@@ -516,9 +516,9 @@ void call_lamina_callback(int64_t cbid, uint64_t client_id, const std::string& d
 #else // USE_LIBUV
 
 Value runnable(const std::vector<Value>& args) {
-    loop = uv_default_loop();
-    uv_run(loop, UV_RUN_DEFAULT);
-    return Value(0);
+    // LibUV not available, return error
+    std::cerr << "LibUV not available, socket operations not supported." << std::endl;
+    return Value(-1);
 }
 
 Value socket_send(const std::vector<Value>&) {
