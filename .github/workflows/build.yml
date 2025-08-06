@@ -20,7 +20,7 @@ jobs:
             cmake_generator: "Unix Makefiles"
           - os: windows-2025
             compiler: msvc
-            cmake_generator: "Visual Studio 16 2019"
+            cmake_generator: "Visual Studio Enterprise 2022"
             cmake_arch: "-A x64"
           - os: macos-latest
             compiler: clang
