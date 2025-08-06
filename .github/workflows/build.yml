@@ -12,13 +12,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-2019, macos-latest]
         build_type: [Release, Debug]
         include:
           - os: ubuntu-latest
             compiler: gcc
             cmake_generator: "Unix Makefiles"
-          - os: windows-latest
+          - os: windows-2019
             compiler: msvc
             cmake_generator: "Visual Studio 16 2019"
             cmake_arch: "-A x64"
@@ -49,7 +49,7 @@ jobs:
           brew install cmake ninja
 
       - name: Set up MSVC (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Initialize Git submodules
@@ -75,7 +75,7 @@ jobs:
           echo 'var x = 2 + 3;' >> test.lm
           echo 'print("2 + 3 =", x);' >> test.lm
           
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ matrix.os }}" = "windows-2019" ]; then
             ./${{ matrix.build_type }}/Lamina.exe test.lm
           else
             ./Lamina test.lm
@@ -94,7 +94,7 @@ jobs:
             for example in ../interpreter/examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $example..."
-                if [ "${{ matrix.os }}" = "windows-latest" ]; then
+                if [ "${{ matrix.os }}" = "windows-2019" ]; then
                   ./${{ matrix.build_type }}/Lamina.exe "$example" || echo "Warning: $example failed"
                 else
                   ./Lamina "$example" || echo "Warning: $example failed"
@@ -110,8 +110,8 @@ jobs:
         with:
           name: lamina-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
-            build/${{ matrix.os == 'windows-latest' && format('{0}/Lamina.exe', matrix.build_type) || 'Lamina' }}
-            build/${{ matrix.os == 'windows-latest' && format('{0}/*.dll', matrix.build_type) || '*.so' }}
+            build/${{ matrix.os == 'windows-2019' && format('{0}/Lamina.exe', matrix.build_type) || 'Lamina' }}
+            build/${{ matrix.os == 'windows-2019' && format('{0}/*.dll', matrix.build_type) || '*.so' }}
             interpreter/examples/
           retention-days: 30
 
@@ -141,8 +141,8 @@ jobs:
           fi
           
           # Package Windows build
-          if [ -d "artifacts/lamina-windows-latest-Release" ]; then
-            cd artifacts/lamina-windows-latest-Release
+          if [ -d "artifacts/lamina-windows-2019-Release" ]; then
+            cd artifacts/lamina-windows-2019-Release
             zip -r ../../release/lamina-windows-x64.zip Lamina.exe *.dll examples/ 2>/dev/null || zip -r ../../release/lamina-windows-x64.zip Lamina.exe examples/
             cd ../..
           fi
