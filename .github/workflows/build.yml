@@ -22,7 +22,7 @@ jobs:
             compiler: msvc
             cmake_generator: "Visual Studio 16 2019"
             cmake_arch: "-A x64"
-          - os: macos-latest  
+          - os: macos-latest
             compiler: clang
             cmake_generator: "Unix Makefiles"
 
@@ -48,10 +48,6 @@ jobs:
         run: |
           brew install cmake ninja
 
-      - name: Set up build environment (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: microsoft/setup-msbuild@v2
-
       - name: Set up MSVC (Windows)
         if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
@@ -62,7 +58,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build ${{ matrix.cmake_arch || '' }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -G "${{ matrix.cmake_generator }}" .
+          cmake -B build ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -G "${{ matrix.cmake_generator }}" .
 
       - name: Build with CMake
         run: |
