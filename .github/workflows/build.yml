@@ -35,7 +35,7 @@ jobs:
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.16.3'
+          cmake-version: '3.31.6'
 
       - name: Set up build environment (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
