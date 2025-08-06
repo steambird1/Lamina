@@ -76,7 +76,6 @@ if(MSVC)
 else()
     target_compile_options(lamina_core PRIVATE 
         -Wall -Wextra -Wpedantic
-        -fvisibility=hidden
     )
 endif()
 

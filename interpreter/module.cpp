@@ -138,8 +138,9 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
 
         for (size_t j = 0; j < symcount; ++j) {
             const ElfW(Sym)* sym = &symtab[j];
-            if (sym->st_name && strtab + sym->st_name) {
-                std::string symbolName = strtab + sym->st_name;
+            if (sym->st_name != 0) {
+                const char* symbolNamePtr = strtab + sym->st_name;
+                std::string symbolName = symbolNamePtr;
                 if (symbolName.find("_entry") != std::string::npos) {
                     void* symbolAddr = findSymbol(symbolName.c_str());
                     if (symbolAddr) {
