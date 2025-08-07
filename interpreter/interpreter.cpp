@@ -263,14 +263,13 @@ Value Interpreter::eval(const ASTNode* node) {
                 double d = std::stod(lit->value);
                 return Value(d);
             } else {
-                // 尝试用 BigInt 解析
-                ::BigInt big(lit->value);
-                // 判断是否能安全转为 int
-                int as_int = big.to_int();
-                // 如果 big 和 as_int 的字符串表示一致，且没溢出，则用 int，否则用 BigInt
-                if (big.to_string() == std::to_string(as_int) && big.to_string().length() <= 10) {
-                    return Value(as_int);
-                } else {
+                // 先尝试用 int 解析，只有溢出时才用 BigInt
+                try {
+                    int i = std::stoi(lit->value);
+                    return Value(i);
+                } catch (const std::out_of_range&) {
+                    // int 溢出，使用 BigInt
+                    ::BigInt big(lit->value);
                     return Value(big);
                 }
             }
