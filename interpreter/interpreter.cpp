@@ -255,7 +255,7 @@ Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
         error_and_exit("Attempted to evaluate null expression");
     }
-      if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
+    if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
         // Try to parse as number first
         try {
             // Check if it contains a decimal point for float
@@ -263,8 +263,16 @@ Value Interpreter::eval(const ASTNode* node) {
                 double d = std::stod(lit->value);
                 return Value(d);
             } else {
-                int i = std::stoi(lit->value);
-                return Value(i);
+                // 尝试用 BigInt 解析
+                ::BigInt big(lit->value);
+                // 判断是否能安全转为 int
+                int as_int = big.to_int();
+                // 如果 big 和 as_int 的字符串表示一致，且没溢出，则用 int，否则用 BigInt
+                if (big.to_string() == std::to_string(as_int) && big.to_string().length() <= 10) {
+                    return Value(as_int);
+                } else {
+                    return Value(big);
+                }
             }
         } catch (...) {
             // Check for boolean literals
@@ -297,6 +305,12 @@ Value Interpreter::eval(const ASTNode* node) {
             }
             // Numeric addition with irrational and rational number support
             else if (l.is_numeric() && r.is_numeric()) {
+                // BigInt 优先：如果任一为 BigInt，结果为 BigInt
+                if (l.is_bigint() || r.is_bigint()) {
+                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                    return Value(lb + rb);
+                }
                 // If either operand is irrational, use irrational arithmetic
                 if (l.is_irrational() || r.is_irrational()) {
                     ::Irrational result = l.as_irrational() + r.as_irrational();
@@ -345,6 +359,12 @@ Value Interpreter::eval(const ASTNode* node) {
                 }
                 // Regular multiplication (both must be numeric)
                 if (l.is_numeric() && r.is_numeric()) {
+                    // BigInt 优先：如果任一为 BigInt，结果为 BigInt
+                    if (l.is_bigint() || r.is_bigint()) {
+                        ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                        ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                        return Value(lb * rb);
+                    }
                     // If either operand is irrational, use irrational arithmetic
                     if (l.is_irrational() || r.is_irrational()) {
                         ::Irrational result = l.as_irrational() * r.as_irrational();
@@ -370,6 +390,28 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // For division, always use rational arithmetic for precise results
             if (bin->op == "/") {
+                // BigInt 优先：如果任一为 BigInt，结果为 BigInt（如果整除）或 Rational
+                if (l.is_bigint() || r.is_bigint()) {
+                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                    if (rb.is_zero()) {
+                        error_and_exit("Division by zero");
+                    }
+                    // 对于BigInt除法，如果能整除则返回BigInt，否则返回Rational
+                    try {
+                        ::BigInt quotient = lb / rb;
+                        ::BigInt remainder = lb - (quotient * rb);
+                        if (remainder.is_zero()) {
+                            return Value(quotient);
+                        } else {
+                            // 不能整除，返回有理数
+                            return Value(::Rational(lb.to_int(), rb.to_int()));
+                        }
+                    } catch (...) {
+                        // 如果BigInt运算失败，回退到Rational
+                        return Value(::Rational(lb.to_int(), rb.to_int()));
+                    }
+                }
                 // If either operand is irrational, use irrational arithmetic
                 if (l.is_irrational() || r.is_irrational()) {
                     ::Irrational lr = l.as_irrational();
@@ -430,6 +472,31 @@ Value Interpreter::eval(const ASTNode* node) {
                 }
             }
 
+            // BigInt 运算优先：如果任一为 BigInt，结果为 BigInt
+            if (l.is_bigint() || r.is_bigint()) {
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                
+                if (bin->op == "-") {
+                    return Value(lb - rb);
+                }
+                if (bin->op == "%") {
+                    if (rb.is_zero()) {
+                        error_and_exit("Modulo by zero");
+                    }
+                    // BigInt 模运算需要实现，这里暂时转换为int处理
+                    int li = lb.to_int();
+                    int ri = rb.to_int();
+                    return Value(li % ri);
+                }
+                if (bin->op == "^") {
+                    // BigInt 幂运算，转换为double处理大数
+                    double ld = lb.to_int();
+                    double rd = rb.to_int();
+                    return Value(std::pow(ld, rd));
+                }
+            }
+
             // Fall back to double arithmetic
             double ld = l.as_number();
             double rd = r.as_number();
@@ -456,15 +523,64 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // Handle different type combinations
             if (l.is_numeric() && r.is_numeric()) {
-                double ld = l.as_number();
-                double rd = r.as_number();
+                // BigInt 比较优先
+                if (l.is_bigint() || r.is_bigint()) {
+                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                    
+                    // 使用字符串比较来判断大小（这是一个简化的实现）
+                    std::string ls = lb.to_string();
+                    std::string rs = rb.to_string();
+                    
+                    if (bin->op == "==") return Value(ls == rs);
+                    if (bin->op == "!=") return Value(ls != rs);
+                    
+                    // 对于大小比较，需要考虑符号和长度
+                    bool lb_neg = ls[0] == '-';
+                    bool rb_neg = rs[0] == '-';
+                    
+                    if (lb_neg && !rb_neg) {
+                        // 左负右正
+                        if (bin->op == "<") return Value(true);
+                        if (bin->op == "<=") return Value(true);
+                        if (bin->op == ">") return Value(false);
+                        if (bin->op == ">=") return Value(false);
+                    } else if (!lb_neg && rb_neg) {
+                        // 左正右负
+                        if (bin->op == "<") return Value(false);
+                        if (bin->op == "<=") return Value(false);
+                        if (bin->op == ">") return Value(true);
+                        if (bin->op == ">=") return Value(true);
+                    } else {
+                        // 同号比较：比较绝对值的长度和字典序
+                        std::string labs = lb_neg ? ls.substr(1) : ls;
+                        std::string rabs = rb_neg ? rs.substr(1) : rs;
+                        
+                        bool abs_less;
+                        if (labs.length() != rabs.length()) {
+                            abs_less = labs.length() < rabs.length();
+                        } else {
+                            abs_less = labs < rabs;
+                        }
+                        
+                        bool result_less = lb_neg ? !abs_less : abs_less;
+                        
+                        if (bin->op == "<") return Value(result_less);
+                        if (bin->op == "<=") return Value(result_less || ls == rs);
+                        if (bin->op == ">") return Value(!result_less && ls != rs);
+                        if (bin->op == ">=") return Value(!result_less);
+                    }
+                } else {
+                    double ld = l.as_number();
+                    double rd = r.as_number();
 
-                if (bin->op == "==") return Value(ld == rd);
-                if (bin->op == "!=") return Value(ld != rd);
-                if (bin->op == "<") return Value(ld < rd);
-                if (bin->op == "<=") return Value(ld <= rd);
-                if (bin->op == ">") return Value(ld > rd);
-                if (bin->op == ">=") return Value(ld >= rd);
+                    if (bin->op == "==") return Value(ld == rd);
+                    if (bin->op == "!=") return Value(ld != rd);
+                    if (bin->op == "<") return Value(ld < rd);
+                    if (bin->op == "<=") return Value(ld <= rd);
+                    if (bin->op == ">") return Value(ld > rd);
+                    if (bin->op == ">=") return Value(ld >= rd);
+                }
             }
             else if (l.is_string() && r.is_string()) {
                 std::string ls = std::get<std::string>(l.data);
@@ -887,16 +1003,20 @@ bool Interpreter::load_module(const std::string& module_name) {
     return false;
 }
 
-std::vector<Interpreter::EntryFunction> Interpreter::entry_functions;
+// 使用函数内的静态变量来避免DLL导出/导入问题
+static std::vector<Interpreter::EntryFunction>& get_entry_functions() {
+    static std::vector<Interpreter::EntryFunction> entry_functions;
+    return entry_functions;
+}
 
 void Interpreter::register_entry(EntryFunction func) {
-    entry_functions.push_back(func);
+    get_entry_functions().push_back(func);
 }
 
 // Register builtin mathematical functions
 void Interpreter::register_builtin_functions()
 {
-    for (auto entry : entry_functions) {
+    for (auto entry : get_entry_functions()) {
         entry(*this);
     }
 }

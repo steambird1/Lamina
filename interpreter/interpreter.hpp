@@ -131,6 +131,7 @@ private:
     bool load_module(const std::string& module_name);
     // Register builtin functions
     void register_builtin_functions();
-    static std::vector<EntryFunction> entry_functions;
+    // 移除静态成员变量声明，改用函数内静态变量
+    // static std::vector<EntryFunction> entry_functions;
 
 };
