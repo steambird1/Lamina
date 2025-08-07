@@ -826,6 +826,8 @@ bool Interpreter::load_module(const std::string& module_name) {
     if (loaded_modules.find(module_name) != loaded_modules.end()) {
         return true;  // Already loaded
     }
+    // 立即插入，防止递归 include
+    loaded_modules.insert(module_name);
 
     bool is_shared_lib = false;
     std::string clean_name = module_name;
@@ -991,6 +993,7 @@ bool Interpreter::load_module(const std::string& module_name) {
             }
         } catch (const std::exception& e) {
             std::cerr << "Error: Exception while executing module '" << module_name << "': " << e.what() << std::endl;
+            loaded_modules.erase(module_name); // 失败时移除，防止死锁
             return false;
         }
 
@@ -1021,7 +1024,7 @@ void Interpreter::register_builtin_functions()
 }
 
 // 在文件顶端添加错误处理函数
-void error_and_exit(const std::string& msg) {
+LAMINA_EXPORT void error_and_exit(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
     std::exit(EXIT_FAILURE);
 }

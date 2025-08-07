@@ -8,12 +8,17 @@
 #endif
 
 #include <string>
+#include <iostream>
+#include <cstdlib>
 #include "interpreter.hpp"
 #include "value.hpp"
 
 /*
     对LAMINA核心资源操作的头文件
  */
+
+// 声明错误处理函数
+LAMINA_EXPORT void error_and_exit(const std::string& msg);
 
 template<class> constexpr bool always_false = false;
 
@@ -86,8 +91,11 @@ void func##_entry(Interpreter& interpreter) { \
 #define LAMINA_GET_VAR(interpreter, var) \
    interpreter.get_variable(#var)
 
-#define L_ERR(msg)\
-    error_and_exit(msg); \
+#define L_ERR(msg) \
+    do { \
+        std::cerr << "Error: " << msg << std::endl; \
+        std::exit(EXIT_FAILURE); \
+    } while(0)
 
 #define LAMINA_GLOBAL_VAR(name, value) \
 void global_var_##name##_entry(Interpreter& interpreter) { \
