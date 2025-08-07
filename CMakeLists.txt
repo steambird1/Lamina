@@ -155,18 +155,27 @@ foreach(SOURCE_FILE ${EXTENSION_SOURCE_FILES})
             set_target_properties(${SOURCE_NAME} PROPERTIES PREFIX "")  # 去掉 lib 前缀
         endif()
         
-        # Windows 下自动复制 DLL 到 Debug/Release 目录，PDB 仅 MSVC 支持
+        # Windows 下自动复制 DLL 到 Debug/Release 目录，PDB 仅 MSVC Debug 支持
         if(WIN32)
             if(MSVC)
-                add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        $<TARGET_FILE:${SOURCE_NAME}>
-                        $<TARGET_FILE_DIR:${SOURCE_NAME}>
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        $<TARGET_PDB_FILE:${SOURCE_NAME}>
-                        $<TARGET_FILE_DIR:${SOURCE_NAME}>
-                    COMMENT "Copying ${SOURCE_NAME}.dll and .pdb to output directory (MSVC)"
-                )
+                if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                    add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            $<TARGET_FILE:${SOURCE_NAME}>
+                            $<TARGET_FILE_DIR:${SOURCE_NAME}>
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            $<TARGET_PDB_FILE:${SOURCE_NAME}>
+                            $<TARGET_FILE_DIR:${SOURCE_NAME}>
+                        COMMENT "Copying ${SOURCE_NAME}.dll and .pdb to output directory (MSVC Debug)"
+                    )
+                else()
+                    add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            $<TARGET_FILE:${SOURCE_NAME}>
+                            $<TARGET_FILE_DIR:${SOURCE_NAME}>
+                        COMMENT "Copying ${SOURCE_NAME}.dll to output directory (MSVC Release)"
+                    )
+                endif()
             else()
                 add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
