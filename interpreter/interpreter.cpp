@@ -571,16 +571,30 @@ Value Interpreter::eval(const ASTNode* node) {
         // Check builtin functions first
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
+            // Handle builtin call with stack frame and unified error handling
+            push_frame(actual_callee, "<builtin>", 0);
+
             std::vector<Value> args;
             for (const auto& arg : call->args) {
-                if (arg) {
-                    args.push_back(eval(arg.get()));
-                } else {
-                    std::cerr << "Error: Null argument in call to builtin function '" << actual_callee << "'" << std::endl;
-                    return Value();
+                if (!arg) {
+                    pop_frame();
+                    RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
+                    err.stack_trace = get_stack_trace();
+                    throw err;
                 }
+                args.push_back(eval(arg.get()));
             }
-            return builtin_it->second(args);
+
+            Value result;
+            try {
+                result = builtin_it->second(args);
+            } catch (...) {
+                pop_frame();
+                throw;
+            }
+
+            pop_frame();
+            return result;
         }
 
         // Check user-defined functions
