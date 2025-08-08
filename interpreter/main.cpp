@@ -63,15 +63,6 @@ int main(int argc, char* argv[]) {
                     continue;
                 }
 
-                if (line == ":fns") {
-                    std::cout << "Registered functions:\n";
-                    for (const auto& [name, _] : interpreter.get_functions()) {
-                        std::cout << " - " << name << "\n";
-                    }
-                    ++lineno;
-                    continue;
-                }
-                
                 auto tokens = Lexer::tokenize(line);
                 auto ast = Parser::parse(tokens);
                 if (!ast) {
