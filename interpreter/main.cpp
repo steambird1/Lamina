@@ -2,6 +2,7 @@
 #include "parser.hpp"
 #include "interpreter.hpp"
 #include "trackback.hpp"
+#include "module.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -41,6 +42,7 @@ int main(int argc, char* argv[]) {
                     std::cout << "  :help - Show this help message\n";
                     std::cout << "  :vars - Show all variables\n";
                     std::cout << "  :clear - Clear screen\n";
+                    std::cout << "  :fns - Get Lamina Runtime Functions\n";
                     ++lineno;
                     continue;
                 }
@@ -57,6 +59,15 @@ int main(int argc, char* argv[]) {
                     #else
                     (void)system("clear");
                     #endif
+                    ++lineno;
+                    continue;
+                }
+
+                if (line == ":fns") {
+                    std::cout << "Registered functions:\n";
+                    for (const auto& [name, _] : interpreter.get_functions()) {
+                        std::cout << " - " << name << "\n";
+                    }
                     ++lineno;
                     continue;
                 }
