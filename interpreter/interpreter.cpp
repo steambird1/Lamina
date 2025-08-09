@@ -85,6 +85,7 @@ void Interpreter::set_global_variable(const std::string& name, const Value& val)
 
 void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     if (!node) return;
+
     if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {        if (v->expr) {
         Value val = eval(v->expr.get());
         set_variable(v->name, val);
@@ -125,13 +126,19 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 set_variable(bi->name, Value(big_val));
             } else if (val.is_string()) {
                 // 从字符串创建BigInt
-                ::BigInt big_val(std::get<std::string>(val.data));
-                set_variable(bi->name, Value(big_val));
+                try {
+                    ::BigInt big_val(std::get<std::string>(val.data));
+                    set_variable(bi->name, Value(big_val));
+                } catch (const std::exception& e) {
+                    error_and_exit("Invalid BigInt string '" + std::get<std::string>(val.data)
+                                + "' in declaration of " + bi->name);
+                }
             } else {
-                error_and_exit("Cannot convert " + val.to_string() + " to BigInt");
+                // 默认初始化为0
+                error_and_exit("Cannot convert " + val.to_string()
+                            + " to BigInt in declaration of " + bi->name);
             }
         } else {
-            // 默认初始化为0
             set_variable(bi->name, Value(::BigInt(0)));
         }
     }
