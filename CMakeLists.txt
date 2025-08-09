@@ -87,7 +87,7 @@ target_include_directories(lamina_core PUBLIC
 )
 
 # 创建主可执行文件
-add_executable(Lamina interpreter/main.cpp)
+add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp)
 
 # 链接到 lamina_core
 target_link_libraries(Lamina PRIVATE lamina_core)

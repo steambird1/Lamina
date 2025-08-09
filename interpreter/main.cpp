@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <typeinfo>  // 用于typeid操作符
+#include "repl_input.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -17,18 +18,12 @@ int main(int argc, char* argv[]) {
         int lineno = 1;
         while (true) {
             try {
-                // Use color-safe prompt
-                if (Interpreter::supports_colors()) {
-                    std::cout << "\033[1;32m>\033[0m "; // Green prompt with colors
-                } else {
-                    std::cout << "> "; // Plain prompt without colors
-                }
-                std::string line;
-                if (!std::getline(std::cin, line)) break;
-                
-                if (line.empty()) { 
-                    ++lineno; 
-                    continue; 
+                std::string prompt = Interpreter::supports_colors() ? "\033[1;32m>\033[0m " : "> ";
+                std::string line = repl_readline(prompt);
+                if (std::cin.eof()) break;
+                if (line.empty()) {
+                    ++lineno;
+                    continue;
                 }
                 
                 // 处理特殊命令
