@@ -6,12 +6,11 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <typeinfo>  // 用于typeid操作符
+#include <typeinfo>
 #include "repl_input.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        // 进入交互式终端（REPL）
         std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit.\n";
         std::cout << "Type :help for help.\n";
         Interpreter interpreter;
@@ -19,14 +18,18 @@ int main(int argc, char* argv[]) {
         while (true) {
             try {
                 std::string prompt = Interpreter::supports_colors() ? "\033[1;32m>\033[0m " : "> ";
-                std::string line = repl_readline(prompt);
+                std::string line;
+                try {
+                    line = repl_readline(prompt);
+                } catch (const CtrlCException&) {
+                    break;
+                }
                 if (std::cin.eof()) break;
                 if (line.empty()) {
                     ++lineno;
                     continue;
                 }
                 
-                // 处理特殊命令
                 if (line == ":exit") {
                     break;
                 }
@@ -37,7 +40,7 @@ int main(int argc, char* argv[]) {
                     std::cout << "  :help - Show this help message\n";
                     std::cout << "  :vars - Show all variables\n";
                     std::cout << "  :clear - Clear screen\n";
-                    std::cout << "  :fns - Get Lamina Runtime Functions\n";
+                    //std::cout << "  :fns - Get Lamina Runtime Functions\n";
                     ++lineno;
                     continue;
                 }

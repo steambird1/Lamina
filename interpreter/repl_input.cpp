@@ -20,6 +20,11 @@ std::string repl_readline(const std::string& prompt) {
     std::string current_edit;
     while (true) {
         int ch = _getch();
+        // Ctrl+C
+        if (ch == 3) { // Ctrl+C
+            std::cout << "^C" << std::endl;
+            throw CtrlCException();
+        }
         // Ctrl+R
         if (ch == 18) { // Ctrl+R
             std::string search;
@@ -189,6 +194,12 @@ std::string repl_readline(const std::string& prompt) {
     size_t maxlen_unix = 0;
     while (true) {
         char ch = getchar();
+        // Ctrl+C
+        if (ch == 3) { // Ctrl+C
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 恢复终端设置
+            std::cout << "^C" << std::endl;
+            throw CtrlCException();
+        }
         // Ctrl+R
         if (ch == 18) { // Ctrl+R
             std::string search;
