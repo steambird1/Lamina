@@ -81,10 +81,23 @@ endif()
 
 # 设置编译器特定选项
 if(MSVC)
-    target_compile_options(lamina_core PRIVATE /W4)
+    target_compile_options(lamina_core PRIVATE 
+        /W4
+        /wd4251  # 'class' needs to have dll-interface to be used by clients of class
+        /wd4267  # 'var' : conversion from 'size_t' to 'type', possible loss of data
+        /wd4996  # This function or variable may be unsafe
+        /wd4702  # unreachable code
+        /wd4100  # unreferenced formal parameter
+        /wd4189  # local variable is initialized but not referenced
+        /wd4459  # declaration hides global declaration
+        /wd4244  # conversion from 'type1' to 'type2', possible loss of data
+        /wd4005  # macro redefinition
+    )
 else()
     target_compile_options(lamina_core PRIVATE 
         -Wall -Wextra -Wpedantic
+        -Wno-unused-parameter
+        -Wno-unused-variable
     )
 endif()
 
@@ -125,109 +138,123 @@ endif()
 # 扩展/插件系统（支持 Linux 和 Windows）
 message(STATUS "Building extensions for ${CMAKE_SYSTEM_NAME}")
 
-# 手动添加json_v2扩展
-add_library(json_v2 SHARED extensions/json_v2/json_v2.cpp)
-target_link_libraries(json_v2 PRIVATE lamina_core ${LIBUV_LIBRARY})
-target_include_directories(json_v2 PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
-    ${CMAKE_CURRENT_SOURCE_DIR}/extensions
-)
-set_target_properties(json_v2 PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug
-)
+# 自动寻找并构建扩展
+function(build_extension EXTENSION_PATH)
+    get_filename_component(EXTENSION_NAME ${EXTENSION_PATH} NAME)
+    get_filename_component(EXTENSION_DIR ${EXTENSION_PATH} DIRECTORY)
+    
+    # 检查是否有对应的 .cpp 文件
+    set(EXTENSION_SOURCE "${EXTENSION_PATH}/${EXTENSION_NAME}.cpp")
+    if(EXISTS ${EXTENSION_SOURCE})
+        message(STATUS "Building extension: ${EXTENSION_NAME}")
+        
+        # 创建共享库
+        add_library(${EXTENSION_NAME} SHARED ${EXTENSION_SOURCE})
+        
+        # 链接到 lamina_core 和 libuv
+        target_link_libraries(${EXTENSION_NAME} PRIVATE lamina_core ${LIBUV_LIBRARY})
+        
+        # 设置包含目录
+        target_include_directories(${EXTENSION_NAME} PRIVATE 
+            ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+            ${CMAKE_CURRENT_SOURCE_DIR}/extensions
+            ${EXTENSION_PATH}
+        )
+        
+        # 设置输出目录和属性
+        set_target_properties(${EXTENSION_NAME} PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
+            ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
+            LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
+            ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
+            POSITION_INDEPENDENT_CODE ON
+            PREFIX ""  # 去掉 lib 前缀
+        )
+        
+        # 设置扩展的编译选项（抑制常见警告）
+        if(MSVC)
+            target_compile_options(${EXTENSION_NAME} PRIVATE 
+                /W4
+                /wd4251  # 'class' needs to have dll-interface
+                /wd4267  # conversion from 'size_t' to 'type', possible loss of data
+                /wd4996  # This function or variable may be unsafe
+                /wd4702  # unreachable code
+                /wd4100  # unreferenced formal parameter
+                /wd4189  # local variable is initialized but not referenced
+                /wd4459  # declaration hides global declaration
+                /wd4244  # conversion possible loss of data
+                /wd4005  # macro redefinition
+            )
+        else()
+            target_compile_options(${EXTENSION_NAME} PRIVATE 
+                -Wall -Wextra -Wpedantic
+                -Wno-unused-parameter
+                -Wno-unused-variable
+            )
+        endif()
+        
+        # Windows 下自动复制 DLL，支持 MSVC 和 MinGW
+        if(WIN32)
+            if(MSVC)
+                # MSVC 构建，支持 Debug 配置的 PDB 文件
+                add_custom_command(TARGET ${EXTENSION_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        $<TARGET_FILE:${EXTENSION_NAME}>
+                        $<TARGET_FILE_DIR:${EXTENSION_NAME}>
+                    COMMENT "Copying ${EXTENSION_NAME}.dll to output directory"
+                )
+                # 在 Debug 配置下复制 PDB 文件
+                if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                    add_custom_command(TARGET ${EXTENSION_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            $<TARGET_PDB_FILE:${EXTENSION_NAME}>
+                            $<TARGET_FILE_DIR:${EXTENSION_NAME}>
+                        COMMENT "Copying ${EXTENSION_NAME}.pdb to output directory"
+                    )
+                endif()
+            else()
+                # MinGW 构建，只复制 DLL
+                add_custom_command(TARGET ${EXTENSION_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        $<TARGET_FILE:${EXTENSION_NAME}>
+                        $<TARGET_FILE_DIR:${EXTENSION_NAME}>
+                    COMMENT "Copying ${EXTENSION_NAME}.dll to output directory"
+                )
+            endif()
+        endif()
+    else()
+        message(WARNING "Extension source file not found: ${EXTENSION_SOURCE}")
+    endif()
+endfunction()
 
-# 添加minimal测试扩展
-add_library(minimal SHARED extensions/minimal/minimal.cpp)
-target_link_libraries(minimal PRIVATE lamina_core ${LIBUV_LIBRARY})
-target_include_directories(minimal PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
-    ${CMAKE_CURRENT_SOURCE_DIR}/extensions
-)
-set_target_properties(minimal PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug
-)
+# 自动寻找扩展目录（排除 standard 目录）
+file(GLOB EXTENSION_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/extensions/*")
+foreach(EXTENSION_DIR ${EXTENSION_DIRS})
+    if(IS_DIRECTORY ${EXTENSION_DIR})
+        get_filename_component(DIR_NAME ${EXTENSION_DIR} NAME)
+        # 排除标准库扩展目录
+        if(NOT DIR_NAME STREQUAL "standard")
+            build_extension(${EXTENSION_DIR})
+        endif()
+    endif()
+endforeach()
 
-# 临时注释掉自动扩展构建
-# file(GLOB_RECURSE EXTENSION_SOURCE_FILES
-#         "extensions/*.cpp"
-#         "extensions/*/*.cpp"
-#         "extensions/*/*/*.cpp"
-# )
-# 
-# foreach(SOURCE_FILE ${EXTENSION_SOURCE_FILES})
-#     # 排除标准库扩展
-#     if(NOT SOURCE_FILE MATCHES "extensions/standard")
-#         get_filename_component(SOURCE_NAME ${SOURCE_FILE} NAME_WE)
-#         
-#         # 链接到 lamina_core 和 libuv
-#         target_link_libraries(${SOURCE_NAME} PRIVATE lamina_core ${LIBUV_LIBRARY})
-#         
-#         # 设置包含目录
-#         target_include_directories(${SOURCE_NAME} PRIVATE 
-#             ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
-#             ${CMAKE_CURRENT_SOURCE_DIR}/extensions
-#         )
-#         
-#         # 设置输出目录为 build/Debug 或 build/Release，方便调试和分发
-#         set_target_properties(${SOURCE_NAME} PROPERTIES
-#             LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
-#             RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
-#             ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
-#             LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
-#             RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
-#             ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
-#             POSITION_INDEPENDENT_CODE ON
-#         )
-#         
-#         # 根据平台设置前缀
-#         if(UNIX)
-#             set_target_properties(${SOURCE_NAME} PROPERTIES PREFIX "")  # 去掉 lib 前缀
-#         elseif(WIN32)
-#             set_target_properties(${SOURCE_NAME} PROPERTIES PREFIX "")  # 去掉 lib 前缀
-#         endif()
-#         
-#         # Windows 下自动复制 DLL 到 Debug/Release 目录，PDB 仅 MSVC Debug 支持
-#         if(WIN32)
-#             if(MSVC)
-#                 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#                     add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
-#                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                             $<TARGET_FILE:${SOURCE_NAME}>
-#                             $<TARGET_FILE_DIR:${SOURCE_NAME}>
-#                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                             $<TARGET_PDB_FILE:${SOURCE_NAME}>
-#                             $<TARGET_FILE_DIR:${SOURCE_NAME}>
-#                         COMMENT "Copying ${SOURCE_NAME}.dll and .pdb to output directory (MSVC Debug)"
-#                     )
-#                 else()
-#                     add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
-#                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                             $<TARGET_FILE:${SOURCE_NAME}>
-#                             $<TARGET_FILE_DIR:${SOURCE_NAME}>
-#                         COMMENT "Copying ${SOURCE_NAME}.dll to output directory (MSVC Release)"
-#                     )
-#                 endif()
-#             else()
-#                 add_custom_command(TARGET ${SOURCE_NAME} POST_BUILD
-#                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                         $<TARGET_FILE:${SOURCE_NAME}>
-#                         $<TARGET_FILE_DIR:${SOURCE_NAME}>
-#                     COMMENT "Copying ${SOURCE_NAME}.dll to output directory (MinGW)"
-#                 )
-#             endif()
-#         endif()
-# #[[ 
-#   本项目支持 MSVC (Visual Studio) 和 MinGW (GCC) 编译。
-#   - MSVC: 支持 .pdb 调试符号，CMake 会自动复制 DLL 和 PDB。
-#   - MinGW: 仅复制 DLL，调试信息内嵌于 DLL/EXE。
-#   如需 MSVC 编译，推荐用如下命令：
-#     cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Debug .
-#     cmake --build build --config Debug --parallel
-# ]]
-#         
-#         message(STATUS "Building extension: ${SOURCE_NAME}")
-#     endif()
-# endforeach()
+#[[ 
+  本项目支持 MSVC (Visual Studio) 和 MinGW (GCC) 编译。
+  - MSVC: 支持 .pdb 调试符号，CMake 会自动复制 DLL 和 PDB。
+  - MinGW: 仅复制 DLL，调试信息内嵌于 DLL/EXE。
+  
+  扩展构建说明：
+  - 自动寻找 extensions/ 目录下的所有子目录（除了 standard/）
+  - 每个扩展目录应包含与目录名同名的 .cpp 文件
+  - 扩展将被编译为共享库并自动复制到输出目录
+  
+  如需 MSVC 编译，推荐用如下命令：
+    cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Debug .
+    cmake --build build --config Debug --parallel
+]]
 
 # 安装规则
 install(TARGETS Lamina lamina_core

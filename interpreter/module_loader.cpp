@@ -147,8 +147,9 @@ bool ModuleLoader::registerToInterpreter(Interpreter& interpreter) {
     
     const std::string& ns_name = m_exports->info.namespace_name;
     
+    // TODO: 命名空间功能尚未实现，暂时注释掉
     // 注册域
-    interpreter.register_namespace(ns_name);
+    // interpreter.register_namespace(ns_name);
     
     // 注册函数到命名空间
     for (int i = 0; i < m_exports->function_count; ++i) {
@@ -160,7 +161,9 @@ bool ModuleLoader::registerToInterpreter(Interpreter& interpreter) {
             return callModuleFunction(func_name, args);
         };
         
-        interpreter.register_namespace_function(ns_name, func_name, wrapper);
+        // TODO: 命名空间功能尚未实现，暂时直接注册为全局函数
+        // interpreter.register_namespace_function(ns_name, func_name, wrapper);
+        interpreter.builtin_functions[ns_name + "::" + func_name] = wrapper;
         std::cout << "Function '" << ns_name << "::" << func_name << "' registered" << std::endl;
     }
     
@@ -168,7 +171,9 @@ bool ModuleLoader::registerToInterpreter(Interpreter& interpreter) {
     for (int i = 0; i < m_exports->variable_count; ++i) {
         const auto& var_entry = m_exports->variables[i];
         Value val = laminaToValue(var_entry.value);
-        interpreter.register_namespace_variable(ns_name, var_entry.name, val);
+        // TODO: 命名空间功能尚未实现，暂时直接注册为全局变量
+        // interpreter.register_namespace_variable(ns_name, var_entry.name, val);
+        interpreter.set_global_variable(ns_name + "::" + var_entry.name, val);
     }
     
     return true;

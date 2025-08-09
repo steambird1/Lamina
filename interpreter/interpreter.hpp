@@ -19,8 +19,7 @@
 #include <functional>
 #include <stack>
 
-// Forward declaration for error handling
-void LAMINA_EXPORT error_and_exit(const std::string& msg);
+// 前向声明在 lamina.hpp 中已定义，无需重复声明
 
 // Stack frame for function call tracking
 struct StackFrame {
