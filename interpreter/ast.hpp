@@ -106,6 +106,15 @@ struct CallExpr : public Expression {
         : callee(c), args(std::move(a)) {}
 };
 
+// 命名空间函数调用
+struct NamespaceCallExpr : public Expression {
+    std::string namespace_name;
+    std::string function_name;
+    std::vector<std::unique_ptr<Expression>> args;
+    NamespaceCallExpr(const std::string& ns, const std::string& fn, std::vector<std::unique_ptr<Expression>> a)
+        : namespace_name(ns), function_name(fn), args(std::move(a)) {}
+};
+
 // 数组字面量
 struct ArrayExpr : public Expression {
     std::vector<std::unique_ptr<Expression>> elements;
@@ -123,6 +132,12 @@ struct ReturnStmt : public Statement {
 struct IncludeStmt : public Statement {
     std::string module;
     IncludeStmt(const std::string& m) : module(m) {}
+};
+
+// use 语句
+struct UseStmt : public Statement {
+    std::string module;
+    UseStmt(const std::string& m) : module(m) {}
 };
 
 // break 语句
