@@ -686,7 +686,7 @@ Value Interpreter::eval(const ASTNode* node) {
     }    // Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         std::string actual_callee = call->callee;
-        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
+//        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
 
         // 检查调用的名称是否是一个参数，如果是，获取其实际值
         try {
@@ -694,28 +694,28 @@ Value Interpreter::eval(const ASTNode* node) {
             if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
                 // 这是一个函数参数，提取实际的函数名
                 actual_callee = std::get<std::string>(callee_value.data).substr(11);
-                std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
+             //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
             }
         } catch (const RuntimeError&) {
             // 如果不是变量，保持原名称
-            std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
+           // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
         }
 
         // Check builtin functions first
-        std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
-        std::cout << "DEBUG: Available builtin functions:" << std::endl;
+     //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
+     //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
         for (const auto& pair : builtin_functions) {
             std::cout << "  - '" << pair.first << "'" << std::endl;
         }
         
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
-            std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
+       //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
             
             // 检查是否是模块函数
             bool is_module_func = actual_callee.find(".") != std::string::npos;
             if (is_module_func) {
-                std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
+         //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
             }
             
             // Handle builtin call with stack frame and unified error handling
