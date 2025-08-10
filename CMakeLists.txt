@@ -5,6 +5,25 @@ project(Lamina VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 在Windows上优先使用MSVC
+if(WIN32)
+    # 检测MSVC是否存在
+    if(NOT MSVC)
+        message(WARNING "在Windows上推荐使用MSVC编译器。将尝试使用MinGW，但可能存在兼容性问题。")
+    else()
+        # 设置MSVC编译选项 - 增加异常处理、调用约定和并行PDB写入支持
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MD /Gz /FS")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MD /Gz /FS")
+        
+        # 设置为多线程动态链接库
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+        
+        # 添加额外的定义确保调用约定一致
+        add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    endif()
+endif()
+
 # 设置输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -83,6 +102,7 @@ endif()
 if(MSVC)
     target_compile_options(lamina_core PRIVATE 
         /W4
+        /FS  # 添加 /FS 标志解决并行编译时的 PDB 文件冲突
         /wd4251  # 'class' needs to have dll-interface to be used by clients of class
         /wd4267  # 'var' : conversion from 'size_t' to 'type', possible loss of data
         /wd4996  # This function or variable may be unsafe
@@ -107,7 +127,9 @@ target_include_directories(lamina_core PUBLIC
 )
 
 # 创建主可执行文件
-add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp)
+add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
+               # 直接包含module_loader.cpp以解决MinGW链接问题
+               interpreter/module_loader.cpp)
 
 # 链接到 lamina_core
 target_link_libraries(Lamina PRIVATE lamina_core)
