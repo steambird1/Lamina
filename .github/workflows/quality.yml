@@ -620,12 +620,12 @@ jobs:
               if (/\{/) brace_count += gsub(/\{/, "");
               if (/\}/) brace_count -= gsub(/\}/, "");
               if (brace_count == 0) {
-                length = NR - func_start;
+                func_length = NR - func_start;
                 if (complexity > 10) {
                   print "⚠️  **" file "**: High complexity function at line " func_start " (complexity: " complexity ")";
                 }
-                if (length > 50) {
-                  print "⚠️  **" file "**: Long function at line " func_start " (" length " lines)";
+                if (func_length > 50) {
+                  print "⚠️  **" file "**: Long function at line " func_start " (" func_length " lines)";
                 }
                 in_function = 0;
               }
