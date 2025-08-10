@@ -9,11 +9,15 @@
 #include "lamina.hpp"
 
 #ifdef _WIN32
+#ifndef USE_LIBUV
 #define USE_LIBUV
+#endif
 #endif
 
 #ifdef __linux__
+#ifndef USE_LIBUV
 #define USE_LIBUV
+#endif
 #endif
 
 #ifdef USE_LIBUV

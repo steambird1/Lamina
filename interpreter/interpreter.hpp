@@ -11,6 +11,7 @@
 #endif
 #include "ast.hpp"
 #include "value.hpp"
+#include "module_loader.hpp"
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -106,6 +107,8 @@ public:
     void set_global_variable(const std::string& name, const Value& val);
     // Variable lookup
     Value get_variable(const std::string& name) const;
+    // Call module function
+    Value call_module_function(const std::string& func_name, const std::vector<Value>& args);
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{ { } };
 private:
@@ -117,6 +120,8 @@ private:
     std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
     // Store REPL ASTs to keep function pointers valid in interactive mode
     std::vector<std::unique_ptr<ASTNode>> repl_asts;
+    // Store loaded module loaders for function calls
+    std::vector<std::unique_ptr<ModuleLoader>> module_loaders;
 
     // Stack trace for function calls
     std::vector<StackFrame> call_stack;

@@ -4,8 +4,8 @@
 #include <string>
 #include <stdexcept>
 
-// Set to false to disable debug output
-static const bool PARSER_DEBUG = false;
+// Set to true to enable debug output
+static const bool PARSER_DEBUG = true;
 
 // Debug output macro - no output if DEBUG is false
 #define DEBUG_OUT if (PARSER_DEBUG) std::cerr
@@ -99,6 +99,9 @@ std::unique_ptr<Expression> Parser::parse_unary(const std::vector<Token>& tokens
 
 std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& tokens, size_t& i) {
     if (i >= tokens.size()) return nullptr;
+    
+    DEBUG_OUT << "Debug - parse_primary: token[" << i << "] = '" << tokens[i].text 
+              << "' (type=" << static_cast<int>(tokens[i].type) << ")" << std::endl;
       if (tokens[i].type == TokenType::Number) {
         return std::make_unique<LiteralExpr>(tokens[i++].text);
     } else if (tokens[i].type == TokenType::String) {
@@ -138,7 +141,25 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
         return std::make_unique<ArrayExpr>(std::move(elements));
     } else if (tokens[i].type == TokenType::Identifier) {
         std::string name = tokens[i].text;
+        std::cerr << "DEBUG: Found identifier '" << name << "' at token " << i << std::endl;
         ++i;
+
+        // Check for dot notation (namespace.function)
+        if (i < tokens.size() && tokens[i].type == TokenType::Dot) {
+            std::cerr << "DEBUG: Found dot at token " << i << std::endl;
+            ++i; // Skip '.'
+            if (i < tokens.size() && tokens[i].type == TokenType::Identifier) {
+                std::cerr << "DEBUG: Found second identifier '" << tokens[i].text << "' at token " << i << std::endl;
+                name += "." + tokens[i].text;  // 保持点格式
+                ++i;
+                std::cerr << "DEBUG: Converted to namespace syntax: '" << name << "'" << std::endl;
+            } else {
+                std::cerr << "Error: Expected identifier after '.'" << std::endl;
+                return nullptr;
+            }
+        } else {
+            std::cerr << "DEBUG: No dot found, next token type is " << (i < tokens.size() ? static_cast<int>(tokens[i].type) : -1) << std::endl;
+        }
 
         // Function call
         if (i < tokens.size() && tokens[i].type == TokenType::LParen) {
@@ -460,6 +481,7 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
 }
 
 std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tokens, size_t& i) {
+    std::cerr << "DEBUG: parse_statement starting at token " << i << std::endl;
     // Handle include statements first - only support quoted strings
     if (tokens[i].type == TokenType::Include && i+1 < tokens.size()) {
         if (tokens[i+1].type != TokenType::String) {
@@ -622,8 +644,11 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         return std::make_unique<BigIntDeclStmt>(name, std::move(init_value));
     } else if (tokens[i].type == TokenType::Var && tokens[i+1].type == TokenType::Identifier && tokens[i+2].type == TokenType::Assign) {
         std::string name = tokens[i+1].text;
+        DEBUG_OUT << "Debug - Parsing variable declaration: " << name << std::endl;
         i += 3;
+        DEBUG_OUT << "Debug - About to parse expression for variable " << name << std::endl;
         auto expr = parse_expression(tokens, i);
+        DEBUG_OUT << "Debug - Expression parsing result: " << (expr ? "success" : "failed") << std::endl;
         if (!expr) {
             std::cerr << "Error: Missing expression in variable declaration for '" << name << "'" << std::endl;
             return nullptr;

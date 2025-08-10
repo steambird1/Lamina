@@ -6,24 +6,49 @@
 #ifndef LAMINA_MODULE_API_HPP
 #define LAMINA_MODULE_API_HPP
 
-// 跨平台调用约定定义
-#ifdef _WIN32
+// 跨平台调用约定定义 - 更明确地指定调用约定
+#if defined(_WIN32) && defined(_MSC_VER)
+    // MSVC下使用__stdcall
+    #ifdef __cplusplus
+        #define LAMINA_CALL __stdcall
+        #ifndef LAMINA_EXPORT
+        #define LAMINA_EXPORT extern "C" __declspec(dllexport)
+        #endif
+    #else
+        #define LAMINA_CALL __stdcall
+        #ifndef LAMINA_EXPORT
+        #define LAMINA_EXPORT __declspec(dllexport)
+        #endif
+    #endif
+#elif defined(_WIN32)
+    // 其他Windows编译器使用__cdecl
     #ifdef __cplusplus
         #define LAMINA_CALL __cdecl
+        #ifndef LAMINA_EXPORT
         #define LAMINA_EXPORT extern "C" __declspec(dllexport)
+        #endif
     #else
         #define LAMINA_CALL __cdecl
+        #ifndef LAMINA_EXPORT
         #define LAMINA_EXPORT __declspec(dllexport)
+        #endif
     #endif
 #else
+    // 非Windows平台不需要特殊调用约定
     #ifdef __cplusplus
         #define LAMINA_CALL
+        #ifndef LAMINA_EXPORT
         #define LAMINA_EXPORT extern "C" __attribute__((visibility("default")))
+        #endif
     #else
         #define LAMINA_CALL
+        #ifndef LAMINA_EXPORT
         #define LAMINA_EXPORT __attribute__((visibility("default")))
+        #endif
     #endif
 #endif
+
+// 确保所有使用了函数指针的地方都明确使用了LAMINA_CALL
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,8 +81,17 @@ typedef struct {
     } data;
 } LaminaValue;
 
-// 函数调用的回调类型 - 使用标准C调用约定确保跨平台兼容性
-typedef LaminaValue (LAMINA_CALL *LaminaFunction)(const LaminaValue* args, int arg_count);
+// 函数调用的回调类型 - 更加明确地使用特定平台的调用约定
+#if defined(_WIN32) && defined(_MSC_VER)
+// 在MSVC下明确使用__stdcall约定，保持与模块函数一致
+typedef LaminaValue (__stdcall *LaminaFunction)(const LaminaValue* args, int arg_count);
+#elif defined(_WIN32)
+// 其他Windows编译器使用__cdecl
+typedef LaminaValue (__cdecl *LaminaFunction)(const LaminaValue* args, int arg_count);
+#else
+// 非Windows平台不需要特殊约定
+typedef LaminaValue (*LaminaFunction)(const LaminaValue* args, int arg_count);
+#endif
 
 // 函数注册结构
 typedef struct {
@@ -83,7 +117,17 @@ typedef struct {
 } LaminaModuleExports;
 
 // 模块入口函数 - 每个模块必须实现 (注意返回值不是指针)
-typedef LaminaModuleExports* (LAMINA_CALL *LaminaModuleInit)(void);
+// 模块入口函数类型
+#if defined(_WIN32) && defined(_MSC_VER)
+// 在MSVC下使用__stdcall约定
+typedef LaminaModuleExports* (__stdcall *LaminaModuleInit)(void);
+#elif defined(_WIN32)
+// 其他Windows编译器使用__cdecl
+typedef LaminaModuleExports* (__cdecl *LaminaModuleInit)(void);
+#else
+// 非Windows平台使用标准调用约定
+typedef LaminaModuleExports* (*LaminaModuleInit)(void);
+#endif
 
 // 模块签名验证
 #define LAMINA_MODULE_SIGNATURE "LAMINA_MODULE_V2"

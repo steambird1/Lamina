@@ -1,12 +1,12 @@
-# Minimal 测试模块
+# Minimal 测试模块 (修复版)
 cmake_minimum_required(VERSION 3.10)
 
 # 设置模块名称
 set(MODULE_NAME minimal)
 
-# 创建共享库
+# 创建共享库 - 使用超级极简版源文件
 add_library(${MODULE_NAME} SHARED
-    minimal.cpp
+    ultra_minimal.cpp
 )
 
 # 设置输出目录
@@ -22,10 +22,30 @@ if(WIN32)
     target_compile_definitions(${MODULE_NAME} PRIVATE
         _CRT_SECURE_NO_WARNINGS
     )
-    # 确保使用正确的调用约定
-    target_compile_options(${MODULE_NAME} PRIVATE
-        /std:c++17
-    )
+    
+    if(MSVC)
+        # MSVC 特定设置 - 确保使用正确的调用约定
+        target_compile_options(${MODULE_NAME} PRIVATE
+            /std:c++17
+            /EHsc    # 启用C++异常处理
+            /MD      # 使用动态运行时库
+            /W4      # 警告等级
+        )
+        
+        # 确保与主程序使用相同的运行时库
+        set_property(TARGET ${MODULE_NAME} PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+        )
+    else()
+        # MinGW 特定设置，但强烈建议使用MSVC
+        message(WARNING "构建${MODULE_NAME}模块时推荐使用MSVC，以避免ABI兼容性问题")
+        target_compile_options(${MODULE_NAME} PRIVATE
+            -std=c++17
+            -fexceptions  # 启用C++异常处理
+            -shared       # 确保正确生成共享库
+        )
+    endif()
+)
 elseif(UNIX AND NOT APPLE)
     # Linux 特定设置
     target_compile_options(${MODULE_NAME} PRIVATE

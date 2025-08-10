@@ -30,6 +30,7 @@ public:
     ModuleLoader(const std::string& path);
     ~ModuleLoader();
     
+    void unload();
     bool isLoaded() const { return m_handle != nullptr && m_exports != nullptr; }
     bool registerToInterpreter(Interpreter& interpreter);
     

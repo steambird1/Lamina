@@ -1,6 +1,6 @@
 #include "interpreter.hpp"
 #include "lexer.hpp"
-#include "module.hpp"
+#include "module_loader.hpp"
 #include "lamina.hpp"
 #include "parser.hpp"
 #include "bigint.hpp"
@@ -250,7 +250,15 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
         if (exprstmt->expr) {
-            eval(exprstmt->expr.get());
+            try {
+                std::cerr << "DEBUG: Executing expression statement" << std::endl;
+                Value result = eval(exprstmt->expr.get());
+                std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "ERROR: Unknown exception in expression statement" << std::endl;
+            }
         } else {
             error_and_exit("Empty expression statement");
         }
@@ -678,6 +686,7 @@ Value Interpreter::eval(const ASTNode* node) {
     }    // Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         std::string actual_callee = call->callee;
+        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
 
         // 检查调用的名称是否是一个参数，如果是，获取其实际值
         try {
@@ -685,14 +694,30 @@ Value Interpreter::eval(const ASTNode* node) {
             if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
                 // 这是一个函数参数，提取实际的函数名
                 actual_callee = std::get<std::string>(callee_value.data).substr(11);
+                std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
             }
         } catch (const RuntimeError&) {
             // 如果不是变量，保持原名称
+            std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
         }
 
         // Check builtin functions first
+        std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
+        std::cout << "DEBUG: Available builtin functions:" << std::endl;
+        for (const auto& pair : builtin_functions) {
+            std::cout << "  - '" << pair.first << "'" << std::endl;
+        }
+        
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
+            std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
+            
+            // 检查是否是模块函数
+            bool is_module_func = actual_callee.find(".") != std::string::npos;
+            if (is_module_func) {
+                std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
+            }
+            
             // Handle builtin call with stack frame and unified error handling
             push_frame(actual_callee, "<builtin>", 0);
 
@@ -808,6 +833,28 @@ Value Interpreter::eval(const ASTNode* node) {
             return Value(); // Default value when no return
         }
 
+        // Check if it's a module function before reporting undefined
+        bool is_module_func = actual_callee.find(".") != std::string::npos;
+        if (is_module_func) {
+            // Prepare arguments for module function call
+            std::vector<Value> args;
+            for (const auto& arg : call->args) {
+                if (!arg) {
+                    std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
+                    args.push_back(Value());
+                } else {
+                    args.push_back(eval(arg.get()));
+                }
+            }
+            
+            // Try to call the module function
+            Value result = call_module_function(actual_callee, args);
+            if (result.to_string() != "null") {  // 检查是否成功调用
+                return result;
+            }
+            // If module function call failed, fall through to undefined function error
+        }
+
         std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
         return Value("<undefined function>");
     }
@@ -899,14 +946,16 @@ bool Interpreter::load_module(const std::string& module_name) {
             std::ifstream testfile(full_path, std::ios::binary);
             if (testfile) {
                 testfile.close();
-                ModuleLoader loader(full_path);
-                if (loader.isLoaded()) {
-                    std::vector<ModuleLoader::EntryFunction> entryFunctions = loader.findEntryFunctions();
-                    for (auto& entryFunc : entryFunctions) {
-                        entryFunc(*this);
+                auto loader = std::make_unique<ModuleLoader>(full_path);
+                if (loader->isLoaded()) {
+                    if (loader->registerToInterpreter(*this)) {
+                        // 保存模块加载器实例
+                        module_loaders.push_back(std::move(loader));
+                        loaded_modules.insert(module_name);
+                        return true;
+                    } else {
+                        std::cerr << "Failed to register module: " << full_path << std::endl;
                     }
-                    loaded_modules.insert(module_name);
-                    return true;
                 } else {
                     std::cerr << "Failed to load shared library: " << full_path << std::endl;
                 }
@@ -943,15 +992,17 @@ bool Interpreter::load_module(const std::string& module_name) {
                 std::ifstream testfile(full_path, std::ios::binary);
                 if (testfile) {
                     testfile.close();
-                    ModuleLoader loader(full_path);
-                    if (loader.isLoaded()) {
-                        std::vector<ModuleLoader::EntryFunction> entryFunctions = loader.findEntryFunctions();
-                        for (auto& entryFunc : entryFunctions) {
-                            entryFunc(*this);
+                    auto loader = std::make_unique<ModuleLoader>(full_path);
+                    if (loader->isLoaded()) {
+                        if (loader->registerToInterpreter(*this)) {
+                            // 保存模块加载器实例
+                            module_loaders.push_back(std::move(loader));
+                            loaded_modules.insert(module_name);
+                            found = true;
+                            break;
+                        } else {
+                            std::cerr << "Failed to register module: " << full_path << std::endl;
                         }
-                        loaded_modules.insert(module_name);
-                        found = true;
-                        break;
                     } else {
                         std::cerr << "Failed to load shared library: " << full_path << std::endl;
                     }
@@ -1180,6 +1231,27 @@ void Interpreter::print_error(const std::string& message, bool use_colors) {
     } else {
         std::cerr << "Error: " << message << "\n";
     }
+}
+
+// Call module function implementation
+Value Interpreter::call_module_function(const std::string& func_name, const std::vector<Value>& args) {
+    // Try each loaded module
+    for (auto& loader : module_loaders) {
+        if (loader && loader->isLoaded()) {
+            // Check if this module has the function (by namespace)
+            size_t dot_pos = func_name.find(".");
+            if (dot_pos != std::string::npos) {
+                std::string ns = func_name.substr(0, dot_pos);
+                const auto* module_info = loader->getModuleInfo();
+                if (module_info && std::string(module_info->namespace_name) == ns) {
+                    return loader->callModuleFunction(func_name, args);
+                }
+            }
+        }
+    }
+    
+    std::cerr << "ERROR: Module function '" << func_name << "' not found in any loaded module" << std::endl;
+    return Value(); // null value
 }
 
 void Interpreter::print_warning(const std::string& message, bool use_colors) {

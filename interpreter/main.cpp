@@ -2,7 +2,7 @@
 #include "parser.hpp"
 #include "interpreter.hpp"
 #include "trackback.hpp"
-#include "module.hpp"
+#include "module_loader.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -53,9 +53,11 @@ int main(int argc, char* argv[]) {
                 
                 if (line == ":clear") {
                     #ifdef _WIN32
-                    (void)system("cls");
+                    auto result = system("cls");
+                    (void)result;  // 明确忽略返回值
                     #else
-                    (void)system("clear");
+                    auto result = system("clear");
+                    (void)result;  // 明确忽略返回值
                     #endif
                     ++lineno;
                     continue;
@@ -125,6 +127,25 @@ int main(int argc, char* argv[]) {
     auto tokens = Lexer::tokenize(source);
     auto ast = Parser::parse(tokens);
     Interpreter interpreter;
+    
+    // 加载minimal模块
+    std::cout << "Loading minimal module..." << std::endl;
+    try {
+        auto moduleLoader = std::make_unique<ModuleLoader>("minimal.dll");
+        if (moduleLoader->isLoaded()) {
+            std::cout << "Module loaded successfully, registering to interpreter..." << std::endl;
+            if (moduleLoader->registerToInterpreter(interpreter)) {
+                std::cout << "Module registered successfully!" << std::endl;
+            } else {
+                std::cerr << "Failed to register module to interpreter!" << std::endl;
+            }
+        } else {
+            std::cerr << "Failed to load module!" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception during module loading: " << e.what() << std::endl;
+    }
+    
     if (!ast) {
         print_traceback(argv[1], 1);
         return 2;
