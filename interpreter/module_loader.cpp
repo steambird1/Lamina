@@ -143,11 +143,11 @@ ModuleLoader::ModuleLoader(const std::string& path) : m_handle(nullptr), m_path(
         return;
     }
 
-    std::cout << "Module loaded successfully: " << path << std::endl;
-    std::cout << "  Namespace: " << m_exports->info.namespace_name << std::endl;
-    std::cout << "  Version: " << m_exports->info.version << std::endl;
-    std::cout << "  Description: " << m_exports->info.description << std::endl;
-    std::cout << "  Functions: " << m_exports->function_count << std::endl;
+ //   std::cout << "Module loaded successfully: " << path << std::endl;
+ //   std::cout << "  Namespace: " << m_exports->info.namespace_name << std::endl;
+ //   std::cout << "  Version: " << m_exports->info.version << std::endl;
+ //   std::cout << "  Description: " << m_exports->info.description << std::endl;
+ //   std::cout << "  Functions: " << m_exports->function_count << std::endl;
 }
 
 ModuleLoader::~ModuleLoader() {
