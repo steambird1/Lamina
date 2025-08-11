@@ -63,6 +63,12 @@ int main(int argc, char* argv[]) {
                     continue;
                 }
 
+                if (line == ":fns") {
+
+                    ++lineno;
+                    continue;
+                }
+
                 auto tokens = Lexer::tokenize(line);
                 auto ast = Parser::parse(tokens);
                 if (!ast) {
