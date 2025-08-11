@@ -1,7 +1,7 @@
 #include "interpreter.hpp"
 #include "lamina.hpp"
 #include "value.hpp"
-
+#include "latex.hpp"
 
 inline Value sqrt(const std::vector<Value>& args) {
      if (!args[0].is_numeric()) {
@@ -190,6 +190,54 @@ inline Value decimal(const std::vector<Value>& args) {
      double val = args[0].as_number();
      return Value(val);
 }
+
+namespace latex{
+     ImprovedLaTeXCalculator* improved_la_te_x_calculator = new ImprovedLaTeXCalculator();
+
+     Value Initialize(const std::vector<Value>& args) {
+          improved_la_te_x_calculator;
+          return Value(nullptr);
+     }
+
+     Value set_var(const std::vector<Value>& args) {
+          if (!args[0].is_string()) {
+               L_ERR("Args 0 must be string");
+          }
+          if (!args[1].is_numeric()) {
+               L_ERR("Args 1 must be number");
+          }
+          std::string var_name = args[0].to_string();
+          double value = args[1].as_number();
+          improved_la_te_x_calculator->setVariable(var_name, value);
+          return Value(nullptr);
+     }
+
+     Value calculate(const std::vector<Value>& args) {
+          if (!args[0].is_string()) {
+               L_ERR("Args 0 must be string");
+          }
+          std::string expression = args[0].to_string();
+          auto [success, result] = improved_la_te_x_calculator->evaluate(expression);
+          if (!success) {
+               throw RuntimeError("LaTeX evaluation failed: " + result);
+          }
+          try {
+               size_t pos;
+               double num = std::stod(result, &pos);
+               if (pos == result.size() && num == std::floor(num)) {
+                    return Value(static_cast<int>(num));
+               }
+               return Value(num);
+          } catch (const std::exception& e) {
+               throw RuntimeError("Result conversion failed: " + result);
+          }
+     }
+     LAMINA_FUNC("init", Initialize, 0);
+     LAMINA_FUNC("set_var", set_var, 2);
+     LAMINA_FUNC("calculate", calculate, 1);
+
+}
+
 namespace lamina {
      LAMINA_FUNC("sqrt", sqrt, 1);
      LAMINA_FUNC("pi", pi, 0);
