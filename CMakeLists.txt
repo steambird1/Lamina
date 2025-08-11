@@ -113,7 +113,8 @@ endif()
 
 # Set compiler specific options
 if(MSVC)
-    target_compile_options(lamina_core PRIVATE 
+    target_compile_options(lamina_core PRIVATE
+        /bigobj # 消除编译错误
         /W4
         /FS  # Add /FS flag to resolve PDB file conflicts during parallel compilation
         /wd4251  # 'class' needs to have dll-interface to be used by clients of class
