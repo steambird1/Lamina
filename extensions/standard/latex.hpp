@@ -9,7 +9,7 @@
 #include <cctype> // for std::isspace
 
 // 包含 ExprTk 头文件
-#include "../external/exprtk/exprtk.hpp"
+#include "exprtk.hpp"
 
 class ImprovedLaTeXCalculator {
 private:
