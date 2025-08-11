@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 // Set to true to enable debug output
-static const bool PARSER_DEBUG = true;
+static const bool PARSER_DEBUG = false;
 
 // Debug output macro - no output if DEBUG is false
 #define DEBUG_OUT if (PARSER_DEBUG) std::cerr
@@ -141,24 +141,24 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
         return std::make_unique<ArrayExpr>(std::move(elements));
     } else if (tokens[i].type == TokenType::Identifier) {
         std::string name = tokens[i].text;
-        std::cerr << "DEBUG: Found identifier '" << name << "' at token " << i << std::endl;
+       // std::cerr << "DEBUG: Found identifier '" << name << "' at token " << i << std::endl;
         ++i;
 
         // Check for dot notation (namespace.function)
         if (i < tokens.size() && tokens[i].type == TokenType::Dot) {
-            std::cerr << "DEBUG: Found dot at token " << i << std::endl;
+         //   std::cerr << "DEBUG: Found dot at token " << i << std::endl;
             ++i; // Skip '.'
             if (i < tokens.size() && tokens[i].type == TokenType::Identifier) {
-                std::cerr << "DEBUG: Found second identifier '" << tokens[i].text << "' at token " << i << std::endl;
+           //     std::cerr << "DEBUG: Found second identifier '" << tokens[i].text << "' at token " << i << std::endl;
                 name += "." + tokens[i].text;  // 保持点格式
                 ++i;
-                std::cerr << "DEBUG: Converted to namespace syntax: '" << name << "'" << std::endl;
+             //   std::cerr << "DEBUG: Converted to namespace syntax: '" << name << "'" << std::endl;
             } else {
                 std::cerr << "Error: Expected identifier after '.'" << std::endl;
                 return nullptr;
             }
         } else {
-            std::cerr << "DEBUG: No dot found, next token type is " << (i < tokens.size() ? static_cast<int>(tokens[i].type) : -1) << std::endl;
+            // std::cerr << "DEBUG: No dot found, next token type is " << (i < tokens.size() ? static_cast<int>(tokens[i].type) : -1) << std::endl;
         }
 
         // Function call
@@ -481,7 +481,7 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
 }
 
 std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tokens, size_t& i) {
-    std::cerr << "DEBUG: parse_statement starting at token " << i << std::endl;
+    // std::cerr << "DEBUG: parse_statement starting at token " << i << std::endl;
     // Handle include statements first - only support quoted strings
     if (tokens[i].type == TokenType::Include && i+1 < tokens.size()) {
         if (tokens[i+1].type != TokenType::String) {
