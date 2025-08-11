@@ -251,9 +251,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
         if (exprstmt->expr) {
             try {
-                std::cerr << "DEBUG: Executing expression statement" << std::endl;
+                // std::cerr << "DEBUG: Executing expression statement" << std::endl;
                 Value result = eval(exprstmt->expr.get());
-                std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
+                // std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
             } catch (...) {
@@ -273,8 +273,12 @@ Value Interpreter::eval(const ASTNode* node) {
     if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
         // Try to parse as number first
         try {
-            // Check if it contains a decimal point for float
-            if (lit->value.find('.') != std::string::npos) {
+            // Check if it contains scientific notation (e or E) or decimal point
+            std::string value = lit->value;
+            if (value.find('.') != std::string::npos || 
+                value.find('e') != std::string::npos || 
+                value.find('E') != std::string::npos) {
+                // Parse as double for floating point numbers and scientific notation
                 double d = std::stod(lit->value);
                 return Value(d);
             } else {
@@ -704,9 +708,9 @@ Value Interpreter::eval(const ASTNode* node) {
         // Check builtin functions first
      //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
      //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
-        for (const auto& pair : builtin_functions) {
-            std::cout << "  - '" << pair.first << "'" << std::endl;
-        }
+        // for (const auto& pair : builtin_functions) {
+        //     std::cout << "  - '" << pair.first << "'" << std::endl;
+        // }
         
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {

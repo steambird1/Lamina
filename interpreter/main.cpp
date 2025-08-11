@@ -134,23 +134,28 @@ int main(int argc, char* argv[]) {
     auto ast = Parser::parse(tokens);
     Interpreter interpreter;
     
-    // 加载minimal模块
-    std::cout << "Loading minimal module..." << std::endl;
-    try {
-        auto moduleLoader = std::make_unique<ModuleLoader>("minimal.dll");
-        if (moduleLoader->isLoaded()) {
-            std::cout << "Module loaded successfully, registering to interpreter..." << std::endl;
-            if (moduleLoader->registerToInterpreter(interpreter)) {
-                std::cout << "Module registered successfully!" << std::endl;
-            } else {
-                std::cerr << "Failed to register module to interpreter!" << std::endl;
-            }
-        } else {
-            std::cerr << "Failed to load module!" << std::endl;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Exception during module loading: " << e.what() << std::endl;
-    }
+    // 注释掉自动加载minimal模块，改为按需加载
+    // std::cout << "Loading minimal module..." << std::endl;
+    // try {
+    //     // 首先尝试从extensions目录加载
+    //     auto moduleLoader = std::make_unique<ModuleLoader>("../extensions/minimal.dll");
+    //     if (!moduleLoader->isLoaded()) {
+    //         // 如果失败，尝试从当前目录加载
+    //         moduleLoader = std::make_unique<ModuleLoader>("minimal.dll");
+    //     }
+    //     if (moduleLoader->isLoaded()) {
+    //         std::cout << "Module loaded successfully, registering to interpreter..." << std::endl;
+    //         if (moduleLoader->registerToInterpreter(interpreter)) {
+    //             std::cout << "Module registered successfully!" << std::endl;
+    //         } else {
+    //             std::cerr << "Failed to register module to interpreter!" << std::endl;
+    //         }
+    //     } else {
+    //         std::cerr << "Failed to load module!" << std::endl;
+    //     }
+    // } catch (const std::exception& e) {
+    //     std::cerr << "Exception during module loading: " << e.what() << std::endl;
+    // }
     
     if (!ast) {
         print_traceback(argv[1], 1);

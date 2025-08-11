@@ -87,10 +87,31 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             size_t j = i;
             bool has_dot = false;
             
-            // Handle decimal numbers
+            // Handle decimal numbers including scientific notation
+            // Parse mantissa (before 'e' or 'E')
             while (j < src.size() && (isdigit(src[j]) || (src[j] == '.' && !has_dot))) {
                 if (src[j] == '.') has_dot = true;
                 ++j;
+            }
+            
+            // Check for scientific notation (e or E)
+            if (j < src.size() && (src[j] == 'e' || src[j] == 'E')) {
+                size_t e_pos = j;
+                ++j; // Skip 'e' or 'E'
+                // Check for optional + or - in exponent
+                if (j < src.size() && (src[j] == '+' || src[j] == '-')) {
+                    ++j; // Skip sign
+                }
+                // Parse exponent digits
+                if (j < src.size() && isdigit(src[j])) {
+                    while (j < src.size() && isdigit(src[j])) {
+                        ++j;
+                    }
+                } else {
+                    // Invalid scientific notation - backtrack to before 'e'
+                    // This handles cases like "7e" without digits after
+                    j = e_pos;
+                }
             }
             
             tokens.push_back(Token(TokenType::Number, src.substr(i, j-i), line, start_col));
