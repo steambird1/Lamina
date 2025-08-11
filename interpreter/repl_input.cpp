@@ -166,6 +166,49 @@ std::string repl_readline(const std::string& prompt) {
                     std::cout << "\r" << prompt << buffer << std::flush;
                 }
             }
+        } else if (ch == 0) {
+            int key = _getch();
+            if (key == 75) { // Left
+                if (cursor > 0) {
+                    std::cout << "\b" << std::flush;
+                    --cursor;
+                }
+            } else if (key == 77) { // Right
+                if (cursor < buffer.size()) {
+                    std::cout << buffer[cursor];
+                    ++cursor;
+                }
+            } else if (key == 72) { // Up
+                if (!history.empty() && (history_index + 1 < (int)history.size())) {
+                    if (history_index == -1) {
+                        current_edit = buffer;
+                    }
+                    ++history_index;
+                    buffer = history[history.size() - 1 - history_index];
+                    cursor = buffer.size();
+                    maxlen = std::max(maxlen, buffer.size());
+                    std::cout << "\r" << prompt;
+                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
+                    std::cout << "\r" << prompt << buffer << std::flush;
+                }
+            } else if (key == 80) { // Down
+                if (history_index > 0) {
+                    --history_index;
+                    buffer = history[history.size() - 1 - history_index];
+                    cursor = buffer.size();
+                    maxlen = std::max(maxlen, buffer.size());
+                    std::cout << "\r" << prompt;
+                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
+                    std::cout << "\r" << prompt << buffer << std::flush;
+                } else if (history_index == 0) {
+                    history_index = -1;
+                    buffer = current_edit;
+                    cursor = buffer.size();
+                    std::cout << "\r" << prompt;
+                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
+                    std::cout << "\r" << prompt << buffer << std::flush;
+                }
+            }
         } else if (ch >= 32 && ch <= 126) { // Printable
             buffer.insert(buffer.begin() + cursor, (char)ch);
             ++cursor;
