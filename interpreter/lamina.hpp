@@ -44,7 +44,7 @@ struct func##_any_args_registrar { \
     } \
 } func##_any_args_instance; \
 } \
-void func##_any_args_entry(Interpreter& interpreter) { \
+inline void func##_any_args_entry(Interpreter& interpreter) { \
     interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value { \
         return func(args); \
     }; \
@@ -59,7 +59,7 @@ struct func##_registrar { \
     } \
 } func##_instance; \
 } \
-void func##_entry(Interpreter& interpreter) { \
+inline void func##_entry(Interpreter& interpreter) { \
     interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value { \
         if (args.size() != arg_count) { \
             std::cerr << "Error: " << func_name << "() requires " << arg_count <<" arguments\n"; \
@@ -78,7 +78,7 @@ struct func##_registrar { \
     } \
 } func##_instance; \
 } \
-void func##_entry(Interpreter& interpreter) { \
+inline void func##_entry(Interpreter& interpreter) { \
     interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value { \
         if (args.size() > arg_count) { \
             std::cerr << "Error: " << func_name << "() takes 0 to " << arg_count << " arguments\n"; \
