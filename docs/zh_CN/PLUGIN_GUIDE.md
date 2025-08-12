@@ -1,5 +1,9 @@
 # Lamina 模块开发指南
 
+<div align="right">
+  <a href="../zh_TW/PLUGIN_GUIDE.md">🇹🇼 繁體中文</a> | <strong>🇨🇳 简体中文</strong> | <a href="../en_US/PLUGIN_GUIDE.md">🇺🇸 English</a>
+</div>
+
 ## 概述
 Lamina 支持通过动态库（DLL/SO）模块扩展功能。模块系统采用现代化设计，提供类型安全的跨平台API，支持命名空间管理和函数注册机制。
 

@@ -1,10 +1,14 @@
-## 代码提交规范
+## 程式碼提交規範
 
-- This document has a English version. Please refer to [CONTRIBUTING](CONTRIBUTING-EN.md) for the English version.
-- 请先阅读 <https://github.com/Ziyang-Bai/Lamina/blob/main/README.md> 了解项目的基本情况，在继续进行开发！
-- 本项目使用GPL-3.0协议，请严格遵守本协议！
+<div align="right">
+  <strong>🇹🇼 繁體中文</strong> | <a href="../zh_CN/CONTRIBUTING.md">🇨🇳 简体中文</a> | <a href="../en_US/CONTRIBUTING.md">🇺🇸 English</a>
+</div>
+<br>
 
-## 项目结构：
+- 請先閱讀 [README](README.md) 以瞭解專案的基本情況，再繼續進行開發！
+- 本專案採用 GPL-3.0 協議，請務必遵守相關規定！
+
+## 專案結構：
 ```angular2html
 Lamina
 ├── assets
@@ -51,87 +55,87 @@ Lamina
 ├── compile-en.md
 ├── CONTRIUTING-CN.md
 ```
-总计： 5 文件夹, 38 文件。
+總計： 5 資料夾, 38 檔案。
 
-## 创建拉取请求:
+## 創建 Pull Request:
 
 ```angular2html
-1. Fork代码到你的仓库。
-2. 克隆代码到本地。
-3. 提交代码到你的仓库。
-4. 创建拉取请求。
+1. 將程式碼 Fork 到你的倉庫。
+2. 將程式碼 Clone 到本地。
+3. 將修改後的程式碼推送到你的倉庫。
+4. 創建 Pull Request。
 ```
 
-创建拉取请求时，你必须要确保你的PR内容符合以下要求：
+創建 PR 時，請務必確保你的 PR 內容符合以下要求：
 
-- 目的明确
-- 语言流畅
-- 代码规范
+- 目的明確
+- 語言流暢
+- 程式碼規範
 
-在编写拉取请求标题时，必须携带如以下标识， 主要分为这几种：
+在編寫 PR 標題時，必須包含如下標識，主要分為如下類型：
 ```angular2html
 1. [Feature]
 2. [Bug Fix]
 ```
-如果是针对某一个模块，请在创建拉取请求时，在标题中携带类型以及你的模块名称，例如：
+如果是針對某個模組，請在 PR 標題中同時標註類型及模組名稱，例如：
 ```angular2html
-[Feature][stdio] 新增print函数对于文件流操作的支持
+[Feature][stdio] 新增 print 函式對文件流操作的支援
 ```
 
-## 有关库/标准库:
+## 關於庫/標準庫:
 
-标准库的代码存放在`extensions/standard`目录下，每个文件对应一个模块，模块的名称就是文件的名称，且每个模块都要有对应的头文件，头文件内注册Lamina函数。
+標準庫程式碼存放於 `extensions/standard` 目錄下，每個檔案對應一個模組，模組名稱即檔案名稱，且每個模組都需有對應的標頭檔，在標頭檔內註冊 Lamina 函式。
 
-在拓展层注册的Lamina变量均为全局变量。
+在擴充層註冊的 Lamina 變數皆為全域變數。
 
-### 注册Lamina函数的方式： 
+### Lamina 函式註冊方式：
 
-调用LAMINA_FUNC宏，例如：
+呼叫 LAMINA_FUNC 巨集，例如：
 ```c++
 namespace lamina{
      LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 }
 ```
-其实，您也可以不用将函数注册到lamina命名空间下，而是直接注册，例如：
+事實上，也可以不將函式註冊於 lamina 命名空間下，直接註冊，例如：
 ```c++
 LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 ```
 
-但是，这是一种更为规范的方式，我们更推荐这样做！
+不過這是一種更規範的做法，推薦採用！
 
-若你需要声明Lamina函数，它在C++层的返回值必须声明为```Value```，并携带```const std::vector<Value> &args```参数，并且我们更推荐使用lamina.hpp中对于数据类型操作的宏，如```LAMINA_BOOL```，这对于你的Lamina库项目会更直观！
+若需宣告 Lamina 函式，C++ 層的回傳型態必須為 `Value`，並攜帶 `const std::vector<Value> &args` 參數。我們建議使用 lamina.hpp 中對資料型態操作的巨集，如 `LAMINA_BOOL`，這對 Lamina 庫專案開發更直觀！
 
-但是，由于部分历史遗留问题，一些Lamina标准库的内容没有使用这些宏作为返回值。
+但因部分歷史遺留問題，部分 Lamina 標準庫內容尚未採用這些巨集作為回傳值。
 
-在编写标准库的代码时，必须要遵循以下规范：
+編寫標準庫程式碼時，請遵循以下規範：
 
-- 代码必须要确保一定的安全性。
-- 代码必须要符合Lamina拓展的风格。
+- 程式碼必須確保安全性。
+- 程式碼必須符合 Lamina 擴充風格。
 
-## !! 当你为Lamina编写其他库的时候，也亦是如此。
+## !! 為 Lamina 編寫其他庫時亦應遵循上述規範。
 
-## 模块解析：
+## 模組解析：
 
-Lamina主要的核心模块有
+Lamina 主要核心模組有
 
-- bigint.hpp 大整数模块
-- interpreter.cpp 解释器模块
-- irrational.hpp 无理数模块
-- lamina.hpp 访问Lamina部分核心资源的模块
-- module.cpp 加载Lamina动态库的模块
-- rational.hpp 有理数模块
-- value.hpp 数值模块
-- parser.cpp 解析器模块
-- lexer.cpp 词法分析器模块
+- bigint.hpp 大整數模組
+- interpreter.cpp 解譯器模組
+- irrational.hpp 無理數模組
+- lamina.hpp 存取 Lamina 部分核心資源模組
+- module.cpp 載入 Lamina 動態庫模組
+- rational.hpp 有理數模組
+- value.hpp 數值模組
+- parser.cpp 解析器模組
+- lexer.cpp 詞法分析器模組
 
-让我们从0开始，讲解这些模块内的函数，以便于让你进入Lamina的库开发！
+讓我們從零開始，逐步講解這些模組內的函式，幫助你進入 Lamina 庫開發！
 
-在编写Lamina库中，最重要的便是```lamina.hpp```模块，此模块提供了Lamina库开发的一些基本的宏。
+編寫 Lamina 庫時，最重要的是 `lamina.hpp` 模組，此模組提供 Lamina 庫開發的基本巨集。
 ```c++
-// Source Code:
+// 原始碼:
 #pragma once
 /*
-    对LAMINA核心资源操作的头文件
+    操作 LAMINA 核心資源的標頭檔
  */
 
 template<class> constexpr bool always_false = false;
@@ -221,30 +225,30 @@ struct global_var_##name##_registrar { \
 
 ```
 
-- ``` LAMINA_FUNC_WIT_ANY_ARGS ```宏用于注册一个可以接受任意参数数量的Lamina函数。
-- ``` LAMINA_FUNC ```宏用于注册一个可以接受固定参数数量的Lamina函数。
-- ``` LAMINA_FUNC_MULTI_ARGS ```宏用于注册一个可以接受0到固定参数数量的Lamina函数。
+- `LAMINA_FUNC_WIT_ANY_ARGS` 巨集用於註冊可接受任意參數數量的 Lamina 函式。
+- `LAMINA_FUNC` 巨集用於註冊可接受固定參數數量的 Lamina 函式。
+- `LAMINA_FUNC_MULTI_ARGS` 巨集用於註冊可接受 0 到固定參數數量的 Lamina 函式。
 
-他们的宏的内部实现其实都大同小异，只不过对于参数数量的判断略有不同
+這些巨集的內部實作大同小異，只是參數數量判斷略有不同。
 
-最终编译成动态库之后，他们的符号表像是这样：
+編譯成動態庫後，符號表會類似如下：
 ```
 0000000000020edc T _Z10test_entryR11Interpreter
 ```
 
-原函数将会带有```_entry```后缀，后续将注册到```builtin_functions```这个vector容器中。
+原始函式帶有 `_entry` 後綴，後續註冊到 `builtin_functions` 此 vector 容器。
 
-```LAMINA_BOOL```宏用于操作Lamina中的布尔数据类型
-```LAMINA_INT```宏用于操作Lamina中的整数数据类型
-```LAMINA_STRING```宏用于操作Lamina中的字符串数据类型
-```LAMINA_BIGINT```宏用于操作Lamina中的大整数数据类型
-```LAMINA_RATIONAL```宏用于操作Lamina中的有理数数据类型
-```LAMINA_IRRATIONAL```宏用于操作Lamina中的无理数数据类型
-```LAMINA_ARR```宏用于操作Lamina中的数组数据类型
-```LAMINA_MATRIX```宏用于操作Lamina中的矩阵数据类型
-```LAMINA_NULL```宏用于操作Lamina中的空值数据类型
+`LAMINA_BOOL` 巨集用於操作 Lamina 布林型態資料
+`LAMINA_INT` 巨集用於操作 Lamina 整數型態資料
+`LAMINA_STRING` 巨集用於操作 Lamina 字串型態資料
+`LAMINA_BIGINT` 巨集用於操作 Lamina 大整數型態資料
+`LAMINA_RATIONAL` 巨集用於操作 Lamina 有理數型態資料
+`LAMINA_IRRATIONAL` 巨集用於操作 Lamina 無理數型態資料
+`LAMINA_ARR` 巨集用於操作 Lamina 陣列型態資料
+`LAMINA_MATRIX` 巨集用於操作 Lamina 矩陣型態資料
+`LAMINA_NULL` 巨集用於操作 Lamina 空值型態資料
 
-可以使用```LAMINA_BOOL```等宏来直观操作Lamina函数的返回值，例如随机库当中的：
+可利用上述巨集直觀地操作 Lamina 函式回傳值，如隨機庫中：
 ```c++
 Value randstr(const std::vector<Value> &args) {
      if (args.size() != 1 || !args[0].is_numeric()) {
@@ -274,12 +278,12 @@ Value randstr(const std::vector<Value> &args) {
 
 ```
 
-这段Lamina库代码展示了根据用户输入的字符来随机生成一串字符串，并通过```LAMINA_STRING```宏来返回值，若失败，则使用```LAMINA_NULL```宏来返回空值。
+此 Lamina 庫程式碼根據使用者輸入生成隨機字串，並利用 `LAMINA_STRING` 巨集回傳，失敗時則用 `LAMINA_NULL` 巨集回傳空值。
 
-- ```LAMINA_GET_VAR```宏用于在解释器运行时，在已经注册的函数内部，获取Lamina中的变量值。
-- ```LAMINA_GLOBAL_VAR```宏用于定义Lamina中的全局变量。
+- `LAMINA_GET_VAR` 巨集用於執行時於已註冊函式中取得 Lamina 變數值。
+- `LAMINA_GLOBAL_VAR` 巨集用於定義 Lamina 全域變數。
 
-这两个目前在标准库中还未使用，但是我们仍旧给出一个例子，便于开发：
+目前標準庫尚未使用這兩者，但仍提供範例以供開發參考：
 ```c++
 #include "lamina.hpp"
 
@@ -294,9 +298,9 @@ namespace lamina{
     LAMINA_FUNC(func_a, func_a, 0);
 }
 ```
-该例子主要展示了Lamina全局变量的注册方法和使用方法，在获取变量时需要传入一个解释器实例，和一个变量名，在注册全局变量的时候，需要传入一个变量名参数和值。
+此範例展示了 Lamina 全域變數的註冊與使用，在取得變數時需傳入解譯器實例及變數名稱，註冊時則需指定名稱與值。
 
-```L_ERR```宏用于在Lamina内部执行过程中抛出一个错误，此函数不做过多讲解，仅给使用示例：
+`L_ERR` 巨集用於在 Lamina 執行過程中丟出錯誤，例：
 ```c++
 #include "lamina.hpp"
 
@@ -306,19 +310,19 @@ Value a(const std::vector<Value> &args){
 }
 ```
 
-关于库的部分，我们已经讲解完毕，跳出Lamina扩展层，我们来到更为底层解释器模块！
+關於庫部分已說明完畢，接下來介紹 Lamina 更底層的解譯器模組！
 
-Lamina的解释器主要有这几个模块构成，他们共同支撑了Lamina在数学计算方面的优秀。
+Lamina 解譯器主要由以下模組構成，共同支援 Lamina 在數學運算上的優異表現：
 
-- 大整数模块
-- 无理数模块
-- 有理数模块
+- 大整數模組
+- 無理數模組
+- 有理數模組
 
-其次，还有更为底层的解析器模块和词法分析器模块，下文统称为语法处理模块。
+此外，還有底層的解析器及詞法分析器模組，下文統稱語法處理模組。
 
-让我们先从```interpreter.cpp```的源文件进行分析。
+先介紹 `interpreter.cpp` 原始檔案分析。
 
-用于源码过长，这里只展示函数原型和头文件内容。
+因篇幅關係僅展示函式原型與標頭檔內容。
 ```c++
 #pragma once
 #include "lamina.hpp"
@@ -384,7 +388,7 @@ public:
 };
 
 class LAMINA_EXPORT Interpreter {
-    // 禁止拷贝，允许移动
+    // 禁止拷貝，允許移動
     Interpreter(const Interpreter&) = delete;
     Interpreter& operator=(const Interpreter&) = delete;
     Interpreter(Interpreter&&) = default;
@@ -434,7 +438,7 @@ private:
     std::vector<StackFrame> call_stack;
     // Recursion depth tracking
     int recursion_depth = 0;
-    int max_recursion_depth = 100;  // 可变的递归深度限制
+    int max_recursion_depth = 100;  // 可變的遞迴深度限制
     // Enter/exit scope
     void push_scope();
     void pop_scope();
@@ -447,79 +451,76 @@ private:
 };
 ```
 
-```error_and_exit```此函数会打印错误信息并退出程序，他的具体实现如下：
+`error_and_exit` 函式會打印錯誤資訊並結束程式，實作如下：
 ```c++
 void error_and_exit(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
     exit(1);
 }
 ```
-该函数使用时需要传入一个错误信息字符串，该字符串会被打印出来，并且程序会退出。
+呼叫時需傳入錯誤訊息字串，該字串會被打印並終止程式。
 
-```StackFrame```结构体存储了关于函数调用的追踪信息，他有这么几个成员变量：
-- ```function_name```：函数名
-- ```file_name```：文件名
-- ```line_number```：行号
+`StackFrame` 結構儲存函式呼叫追蹤資訊，有以下成員：
+- `function_name`：函式名稱
+- `file_name`：檔案名稱
+- `line_number`：行號
 
-这些信息会在程序运行调用函数错误时被打印出来，用于帮助开发者定位错误的位置。
+這些資訊在程式運行錯誤時會打印，協助開發定位問題。
 
-在Lamina中，还有一些异常类，例如
-```RuntimeError```类继承自```std::exception```，用于表示运行时错误。
-```ReturnException```类继承自```std::exception```，用于表示返回语句错误。
-```BreakException```类继承自```std::exception```，用于表示跳出循环语句错误。
-```ContinueException```类继承自```std::exception```，用于表示继续循环语句错误。
+Lamina 有多種例外類別，例如：
+- `RuntimeError` 繼承自 `std::exception`，表示執行時錯誤。
+- `ReturnException` 表示 return 語句例外。
+- `BreakException` 表示 break 例外。
+- `ContinueException` 表示 continue 例外。
 
-解释器类定义了一些方法，用于计算表达式值和处理控制台内容以及扩展函数和变量。
+Interpreter 類定義多種方法，處理運算、控制台內容、擴充函式與變數。
 
-下面关于类内方法的讲解顺序，均为公开方法到私有方法，公有成员变量到私有成员变量。
+公開方法與成員說明如下：
 
-```Interpreter```此构造函数用于调用```register_builtin_functions()```方法，用于注册内置/扩展函数。
+`Interpreter` 建構子會呼叫 `register_builtin_functions()` 註冊內建/擴充函式。
 
-```execute```此方法用于执行AST树，他的参数是一个```Statement```指针，返回值为空。
+`execute` 用於執行 AST 樹，參數為 `Statement` 指標，無回傳值。
 
-```eval```此方法用于计算表达式值，他的参数是一个```ASTNode```指针，返回值是一个```Value```对象。
+`eval` 用於計算運算式值，參數為 `ASTNode` 指標，回傳 `Value`。
 
-```printVariables```此方法用于打印栈内的所有变量，它的参数为空，返回值为空。
+`printVariables` 打印目前作用域所有變數。
 
-```add_function```此方法用于添加函数，他的参数是一个函数名和一个```FuncDefStmt```指针，返回值为空。
+`add_function` 新增函式，參數為名稱與 `FuncDefStmt` 指標。
 
-```push_frame```此方法用于添加函数调用信息，他的参数是一个函数名、文件名和行号，返回值为空。
+`push_frame` 新增函式呼叫資訊，參數為函式名、檔案名、行號。
 
-```pop_frame```此方法用于弹出函数调用信息，他的参数为空，返回值为空。
+`pop_frame` 移除呼叫資訊。
 
-```register_entry```此方法用于注册入口函数，他的参数是一个```EntryFunction```指针，返回值为空。
+`register_entry` 註冊入口函式，參數為 `EntryFunction` 指標。
 
-```set_variable```此方法用于设置变量，他的参数是一个变量名和一个```Value```对象，返回值为空。
+`set_variable` 設定變數，參數為名稱與值。
 
-```get_variable```此方法用于获取变量，他的参数是一个变量名，返回值是一个```Value```对象。
+`get_variable` 取得變數，參數為名稱。
 
-```set_global_variable```此方法用于设置全局变量，他的参数是一个变量名和一个```Value```对象，返回值为空。
+`set_global_variable` 設定全域變數。
 
-此为对于控制台的操作：
+控制台操作：
 
-```get_stack_trace```此方法用于获取栈调用信息，他的参数为空，返回值是一个```std::vector<StackFrame>```对象。
+`get_stack_trace` 取得堆疊資訊，回傳 `std::vector<StackFrame>`。
 
-```print_stack_trace```此方法用于打印栈调用信息，他的参数是一个```RuntimeError```对象和一个```bool```值，返回值为空。
+`print_stack_trace` 打印堆疊資訊，參數為 `RuntimeError` 與 `bool`。
 
-```supports_colors```此方法用于判断当前终端是否支持颜色输出，他的参数为空，返回值是一个```bool```值。
+`supports_colors` 判斷終端機是否支援色彩。
 
-```print_error```此方法用于打印错误信息，他的参数是一个```std::string```对象和一个```bool```值，返回值为空。
+`print_error` 打印錯誤，參數為字串與 `bool`。
 
-```print_warning```此方法用于打印警告信息，他的参数是一个```std::string```对象和一个```bool```值，返回值为空。
+`print_warning` 打印警告，參數為字串與 `bool`。
 
-成员变量：
+成員變數：
 
-```builtin_functions```此方法存储了所有的内置/扩展函数，他的键是函数名，值是函数指针。
+- `builtin_functions` 儲存所有內建/擴充函式，鍵為名稱，值為函式指標。
+- `functions` 儲存函式定義。
+- `variable_stack` 儲存所有變數與作用域。
+- `loaded_module_asts` 儲存所有已載入模組的 AST。
 
-```functions```此方法存储函数定义。
+接下來介紹 Lamina 數字處理部分。
 
-```variable_stack```此方法存储了所有的变量，以及作用域，他的键是变量名，值是```Value```对象。
-
-```loaded_module_asts```此方法存储了所有的已加载模块的抽象语法树，他的键是模块名，值是抽象语法树指针。
-
-接下来，我们从解释器继续讲解，引入到Lamina对于数字处理的部分。
-
-首先，我们讲解大整数模块:
+首先介紹大整數模組:
 ```c++
 #pragma once
 #include <string>
@@ -530,11 +531,11 @@ void error_and_exit(const std::string& msg) {
 
 class BigInt {
 private:
-    std::vector<int> digits;  // 存储数字，低位在前
+    std::vector<int> digits;  // 數字，低位在前
     bool negative;
 
 public:
-    // 构造函数
+    // 建構子
     BigInt() : negative(false) { digits.push_back(0); }
     
     BigInt(int n) : negative(n < 0) {
@@ -543,11 +544,10 @@ public:
             return;
         }
         
-        // 处理 INT_MIN 的特殊情况
+        // 處理 INT_MIN
         if (n == INT_MIN) {
-            // INT_MIN 的绝对值超出 int 范围，直接处理
             long long ln = static_cast<long long>(n);
-            ln = -ln;  // 现在安全了
+            ln = -ln;
             while (ln > 0) {
                 digits.push_back(ln % 10);
                 ln /= 10;
@@ -588,7 +588,7 @@ public:
         remove_leading_zeros();
     }
     
-    // 移除前导零
+    // 移除前導零
     void remove_leading_zeros() {
         while (digits.size() > 1 && digits.back() == 0) {
             digits.pop_back();
@@ -598,7 +598,7 @@ public:
         }
     }
     
-    // 转换为字符串
+    // 轉字串
     std::string to_string() const {
         if (digits.size() == 1 && digits[0] == 0) {
             return "0";
@@ -634,9 +634,9 @@ public:
         return result;
     }
     
-    // 转换为int（如果可能）
+    // 轉 int（如可行）
     int to_int() const {
-        if (digits.size() > 10) {  // 太大了
+        if (digits.size() > 10) {
             return negative ? INT_MIN : INT_MAX;
         }
         
@@ -654,12 +654,12 @@ public:
         return negative ? -static_cast<int>(result) : static_cast<int>(result);
     }
     
-    // 检查是否为零
+    // 是否為零
     bool is_zero() const {
         return digits.size() == 1 && digits[0] == 0;
     }
     
-    // 比较运算符
+    // 比較運算子
     bool operator==(const BigInt& other) const {
         return negative == other.negative && digits == other.digits;
     }
@@ -670,75 +670,69 @@ public:
 };
 ```
 
+`BigInt` 提供更安全的整數處理方式，避免溢位。
 
-`BigInt`提供了对于整形处理的更加安全的形式，避免了整形溢出的问题。
+內部定義兩個成員：
+- `std::vector<int> digits` 存儲大整數每一位（低位在前）。
+- `bool negative` 表示正負，`true` 為負。
 
-在`BigInt`的内部，我们定义了两个成员变量：
-- `std::vector<int> digits` 用于存储大整数的每一位数字，低位在前。
-- `bool negative` 用于表示大整数的正负性，`true`表示负数，`false`表示正数。
+建構子支援多種型態，包含 `int`、`long long`、`std::string` 等。
 
-`BigInt`的构造函数有多个重载，允许从不同的类型构造大整数，例如从`int`、`long long`、`std::string`等。
+`BigInt` 提供加、減、乘、除與比較等運算子重載。
 
-`BigInt`还提供了一些基本的运算符重载，如加法、减法、乘法、除法等，以及比较运算符。
+接下來介紹無理數/有理數模組
 
-接下来，我们继续讲解无理数/有理数模块
+因篇幅暫不展示。
 
-由于代码过长，这里暂时不做任何展示
+無理數模組支援精確表示 π、e 等常見無理數。
 
-无理数模块支持常见的无理数的精确表示，例如π、e等。
-
-在无理数模块当中，我们定义了一个enum类，用于表示无理数的类型，这里一共有四个类型，我们这边直接展示enum类的代码。
+定義如下 enum 類型：
 ```c++
    enum class Type {
         SQRT,      // √n 形式
-        PI,        // π 的倍数
-        E,         // e 的倍数  
+        PI,        // π 的倍數
+        E,         // e 的倍數  
         LOG,       // log(n) 形式
-        COMPLEX    // 复合形式 (a*√b + c*π + d*e + ...)
+        COMPLEX    // 複合形式 (a*√b + c*π + d*e + ...)
     };
 ```
-在私有成员变量里，我们定义了两个变量，用于表达根号下n的形式。
+私有成員如下，用於 √n 形式：
 ```c++
-    // 对于 √n 形式：coefficient * √radicand
-    double coefficient;  // 系数
-    long long radicand;  // 根号内的数
+    // 對 √n：coefficient * √radicand
+    double coefficient;  // 系數
+    long long radicand;  // 根號內數值
 ```
 
-对于不同形式，无理数模块也做了针对性处理，比如根号下n的形式，使用coefficient * √radicand，对于复合形式，我们采用了系数映射的方式：
+複合形式則採系數映射方式：
 ```c++
     std::map<std::string, double> coefficients;
-    double constant_term;  // 常数项
+    double constant_term;  // 常數項
 ```
 
-在有理数模块中，可以表达基本的a/b形式，以及不常见的分数，并且支持化简分数。
+有理數模組支持 a/b 形式，可化簡分數。
 
-在化简分数的过程中，不用过于考虑分母值的安全性，因为在 rational 模块中，我们已经对分母进行了检查，确保分母不为零。
+在化簡過程中 rational 模組已檢查分母非零，無需額外考量安全性。
 
-我们跳出有关于数字处理的部分，接下来讲解语法分析模块。
+接下來介紹語法分析模組。
 
-在语法分析模块中的解析器模块，我们在头文件中定义了一些函数原型。
+解析器模組定義多種運算式型態，AST 模組定義運算式節點。
 
-解析器模块用于解析不同的表达式类型，在ast模块中定义了表达式的节点。
+詞法分析模組將輸入字串轉為語法單元（token）序列。
 
-词法分析模块用于将输入的字符串转换为词法单元序列，每个词法单元对应一个标记（token）。
+`Token` 結構包含型態、值與位置信息。
 
-在词法分析模块中，我们定义了一个`Token`结构体，用于表示词法单元。
+詞法分析功能為將字串轉為 token 序列，並處理註解、空白等。
 
-`Token`结构体包含了词法单元的类型、值以及位置信息。
+採用簡易狀態機完成詞法分析。
 
-词法分析模块的主要功能是将输入的字符串转换为词法单元序列，同时处理注释、空白字符等。
+最後介紹庫載入模組。
 
-在词法分析模块中，我们使用了一个简单的状态机来实现词法分析。
+目前庫載入僅支援 Linux 平台，包含：
 
-接下来，我们可以进入库加载的模块。
+1. 動態連結庫載入
+2. 符號查找與綁定
+3. 函式呼叫
 
-目前库加载仅支持Linux平台下的加载，库加载主要有这几个部分构成:
+庫載入模組使用 `dlopen` 載入動態庫，`dlsym` 查找符號，`dlclose` 關閉動態庫。
 
-1. 动态链接库的加载
-2. 符号的查找和绑定
-3. 函数的调用
-
-在库加载模块中，我们使用了`dlopen`函数来加载动态链接库，使用`dlsym`函数来查找符号，使用`dlclose`函数来关闭动态链接库。
-
-`findSymbol`函数接受一个符号名作为参数，返回该符号的地址。
-
+`findSymbol` 函式接受符號名稱並回傳位址。

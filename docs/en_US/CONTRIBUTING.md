@@ -1,7 +1,11 @@
 # Code Submission Guidelines
 
-*   本文档有一个中文版本，转到 [贡献指南](CONTRIBUTING-CN.md) 查看中文版本。
-*   Please read [https://github.com/Ziyang-Bai/Lamina/blob/main/README.md](https://github.com/Ziyang-Bai/Lamina/blob/main/README.md) first to understand the basic information of the project before proceeding with development!
+<div align="right">
+  <a href="../zh_TW/CONTRIBUTING.md">🇹🇼 繁體中文</a> | <a href="../zh_CN/CONTRIBUTING.md">🇨🇳 简体中文</a> | <strong>🇺🇸 English</strong>
+</div>
+<br>
+
+*   Please read [README](README.md) first to understand the basic information of the project before proceeding with development!
 *   This project uses the GPL-3.0 license; please strictly abide by this license!
 
 ## Project Structure:
