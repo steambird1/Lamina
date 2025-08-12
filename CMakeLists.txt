@@ -39,6 +39,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(LIBUV_LIBRARY uv_a)
 set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
 
+
 # Check if libuv submodule exists
 if(NOT EXISTS ${LIBUV_ROOT}/CMakeLists.txt)
     message(FATAL_ERROR "LibUV submodule not found. Please run 'git submodule update --init --recursive'")
@@ -52,7 +53,12 @@ set_target_properties(uv uv_a PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Set libuv libraries and include directories
 set(LIBUV_LIBRARIES uv_a)
 set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
-include_directories(${LIBUV_INCLUDE_DIRS})
+include_directories(
+        ${LIBUV_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 新增ExprTK头文件路径
+)
+
 include_directories(interpreter)
 # Create lamina_core shared library
 add_library(lamina_core SHARED
@@ -81,6 +87,7 @@ add_library(lamina_core SHARED
         extensions/standard/array.cpp
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp
+        extensions/standard/latex.hpp
 )
 
 # Set lamina_core properties
@@ -106,7 +113,8 @@ endif()
 
 # Set compiler specific options
 if(MSVC)
-    target_compile_options(lamina_core PRIVATE 
+    target_compile_options(lamina_core PRIVATE
+        /bigobj # 消除编译错误
         /W4
         /FS  # Add /FS flag to resolve PDB file conflicts during parallel compilation
         /wd4251  # 'class' needs to have dll-interface to be used by clients of class
@@ -129,7 +137,8 @@ endif()
 
 # Set lamina_core public header file directory
 target_include_directories(lamina_core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 确保公共包含
 )
 
 # Create main executable
