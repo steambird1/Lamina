@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <value.hpp>
 
 // AST 基类
 struct ASTNode {
@@ -18,8 +19,9 @@ struct Statement : public ASTNode {};
 
 // 字面量
 struct LiteralExpr : public Expression {
+    Value::Type type;
     std::string value;
-    LiteralExpr(const std::string& v) : value(v) {}
+    LiteralExpr(const std::string& v, const Value::Type type) : type(type), value(v) {}
 };
 
 // 标识符
