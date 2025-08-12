@@ -156,7 +156,7 @@ std::string repl_readline(const std::string& prompt) {
                 }
             } else if (key == 79) { // End
                 if (cursor < buffer.size()) {
-                    std::cout << std::string(buffer.begin + cursor, buffer.end()) << std::flush;
+                    std::cout << buffer.substr(cursor) << std::flush;
                     cursor = buffer.size();
                 }
             } else if (key == 72 || key == 73) { // Up or PageUp
@@ -357,7 +357,7 @@ std::string repl_readline(const std::string& prompt) {
                             continue; // not End, skip
                     }
                     if (cursor < buffer.size()) {
-                        std::cout << std::string(buffer.begin()+cursor, buffer.end());
+                        std::cout << buffer.substr(cursor) << std::flush;
                         cursor = buffer.size();
                     }
                 } else if (seq2 == 'A' || seq2 == '5') { // Up or PageUp
