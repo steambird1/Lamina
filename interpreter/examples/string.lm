@@ -1,0 +1,11 @@
+print(string_concat("abc", "abc", "abc"));
+
+print(string_char_at("abc", 1));
+
+print(string_length("abc"));
+
+print(string_find("abcAAA123", 0, "AAA"));
+
+print(string_sub_string("abcAAA123", 3, 3));
+
+print(string_replace_by_index("abcAAA123", 3, "CCC"));
