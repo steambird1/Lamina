@@ -1,11 +1,26 @@
 #include "repl_input.hpp"
 #include <iostream>
 #include <vector>
+#include <signal.h>
 #ifdef _WIN32
 #include <conio.h>
 #else
 #include <termios.h>
 #include <unistd.h>
+#endif
+
+#ifdef _WIN32
+    void CtrlCExit() {
+        std::cout << "^C" << std::endl;
+        throw CtrlCException();
+    }
+#else
+    struct termios oldt;
+    void CtrlCExit() {
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 恢复终端设置
+        std::cout << "^C" << std::endl;
+        throw CtrlCException();
+    }
 #endif
 
 std::string repl_readline(const std::string& prompt) {
@@ -22,8 +37,7 @@ std::string repl_readline(const std::string& prompt) {
         int ch = _getch();
         // Ctrl+C
         if (ch == 3) { // Ctrl+C
-            std::cout << "^C" << std::endl;
-            throw CtrlCException();
+            CtrlCExit();
         }
         // Ctrl+R
         if (ch == 18) { // Ctrl+R
@@ -229,19 +243,20 @@ std::string repl_readline(const std::string& prompt) {
     static int history_max = 100;
     int history_index = -1;
     std::string current_edit;
-    struct termios oldt, newt;
+    struct termios newt;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     size_t maxlen_unix = 0;
+    signal(SIGINT, [](int signum) {
+        CtrlCExit();
+    });
     while (true) {
         char ch = getchar();
         // Ctrl+C
         if (ch == 3) { // Ctrl+C
-            tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // 恢复终端设置
-            std::cout << "^C" << std::endl;
-            throw CtrlCException();
+            CtrlCExit();
         }
         // Ctrl+R
         if (ch == 18) { // Ctrl+R
