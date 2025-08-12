@@ -1,16 +1,16 @@
 #pragma once
-#include "lexer.hpp"
 #include "ast.hpp"
+#include "lexer.hpp"
 #include <vector>
 
 #ifdef _WIN32
-#  ifdef LAMINA_CORE_EXPORTS
-#    define LAMINA_API __declspec(dllexport)
-#  else
-#    define LAMINA_API __declspec(dllimport)
-#  endif
+#ifdef LAMINA_CORE_EXPORTS
+#define LAMINA_API __declspec(dllexport)
 #else
-#  define LAMINA_API
+#define LAMINA_API __declspec(dllimport)
+#endif
+#else
+#define LAMINA_API
 #endif
 
 class LAMINA_API Parser {
@@ -26,7 +26,7 @@ public:
     static std::unique_ptr<Expression> parse_primary(const std::vector<Token>& tokens, size_t& i);
     // 解析一组语句，返回 BlockStmt
     static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i, bool is_global);
-    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i); // 兼容老代码
+    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i);// 兼容老代码
     // 解析单条语句
     static std::unique_ptr<Statement> parse_statement(const std::vector<Token>& tokens, size_t& i);
     static std::unique_ptr<Statement> parse_while(const std::vector<Token>& tokens, size_t& i);

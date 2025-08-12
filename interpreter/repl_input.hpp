@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <stdexcept>
+#include <string>
 
 // Ctrl+C 中断异常
 class CtrlCException : public std::exception {

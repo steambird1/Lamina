@@ -1,12 +1,12 @@
-#include <iostream>
-#include <string>
-#include <map>
+#include <cctype>// for std::isspace
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <map>
 #include <regex>
 #include <sstream>
-#include <iomanip>
 #include <stdexcept>
-#include <cctype> // for std::isspace
+#include <string>
 
 // 包含 ExprTk 头文件
 #include "exprtk.hpp"
@@ -38,7 +38,7 @@ public:
 
     // TODO! 待封装
     void setVariables(const std::map<std::string, double>& vars) {
-        for (const auto& pair : vars) {
+        for (const auto& pair: vars) {
             variables_[pair.first] = pair.second;
             symbol_table_.remove_variable(pair.first);
             symbol_table_.add_variable(pair.first, variables_[pair.first]);
@@ -62,7 +62,7 @@ public:
                 }
             }
         }
-        return -1; // Not found
+        return -1;// Not found
     }
 
     // 递归处理 \frac
@@ -98,7 +98,7 @@ public:
                     }
                 }
                 // 如果 \frac 格式不正确，保留原样或报错
-                result += "\\frac"; // 或者抛出异常
+                result += "\\frac";// 或者抛出异常
             } else {
                 result += input[i];
                 i++;
@@ -114,55 +114,55 @@ public:
         while (i < input.length()) {
             // 查找 ^
             if (input[i] == '^') {
-                i++; // 跳过 ^
-                std::string base; // 我们需要知道底数是什么，这里假设它在 ^ 之前
+                i++;             // 跳过 ^
+                std::string base;// 我们需要知道底数是什么，这里假设它在 ^ 之前
                 // 为了简化，我们只处理变量或数字后直接跟 ^{...} 或 ^...
                 // 更复杂的逻辑需要重写整个解析器
-                
+
                 // 检查前面是否是函数名，用于处理 sin^2(x)
                 if (result.length() >= 3) {
-                     std::string last_chars = result.substr(result.length() - 3);
-                     if (last_chars == "sin" || last_chars == "cos" || last_chars == "tan") {
-                         // 处理 sin^2(x) -> (sin(x))^2
-                         // 这需要更复杂的逻辑，这里提供一个简化版
-                         // 我们假设函数名是2或3个字符
-                         size_t func_start = result.length() - 3;
-                         std::string func_name = result.substr(func_start, 3);
-                         result.erase(func_start); // 移除函数名
-                         
-                         // 现在 i 指向 ^ 后面
-                         if (i < input.length() && input[i] == '{') {
+                    std::string last_chars = result.substr(result.length() - 3);
+                    if (last_chars == "sin" || last_chars == "cos" || last_chars == "tan") {
+                        // 处理 sin^2(x) -> (sin(x))^2
+                        // 这需要更复杂的逻辑，这里提供一个简化版
+                        // 我们假设函数名是2或3个字符
+                        size_t func_start = result.length() - 3;
+                        std::string func_name = result.substr(func_start, 3);
+                        result.erase(func_start);// 移除函数名
+
+                        // 现在 i 指向 ^ 后面
+                        if (i < input.length() && input[i] == '{') {
                             int end_exp = findMatchingBrace(input, i);
                             if (end_exp != -1) {
                                 std::string exponent = input.substr(i + 1, end_exp - i - 1);
                                 // 现在需要找到函数的参数 (sin^2(x) 中的 x)
                                 // 这非常复杂，需要完整的解析器
                                 // 这里我们做一个非常简化的假设：参数紧跟在后面
-                                // 例如，输入是 "...sin^2(x)..." 
+                                // 例如，输入是 "...sin^2(x)..."
                                 // 当前 result="...", input="^2(x)..."
                                 // i=1, end_exp=3, exponent="2"
                                 // 我们需要从 input 中提取 "(x)"
                                 size_t arg_start = end_exp + 1;
                                 if (arg_start < input.length() && input[arg_start] == '(') {
-                                     int end_arg = findMatchingBrace(input, arg_start);
-                                     if (end_arg != -1) {
-                                         std::string argument = input.substr(arg_start + 1, end_arg - arg_start - 1);
-                                         result += "(pow(" + func_name + "(" + argument + ")," + exponent + "))";
-                                         i = end_arg + 1;
-                                         continue;
-                                     }
+                                    int end_arg = findMatchingBrace(input, arg_start);
+                                    if (end_arg != -1) {
+                                        std::string argument = input.substr(arg_start + 1, end_arg - arg_start - 1);
+                                        result += "(pow(" + func_name + "(" + argument + ")," + exponent + "))";
+                                        i = end_arg + 1;
+                                        continue;
+                                    }
                                 }
                                 // 如果参数不匹配，回退
                                 result += func_name;
                                 // Fall through to normal power handling
-                             }
-                         }
-                         // 如果不是 {exp}(arg) 格式，也回退
-                         result += "^";
-                         continue;
-                     }
+                            }
+                        }
+                        // 如果不是 {exp}(arg) 格式，也回退
+                        result += "^";
+                        continue;
+                    }
                 }
-                
+
                 // 处理普通的 x^{...} 或 x^...
                 if (i < input.length() && input[i] == '{') {
                     int end_exp = findMatchingBrace(input, i);
@@ -182,7 +182,8 @@ public:
                                     int j = result.length() - 2;
                                     for (; j >= 0; j--) {
                                         if (result[j] == ')') paren_level++;
-                                        else if (result[j] == '(') paren_level--;
+                                        else if (result[j] == '(')
+                                            paren_level--;
                                         if (paren_level == 0) break;
                                     }
                                     if (j >= 0) {
@@ -223,7 +224,8 @@ public:
                                     int j = result.length() - 2;
                                     for (; j >= 0; j--) {
                                         if (result[j] == ')') paren_level++;
-                                        else if (result[j] == '(') paren_level--;
+                                        else if (result[j] == '(')
+                                            paren_level--;
                                         if (paren_level == 0) break;
                                     }
                                     if (j >= 0) {
@@ -260,7 +262,7 @@ public:
     std::string preprocessLaTeX(const std::string& latex) {
         std::string result = latex;
 
-        // 1. 移除行内数学模式分隔符 $ 和 $$ 
+        // 1. 移除行内数学模式分隔符 $ 和 $$
         if (!result.empty() && result.front() == '$') {
             result.erase(0, 1);
             if (!result.empty() && result.back() == '$') {
@@ -291,14 +293,20 @@ public:
         // 6. 将 LaTeX 函数名映射为 ExprTk 函数名 (ExprTk 通常直接支持)
         // 为了确保兼容性，我们显式映射一次
         std::map<std::string, std::string> func_map = {
-            {R"(\\sin)", "sin"}, {R"(\\cos)", "cos"}, {R"(\\tan)", "tan"},
-            {R"(\\arcsin)", "asin"}, {R"(\\arccos)", "acos"}, {R"(\\arctan)", "atan"},
-            {R"(\\ln)", "log"},  {R"(\\log)", "log10"}, {R"(\\exp)", "exp"},
-            {R"(\\sqrt)", "sqrt"}, {R"(\\abs)", "abs"}
-        };
-        for (const auto& pair : func_map) {
-             std::regex func_regex(pair.first);
-             result = std::regex_replace(result, func_regex, pair.second);
+                {R"(\\sin)", "sin"},
+                {R"(\\cos)", "cos"},
+                {R"(\\tan)", "tan"},
+                {R"(\\arcsin)", "asin"},
+                {R"(\\arccos)", "acos"},
+                {R"(\\arctan)", "atan"},
+                {R"(\\ln)", "log"},
+                {R"(\\log)", "log10"},
+                {R"(\\exp)", "exp"},
+                {R"(\\sqrt)", "sqrt"},
+                {R"(\\abs)", "abs"}};
+        for (const auto& pair: func_map) {
+            std::regex func_regex(pair.first);
+            result = std::regex_replace(result, func_regex, pair.second);
         }
 
         // 7. 处理 LaTeX 点 (中间点) 作为乘法
@@ -315,11 +323,11 @@ public:
 
             exprtk::parser<double> parser;
             if (!parser.compile(processed_expr, expression_)) {
-                return {false, "Compilation error: " + parser.error()}; 
+                return {false, "Compilation error: " + parser.error()};
             }
 
             double result = expression_.value();
-            
+
             // 格式化结果
             std::ostringstream oss;
             if (result == std::floor(result)) {
@@ -339,5 +347,4 @@ public:
             return {false, std::string("Evaluation error: ") + e.what()};
         }
     }
-
 };

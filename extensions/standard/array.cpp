@@ -1,6 +1,6 @@
 #include "array.hpp"
 
-Value visit_array_by_int(const std::vector<Value> &args) {
+Value visit_array_by_int(const std::vector<Value>& args) {
     if (!args[0].is_array()) {
         L_ERR("First Arg Must Be A Array");
         return LAMINA_NULL;

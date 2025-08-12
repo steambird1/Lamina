@@ -3,50 +3,52 @@
 #include <vector>
 
 #ifdef _WIN32
-#  ifdef LAMINA_CORE_EXPORTS
-#    define LAMINA_API __declspec(dllexport)
-#  else
-#    define LAMINA_API __declspec(dllimport)
-#  endif
+#ifdef LAMINA_CORE_EXPORTS
+#define LAMINA_API __declspec(dllexport)
 #else
-#  define LAMINA_API
+#define LAMINA_API __declspec(dllimport)
+#endif
+#else
+#define LAMINA_API
 #endif
 
 enum class TokenType {
     Var,
-    Func,      
-    If,        
-    Else,      
-    While,     
-    For,     Return,    
-    Include,   // 新增
-    Break,     // 新增
-    Continue,  // 新增
-    Define,    // define
-    Bigint,    // bigint
-    True,      // true
-    False,     // false
-    Null,      // null
-    Input,     // input
+    Func,
+    If,
+    Else,
+    While,
+    For,
+    Return,
+    Include, // 新增
+    Break,   // 新增
+    Continue,// 新增
+    Define,  // define
+    Bigint,  // bigint
+    True,    // true
+    False,   // false
+    Null,    // null
+    Input,   // input
     Identifier,
     Assign,
-    Number,    
+    Number,
     LParen,
     RParen,
-    LBrace,    
+    LBrace,
     RBrace,
-    LBracket,   // [
-    RBracket,   // ]
+    LBracket,// [
+    RBracket,// ]
     Comma,
-    Dot,       // 新增
+    Dot,// 新增
     String,
     Semicolon,
-    Plus,    
-    Minus,    Star,    
-    Slash,   
-    Percent,     
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
     Caret,
-    Bang,        
+    Bang,
     Equal,       // ==
     NotEqual,    // !=
     Less,        // <

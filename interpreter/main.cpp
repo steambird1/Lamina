@@ -1,13 +1,13 @@
-#include "lexer.hpp"
-#include "parser.hpp"
 #include "interpreter.hpp"
-#include "trackback.hpp"
+#include "lexer.hpp"
 #include "module_loader.hpp"
+#include "parser.hpp"
+#include "repl_input.hpp"
+#include "trackback.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
-#include "repl_input.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,11 +38,11 @@ int main(int argc, char* argv[]) {
                     ++lineno;
                     continue;
                 }
-                
+
                 if (line == ":exit") {
                     break;
                 }
-                
+
                 if (line == ":help") {
                     std::cout << "Lamina Interpreter Commands:\n";
                     std::cout << "  :exit - Exit interpreter\n";
@@ -53,21 +53,21 @@ int main(int argc, char* argv[]) {
                     ++lineno;
                     continue;
                 }
-                
+
                 if (line == ":vars") {
                     interpreter.printVariables();
                     ++lineno;
                     continue;
                 }
-                
+
                 if (line == ":clear") {
-                    #ifdef _WIN32
+#ifdef _WIN32
                     auto result = system("cls");
-                    (void)result;  // 明确忽略返回值
-                    #else
+                    (void) result;// 明确忽略返回值
+#else
                     auto result = system("clear");
-                    (void)result;  // 明确忽略返回值
-                    #endif
+                    (void) result;// 明确忽略返回值
+#endif
                     ++lineno;
                     continue;
                 }
@@ -88,9 +88,9 @@ int main(int argc, char* argv[]) {
                     if (block) {
                         // Save AST to keep function pointers valid
                         interpreter.save_repl_ast(std::move(ast));
-                        
+
                         try {
-                            for (auto& stmt : block->statements) {
+                            for (auto& stmt: block->statements) {
                                 try {
                                     interpreter.execute(stmt);
                                 } catch (const RuntimeError& re) {
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     auto tokens = Lexer::tokenize(source);
     auto ast = Parser::parse(tokens);
     Interpreter interpreter;
-    
+
     // 注释掉自动加载minimal模块，改为按需加载
     // std::cout << "Loading minimal module..." << std::endl;
     // try {
@@ -165,18 +165,18 @@ int main(int argc, char* argv[]) {
     // } catch (const std::exception& e) {
     //     std::cerr << "Exception during module loading: " << e.what() << std::endl;
     // }
-    
+
     if (!ast) {
         print_traceback(argv[1], 1);
         return 2;
     }
-    
+
     // 只支持 BlockStmt
     auto* block = dynamic_cast<BlockStmt*>(ast.get());
     if (block) {
         // 每个语句独立执行并捕获异常，但保持解释器状态
         int currentLine = 0;
-        for (auto& stmt : block->statements) {
+        for (auto& stmt: block->statements) {
             currentLine++;
             try {
                 interpreter.execute(stmt);

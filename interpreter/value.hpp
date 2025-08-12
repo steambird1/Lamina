@@ -1,32 +1,42 @@
 #pragma once
 #include "bigint.hpp"
-#include "rational.hpp"
 #include "irrational.hpp"
+#include "rational.hpp"
+#include <cmath>
+#include <iostream>
 #include <string>
 #include <variant>
 #include <vector>
-#include <cmath>
-#include <iostream>
 
 #ifdef _WIN32
-#  ifdef LAMINA_CORE_EXPORTS
-#    define LAMINA_API __declspec(dllexport)
-#  else
-#    define LAMINA_API __declspec(dllimport)
-#  endif
+#ifdef LAMINA_CORE_EXPORTS
+#define LAMINA_API __declspec(dllexport)
 #else
-#  define LAMINA_API
+#define LAMINA_API __declspec(dllimport)
+#endif
+#else
+#define LAMINA_API
 #endif
 
 class LAMINA_API Value {
-public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigInt, Rational, Irrational };
+public:
+    enum class Type { Null,
+                      Bool,
+                      Int,
+                      Float,
+                      String,
+                      Array,
+                      Matrix,
+                      BigInt,
+                      Rational,
+                      Irrational };
     Type type;
     std::variant<std::nullptr_t, bool, int, double, std::string, std::vector<Value>, std::vector<std::vector<Value>>, ::BigInt, ::Rational, ::Irrational> data;
 
     virtual ~Value() = default;
 
     // Constructors
-    Value() : type(Type::Null), data(std::in_place_index<0>, nullptr) {}  // 0对应std::nullptr_t类型
+    Value() : type(Type::Null), data(std::in_place_index<0>, nullptr) {}// 0对应std::nullptr_t类型
 
     // 其他构造函数需要同步修改初始化方式
     Value(std::nullptr_t) : type(Type::Null), data(std::in_place_index<0>, nullptr) {}
@@ -44,7 +54,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         if (is_matrix) {
             // Convert to matrix
             std::vector<std::vector<Value>> matrix;
-            for (const auto& row : arr) {
+            for (const auto& row: arr) {
                 if (row.is_array()) {
                     matrix.push_back(std::get<std::vector<Value>>(row.data));
                 } else {
@@ -69,14 +79,15 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
     bool is_null() const { return type == Type::Null; }
     bool is_bool() const { return type == Type::Bool; }
     bool is_int() const { return type == Type::Int; }
-    bool is_float() const { return type == Type::Float; }    bool is_string() const { return type == Type::String; }
+    bool is_float() const { return type == Type::Float; }
+    bool is_string() const { return type == Type::String; }
     bool is_array() const { return type == Type::Array; }
     bool is_matrix() const { return type == Type::Matrix; }
     bool is_bigint() const { return type == Type::BigInt; }
     bool is_rational() const { return type == Type::Rational; }
     bool is_irrational() const { return type == Type::Irrational; }
     bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt || type == Type::Rational || type == Type::Irrational; }
-      // Get numeric value as double
+    // Get numeric value as double
     double as_number() const {
         if (type == Type::Int) return static_cast<double>(std::get<int>(data));
         if (type == Type::Float) return std::get<double>(data);
@@ -93,7 +104,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return 0.0;
     }
-    
+
     // Get numeric value as Rational (for precise calculations)
     ::Rational as_rational() const {
         if (type == Type::Rational) return std::get<::Rational>(data);
@@ -108,7 +119,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return ::Rational(0);
     }
-    
+
     // Get numeric value as Irrational (for exact irrational calculations)
     ::Irrational as_irrational() const {
         if (type == Type::Irrational) return std::get<::Irrational>(data);
@@ -121,7 +132,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return ::Irrational::constant(0);
     }
-      // Get boolean value
+    // Get boolean value
     bool as_bool() const {
         if (type == Type::Bool) return std::get<bool>(data);
         if (type == Type::Int) return std::get<int>(data) != 0;
@@ -137,9 +148,12 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
     // String conversion
     std::string to_string() const {
         switch (type) {
-            case Type::Null: return "null";
-            case Type::Bool: return std::get<bool>(data) ? "true" : "false";
-            case Type::Int: return std::to_string(std::get<int>(data));
+            case Type::Null:
+                return "null";
+            case Type::Bool:
+                return std::get<bool>(data) ? "true" : "false";
+            case Type::Int:
+                return std::to_string(std::get<int>(data));
             case Type::Float: {
                 double val = std::get<double>(data);
                 // Remove trailing zeros for cleaner output
@@ -148,7 +162,8 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
                 str.erase(str.find_last_not_of('.') + 1, std::string::npos);
                 return str;
             }
-            case Type::String: return std::get<std::string>(data);
+            case Type::String:
+                return std::get<std::string>(data);
             case Type::Array: {
                 std::string res = "[";
                 const auto& arr = std::get<std::vector<Value>>(data);
@@ -170,7 +185,8 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
                         res += mat[i][j].to_string();
                     }
                     res += "]";
-                }                res += "]";
+                }
+                res += "]";
                 return res;
             }
             case Type::BigInt: {
@@ -185,22 +201,22 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return "<unknown>";
     }
-    
+
     // Vector operations
     Value vector_add(const Value& other) const {
         if (!is_array() || !other.is_array()) {
             std::cerr << "Error: Vector addition requires two arrays" << std::endl;
             return Value();
         }
-        
+
         const auto& a = std::get<std::vector<Value>>(data);
         const auto& b = std::get<std::vector<Value>>(other.data);
-        
+
         if (a.size() != b.size()) {
             std::cerr << "Error: Vector addition requires same dimensions" << std::endl;
             return Value();
         }
-        
+
         std::vector<Value> result;
         for (size_t i = 0; i < a.size(); ++i) {
             if (a[i].is_numeric() && b[i].is_numeric()) {
@@ -212,22 +228,22 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return Value(result);
     }
-    
+
     // Dot product
     Value dot_product(const Value& other) const {
         if (!is_array() || !other.is_array()) {
             std::cerr << "Error: Dot product requires two arrays" << std::endl;
             return Value();
         }
-        
+
         const auto& a = std::get<std::vector<Value>>(data);
         const auto& b = std::get<std::vector<Value>>(other.data);
-        
+
         if (a.size() != b.size()) {
             std::cerr << "Error: Dot product requires same dimensions" << std::endl;
             return Value();
         }
-        
+
         double result = 0.0;
         for (size_t i = 0; i < a.size(); ++i) {
             if (a[i].is_numeric() && b[i].is_numeric()) {
@@ -239,17 +255,17 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return Value(result);
     }
-      // Scalar multiplication
+    // Scalar multiplication
     Value scalar_multiply(double scalar) const {
         if (!is_array()) {
             std::cerr << "Error: Scalar multiplication requires an array" << std::endl;
             return Value();
         }
-        
+
         const auto& arr = std::get<std::vector<Value>>(data);
         std::vector<Value> result;
-        
-        for (const auto& elem : arr) {
+
+        for (const auto& elem: arr) {
             if (elem.is_numeric()) {
                 result.push_back(Value(elem.as_number() * scalar));
             } else {
@@ -259,51 +275,50 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return Value(result);
     }
-    
+
     // Cross product (for 3D vectors)
     Value cross_product(const Value& other) const {
         if (!is_array() || !other.is_array()) {
             std::cerr << "Error: Cross product requires two arrays" << std::endl;
             return Value();
         }
-        
+
         const auto& a = std::get<std::vector<Value>>(data);
         const auto& b = std::get<std::vector<Value>>(other.data);
-        
+
         if (a.size() != 3 || b.size() != 3) {
             std::cerr << "Error: Cross product requires 3D vectors" << std::endl;
             return Value();
         }
-        
+
         for (size_t i = 0; i < 3; ++i) {
             if (!a[i].is_numeric() || !b[i].is_numeric()) {
                 std::cerr << "Error: Vector elements must be numeric" << std::endl;
                 return Value();
             }
         }
-        
+
         double a1 = a[0].as_number(), a2 = a[1].as_number(), a3 = a[2].as_number();
         double b1 = b[0].as_number(), b2 = b[1].as_number(), b3 = b[2].as_number();
-        
+
         std::vector<Value> result = {
-            Value(a2 * b3 - a3 * b2),
-            Value(a3 * b1 - a1 * b3),
-            Value(a1 * b2 - a2 * b1)
-        };
+                Value(a2 * b3 - a3 * b2),
+                Value(a3 * b1 - a1 * b3),
+                Value(a1 * b2 - a2 * b1)};
         return Value(result);
     }
-    
+
     // Vector magnitude/norm
     Value magnitude() const {
         if (!is_array()) {
             std::cerr << "Error: Magnitude requires an array" << std::endl;
             return Value();
         }
-        
+
         const auto& arr = std::get<std::vector<Value>>(data);
         double sum = 0.0;
-        
-        for (const auto& elem : arr) {
+
+        for (const auto& elem: arr) {
             if (elem.is_numeric()) {
                 double val = elem.as_number();
                 sum += val * val;
@@ -314,7 +329,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return Value(std::sqrt(sum));
     }
-    
+
     // Vector normalization
     Value normalize() const {
         Value mag = magnitude();
@@ -324,28 +339,28 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return scalar_multiply(1.0 / mag.as_number());
     }
-    
+
     // Matrix operations
     Value matrix_multiply(const Value& other) const {
         if (!is_matrix() || !other.is_matrix()) {
             std::cerr << "Error: Matrix multiplication requires two matrices" << std::endl;
             return Value();
         }
-        
+
         const auto& a = std::get<std::vector<std::vector<Value>>>(data);
         const auto& b = std::get<std::vector<std::vector<Value>>>(other.data);
-        
+
         if (a.empty() || b.empty() || a[0].size() != b.size()) {
             std::cerr << "Error: Invalid matrix dimensions for multiplication" << std::endl;
             return Value();
         }
-        
+
         size_t rows = a.size();
         size_t cols = b[0].size();
         size_t inner = a[0].size();
-        
+
         std::vector<std::vector<Value>> result(rows, std::vector<Value>(cols, Value(0.0)));
-        
+
         for (size_t i = 0; i < rows; ++i) {
             for (size_t j = 0; j < cols; ++j) {
                 double sum = 0.0;
@@ -361,23 +376,23 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
         }
         return Value(result);
     }
-    
+
     // Matrix determinant (2x2 and 3x3 only)
     Value determinant() const {
         if (!is_matrix()) {
             std::cerr << "Error: Determinant requires a matrix" << std::endl;
             return Value();
         }
-        
+
         const auto& mat = std::get<std::vector<std::vector<Value>>>(data);
-        
+
         if (mat.size() != mat[0].size()) {
             std::cerr << "Error: Determinant requires a square matrix" << std::endl;
             return Value();
         }
-        
+
         size_t n = mat.size();
-        
+
         if (n == 2) {
             // 2x2 determinant: ad - bc
             if (!mat[0][0].is_numeric() || !mat[0][1].is_numeric() ||
@@ -390,8 +405,7 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
             double c = mat[1][0].as_number();
             double d = mat[1][1].as_number();
             return Value(a * d - b * c);
-        }
-        else if (n == 3) {
+        } else if (n == 3) {
             // 3x3 determinant using rule of Sarrus
             for (size_t i = 0; i < 3; ++i) {
                 for (size_t j = 0; j < 3; ++j) {
@@ -401,14 +415,13 @@ public:    enum class Type { Null, Bool, Int, Float, String, Array, Matrix, BigI
                     }
                 }
             }
-            
+
             double a = mat[0][0].as_number(), b = mat[0][1].as_number(), c = mat[0][2].as_number();
             double d = mat[1][0].as_number(), e = mat[1][1].as_number(), f = mat[1][2].as_number();
             double g = mat[2][0].as_number(), h = mat[2][1].as_number(), i = mat[2][2].as_number();
-            
+
             return Value(a * e * i + b * f * g + c * d * h - c * e * g - b * d * i - a * f * h);
-        }
-        else {
+        } else {
             std::cerr << "Error: Determinant only supported for 2x2 and 3x3 matrices" << std::endl;
             return Value();
         }

@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
-#include <vector>
 #include <memory>
+#include <string>
 #include <value.hpp>
+#include <vector>
 
 // AST 基类
 struct ASTNode {
@@ -11,7 +11,7 @@ struct ASTNode {
 
 // 表达式基类
 struct Expression : public ASTNode {
-    std::string source; // 保存表达式源码
+    std::string source;// 保存表达式源码
 };
 
 // 语句基类
@@ -162,7 +162,7 @@ struct ExprStmt : public Statement {
 struct DefineStmt : public Statement {
     std::string name;
     std::unique_ptr<Expression> value;
-    DefineStmt(const std::string& n, std::unique_ptr<Expression> v) 
+    DefineStmt(const std::string& n, std::unique_ptr<Expression> v)
         : name(n), value(std::move(v)) {}
 };
 
@@ -170,6 +170,6 @@ struct DefineStmt : public Statement {
 struct BigIntDeclStmt : public Statement {
     std::string name;
     std::unique_ptr<Expression> init_value;
-    BigIntDeclStmt(const std::string& n, std::unique_ptr<Expression> v = nullptr) 
+    BigIntDeclStmt(const std::string& n, std::unique_ptr<Expression> v = nullptr)
         : name(n), init_value(std::move(v)) {}
 };

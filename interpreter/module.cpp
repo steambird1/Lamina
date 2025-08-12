@@ -7,19 +7,19 @@
 #else
 #include <dlfcn.h>
 #ifdef __linux__
-#include <link.h>
 #include <elf.h>
+#include <link.h>
 #endif
 #endif
 #include "module.hpp"
 
 ModuleLoader::ModuleLoader(const std::string& soPath) {
 #ifdef _WIN32
-    m_handle = (void*)LoadLibraryA(soPath.c_str());
+    m_handle = (void*) LoadLibraryA(soPath.c_str());
     if (!m_handle) {
         std::cerr << "Failed to load library: " << soPath << std::endl;
     }
-#elif  __linux__
+#elif __linux__
     m_handle = dlopen(soPath.c_str(), RTLD_LAZY);
     if (!m_handle) {
         std::cerr << "Failed to load library: " << dlerror() << std::endl;
@@ -36,10 +36,10 @@ ModuleLoader::ModuleLoader(const std::string& soPath) {
 ModuleLoader::~ModuleLoader() {
 #ifdef _WIN32
     if (m_handle) {
-        FreeLibrary((HMODULE)m_handle);
+        FreeLibrary((HMODULE) m_handle);
         m_handle = nullptr;
     }
-#elif  __linux__
+#elif __linux__
     if (m_handle) {
         dlclose(m_handle);
         m_handle = nullptr;
@@ -59,7 +59,7 @@ void* ModuleLoader::findSymbol(const std::string& symbolName) {
     if (!m_handle) {
         return nullptr;
     }
-    symbol = (void*)GetProcAddress((HMODULE)m_handle, symbolName.c_str());
+    symbol = (void*) GetProcAddress((HMODULE) m_handle, symbolName.c_str());
     if (!symbol) {
         std::cerr << "Error looking up symbol '" << symbolName << "' in DLL." << std::endl;
         return nullptr;
@@ -116,7 +116,7 @@ std::vector<ModuleLoader::EntryFunction> ModuleLoader::findEntryFunctions() {
         entryFunctions.push_back([entryFunc](Interpreter& interpreter) {
             entryFunc(interpreter);
         });
-    }    
+    }
 #elif __linux__
     if (!m_handle) {
         return entryFunctions;

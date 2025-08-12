@@ -19,7 +19,7 @@ private:
     void* m_handle;
     std::string m_path;
     LaminaModuleExports* m_exports;
-    
+
     // Value转换工具
     static LaminaValue valueToLamina(const Value& val);
     static Value laminaToValue(const LaminaValue& val);
@@ -29,18 +29,18 @@ private:
 public:
     ModuleLoader(const std::string& path);
     ~ModuleLoader();
-    
+
     void unload();
     bool isLoaded() const { return m_handle != nullptr && m_exports != nullptr; }
     bool registerToInterpreter(Interpreter& interpreter);
-    
+
     // 安全的函数调用方法
     Value callModuleFunction(const std::string& func_name, const std::vector<Value>& args);
-    
+
     const std::string& getPath() const { return m_path; }
-    const LaminaModuleInfo* getModuleInfo() const { 
-        return m_exports ? &m_exports->info : nullptr; 
+    const LaminaModuleInfo* getModuleInfo() const {
+        return m_exports ? &m_exports->info : nullptr;
     }
 };
 
-#endif // LAMINA_MODULE_LOADER_HPP
+#endif// LAMINA_MODULE_LOADER_HPP

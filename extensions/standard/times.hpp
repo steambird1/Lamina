@@ -10,6 +10,6 @@ namespace lamina {
     LAMINA_FUNC("get_time", get_time, 0);
     LAMINA_FUNC("get_date", get_date, 0);
     LAMINA_FUNC("format_date", get_format_date, 1);
-}
+}// namespace lamina
 
-#endif //TIMES_HPP
+#endif//TIMES_HPP

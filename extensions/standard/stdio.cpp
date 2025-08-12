@@ -119,4 +119,4 @@ namespace lamina {
     LAMINA_FUNC_WIT_ANY_ARGS("print", print);
     LAMINA_FUNC_MULTI_ARGS("file_put_content", file_put_content, 2);
     LAMINA_FUNC_MULTI_ARGS("file_get_content", file_get_content, 1);
-}
+}// namespace lamina
