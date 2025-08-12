@@ -271,8 +271,7 @@ Value Interpreter::eval(const ASTNode* node) {
         error_and_exit("Attempted to evaluate null expression");
     }
     if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
-        // Try to parse as number first
-        try {
+        if (lit->type == Value::Type::Int) {
             // Check if it contains scientific notation (e or E) or decimal point
             std::string value = lit->value;
             if (value.find('.') != std::string::npos || 
@@ -292,7 +291,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     return Value(big);
                 }
             }
-        } catch (...) {
+        } else {
             // Check for boolean literals
             if (lit->value == "true") return Value(true);
             if (lit->value == "false") return Value(false);

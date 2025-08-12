@@ -103,18 +103,15 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
     DEBUG_OUT << "Debug - parse_primary: token[" << i << "] = '" << tokens[i].text 
               << "' (type=" << static_cast<int>(tokens[i].type) << ")" << std::endl;
       if (tokens[i].type == TokenType::Number) {
-        return std::make_unique<LiteralExpr>(tokens[i++].text);
+        return std::make_unique<LiteralExpr>(tokens[i++].text, Value::Type::Int);
     } else if (tokens[i].type == TokenType::String) {
-        return std::make_unique<LiteralExpr>(tokens[i++].text);
+        return std::make_unique<LiteralExpr>(tokens[i++].text, Value::Type::String);
     } else if (tokens[i].type == TokenType::True) {
-        ++i;
-        return std::make_unique<LiteralExpr>("true");
+        return std::make_unique<LiteralExpr>("true", Value::Type::Bool);
     } else if (tokens[i].type == TokenType::False) {
-        ++i;
-        return std::make_unique<LiteralExpr>("false");
+        return std::make_unique<LiteralExpr>("false", Value::Type::Bool);
     } else if (tokens[i].type == TokenType::Null) {
-        ++i;
-        return std::make_unique<LiteralExpr>("null");
+        return std::make_unique<LiteralExpr>("null", Value::Type::Null);
     } else if (tokens[i].type == TokenType::LBracket) {
         // Parse array literal [expr1, expr2, ...]
         ++i; // Skip '['
@@ -397,7 +394,7 @@ std::unique_ptr<Statement> Parser::parse_while(const std::vector<Token>& tokens,
         print_context(tokens, i);
         
         // Try to recover: create a condition that's always true
-        cond = std::make_unique<LiteralExpr>("true");
+        cond = std::make_unique<LiteralExpr>("true", Value::Type::Bool);
         
         // Try to find right parenthesis
         while (i < tokens.size() && tokens[i].type != TokenType::RParen) {
