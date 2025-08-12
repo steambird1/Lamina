@@ -305,6 +305,16 @@ print(2 * v1);                  // 标量乘法：[2, 4, 6]
 | `visit()` | 访问 | `visit(a, 3, 0)`|
 |`visit_by_str()`| 访问 | `visit_by_str(b, "name")` |
 
+### 字符串处理函数
+
+| 函数 | 描述 | 示例 |
+|------|------|------|
+| `string_concat(...)` | 拼接多个字符串 | `string_concat("abc", "abc", "abc") → "abcabcabc"` |
+| `string_char_at(str, index)` | 获取字符串指定位置的字符，以Int类型返回 | `string_char_at("abc", 1) → 98` |
+| `string_length(str)` | 获取字符串长度 | `string_length("abc") → 3` |
+| `string_find(str, start_index, sub_str)` | 从指定位置开始查找子字符串 | `string_find("abcAAA123", 0, "AAA") → 3` |
+| `string_sub_string(str, start_index, len)` | 截取指定长度的子字符串 | `string_sub_string("abcAAA123", 3, 3) → "AAA"` |
+| `string_replace_by_index(str, start_index, sub_str)` | 从指定位置开始替换原字符串 | `string_replace_by_index("abcAAA123", 3, "CCC") → "abcCCC123"` |
 
 ---
 

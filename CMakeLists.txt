@@ -88,6 +88,8 @@ add_library(lamina_core SHARED
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp
         extensions/standard/latex.hpp
+        extensions/standard/string.hpp
+        extensions/standard/string.cpp
 )
 
 # Set lamina_core properties

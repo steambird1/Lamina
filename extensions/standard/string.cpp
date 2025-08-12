@@ -1,0 +1,168 @@
+#include "string.hpp"
+
+/**
+ * 拼接多个字符串，并返回一个新字符串
+ */
+Value concat(const std::vector<Value> &args) {
+    std::string str = "";
+    for (size_t i = 0; i < args.size(); i++) {
+        if (!args[i].is_string()) {
+            L_ERR("Args Must Be String");
+            return LAMINA_NULL;
+        }
+        const std::string arg_str = std::get<std::string>(args[i].data);
+        str += arg_str;
+    }
+
+    return Value(str);
+}
+
+/**
+ * 获取字符串指定位置的字符，以Int类型返回
+ */
+Value char_at(const std::vector<Value> &args) {
+    if (!args[0].is_string()) {
+        L_ERR("First Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+    if (!args[1].is_int()) {
+        L_ERR("Second Arg Must Be A Int");
+        return LAMINA_NULL;
+    }
+
+    const std::string str = std::get<std::string>(args[0].data);
+    const int index = std::get<int>(args[1].data);
+
+    if (index < 0 || static_cast<size_t>(index) >= str.length()) {
+        L_ERR("Char Index Out Of Range");
+    }
+
+    return Value(str.at(static_cast<size_t>(index)));
+}
+
+/**
+ * 获取字符串长度
+ */
+Value length(const std::vector<Value> &args) {
+    if (!args[0].is_string()) {
+        L_ERR("First Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+
+    const std::string str = std::get<std::string>(args[0].data);
+
+    return Value(static_cast<int>(str.length()));
+}
+
+/**
+ * 从指定位置开始查找子字符串，
+ * 若查找成功，返回第一个符合结果的子字符串索引，
+ * 否则返回-1。
+ * 参数1：str（字符串）
+ * 参数2：start_index（开始位置索引）
+ * 参数3：sub_str（子字符串）
+ */
+Value find(const std::vector<Value> &args) {
+    if (!args[0].is_string()) {
+        L_ERR("First Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+    if (!args[1].is_int()) {
+        L_ERR("Second Arg Must Be A Int");
+        return LAMINA_NULL;
+    }
+    if (!args[2].is_string()) {
+        L_ERR("Third Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+
+    const std::string str = std::get<std::string>(args[0].data);
+    const int start_index = std::get<int>(args[1].data);
+    const std::string sub_str = std::get<std::string>(args[2].data);
+
+    if (start_index < 0 || static_cast<size_t>(start_index) >= str.length()) {
+        L_ERR("Start Index Out Of Range");
+    }
+
+    size_t index = str.find(sub_str, static_cast<size_t>(start_index));
+
+    if (index != str.npos) {
+        return Value(static_cast<int>(index));
+    } else {
+        return Value(-1);
+    }
+}
+
+/**
+ * 截取子字符串
+ * 参数1：str（字符串）
+ * 参数2：start_index（子字符串起始位置）
+ * 参数3：len（子字符串长度）
+ */
+Value sub_string(const std::vector<Value> &args) {
+    if (!args[0].is_string()) {
+        L_ERR("First Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+    if (!args[1].is_int()) {
+        L_ERR("Second Arg Must Be A Int");
+        return LAMINA_NULL;
+    }
+    if (!args[2].is_int()) {
+        L_ERR("Third Arg Must Be A Int");
+        return LAMINA_NULL;
+    }
+
+    const std::string str = std::get<std::string>(args[0].data);
+    const int start_index = std::get<int>(args[1].data);
+    const int len = std::get<int>(args[2].data);
+
+    if (start_index < 0 || static_cast<size_t>(start_index) >= str.length()) {
+        L_ERR("Start Index Out Of Range");
+    }
+
+    std::string sub_str = str.substr(start_index, len);
+
+    return Value(sub_str);
+}
+
+/**
+ * 从指定位置开始替换原字符串，并返回一个新字符串
+ * 参数1：str(原字符串)
+ * 参数2：start_index(开始位置)
+ * 参数3：sub_str(子字符串)
+ */
+Value replace_by_index(const std::vector<Value> &args) {
+    if (!args[0].is_string()) {
+        L_ERR("First Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+    if (!args[1].is_int()) {
+        L_ERR("Second Arg Must Be A Int");
+        return LAMINA_NULL;
+    }
+    if (!args[2].is_string()) {
+        L_ERR("Third Arg Must Be A String");
+        return LAMINA_NULL;
+    }
+
+    const std::string str = std::get<std::string>(args[0].data);
+    const int start_index = std::get<int>(args[1].data);
+    const std::string sub_str = std::get<std::string>(args[2].data);
+
+    if (start_index < 0 || static_cast<size_t>(start_index) >= str.length()) {
+        L_ERR("Start Index Out Of Range");
+    }
+
+    std::string prefix = str.substr(0, start_index);
+
+    std::string sufix = "";
+
+    if (start_index + sub_str.length() < str.length()) {
+        size_t sufix_index = start_index + sub_str.length();
+        sufix = str.substr(sufix_index, str.length() - sufix_index);
+    }
+    
+    std::string result_str = prefix + sub_str + sufix;
+    return Value(result_str);
+}
