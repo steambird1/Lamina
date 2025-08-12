@@ -137,7 +137,7 @@ std::string repl_readline(const std::string& prompt) {
                 for (size_t i = cursor; i < maxlen; ++i) std::cout << "\b";
                 std::cout << std::flush;
             }
-        } else if (ch == 224) {
+        } else if (ch == 224 || ch == 0) { // Function and Arrow
             int key = _getch();
             if (key == 75) { // Left
                 if (cursor > 0) {
@@ -149,7 +149,17 @@ std::string repl_readline(const std::string& prompt) {
                     std::cout << buffer[cursor];
                     ++cursor;
                 }
-            } else if (key == 72) { // Up
+            } else if (key == 71) { // Home
+                if (cursor > 0) {
+                    std::cout << std::string(cursor, '\b') << std::flush;
+                    cursor = 0;
+                }
+            } else if (key == 79) { // End
+                if (cursor < buffer.size()) {
+                    std::cout << std::string(buffer.begin + cursor, buffer.end()) << std::flush;
+                    cursor = buffer.size();
+                }
+            } else if (key == 72 || key == 73) { // Up or PageUp
                 if (!history.empty() && (history_index + 1 < (int)history.size())) {
                     if (history_index == -1) {
                         current_edit = buffer;
@@ -162,50 +172,7 @@ std::string repl_readline(const std::string& prompt) {
                     for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
                     std::cout << "\r" << prompt << buffer << std::flush;
                 }
-            } else if (key == 80) { // Down
-                if (history_index > 0) {
-                    --history_index;
-                    buffer = history[history.size() - 1 - history_index];
-                    cursor = buffer.size();
-                    maxlen = std::max(maxlen, buffer.size());
-                    std::cout << "\r" << prompt;
-                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
-                    std::cout << "\r" << prompt << buffer << std::flush;
-                } else if (history_index == 0) {
-                    history_index = -1;
-                    buffer = current_edit;
-                    cursor = buffer.size();
-                    std::cout << "\r" << prompt;
-                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
-                    std::cout << "\r" << prompt << buffer << std::flush;
-                }
-            }
-        } else if (ch == 0) {
-            int key = _getch();
-            if (key == 75) { // Left
-                if (cursor > 0) {
-                    std::cout << "\b" << std::flush;
-                    --cursor;
-                }
-            } else if (key == 77) { // Right
-                if (cursor < buffer.size()) {
-                    std::cout << buffer[cursor];
-                    ++cursor;
-                }
-            } else if (key == 72) { // Up
-                if (!history.empty() && (history_index + 1 < (int)history.size())) {
-                    if (history_index == -1) {
-                        current_edit = buffer;
-                    }
-                    ++history_index;
-                    buffer = history[history.size() - 1 - history_index];
-                    cursor = buffer.size();
-                    maxlen = std::max(maxlen, buffer.size());
-                    std::cout << "\r" << prompt;
-                    for (size_t i = 0; i < maxlen; ++i) std::cout << ' ';
-                    std::cout << "\r" << prompt << buffer << std::flush;
-                }
-            } else if (key == 80) { // Down
+            } else if (key == 80 || key == 81) { // Down or PageDown
                 if (history_index > 0) {
                     --history_index;
                     buffer = history[history.size() - 1 - history_index];
@@ -373,7 +340,32 @@ std::string repl_readline(const std::string& prompt) {
                         std::cout << buffer[cursor];
                         ++cursor;
                     }
-                } else if (seq2 == 'A') { // Up
+                } else if (seq2 == 'H' || seq2 == '1') { // Home
+                    if (seq2 == '1') {
+                        char seq3 = getchar();
+                        if (seq3 != '~')
+                            continue; // not Home, skip
+                    }
+                    if (cursor > 0) {
+                        std::cout << std::string(cursor, '\b') << std::flush;
+                        cursor = 0;
+                    }
+                } else if (seq2 == 'F' || seq2 == '4') { // End
+                    if (seq2 == '4') {
+                        char seq3 = getchar();
+                        if (seq3 != '~')
+                            continue; // not End, skip
+                    }
+                    if (cursor < buffer.size()) {
+                        std::cout << std::string(buffer.begin()+cursor, buffer.end());
+                        cursor = buffer.size();
+                    }
+                } else if (seq2 == 'A' || seq2 == '5') { // Up or PageUp
+                    if (seq2 == '5') {
+                        char seq3 = getchar();
+                        if (seq3 != '~')
+                            continue; // not PageUp, skip
+                    }
                     if (!history.empty() && (history_index + 1 < (int)history.size())) {
                         if (history_index == -1) {
                             current_edit = buffer;
@@ -386,7 +378,12 @@ std::string repl_readline(const std::string& prompt) {
                         for (size_t i = 0; i < maxlen_unix; ++i) std::cout << ' ';
                         std::cout << "\r" << prompt << buffer << std::flush;
                     }
-                } else if (seq2 == 'B') { // Down
+                } else if (seq2 == 'B' || seq2 == '6') { // Down or PageDown
+                    if (seq2 == '6') {
+                        char seq3 = getchar();
+                        if (seq3 != '~')
+                            continue; // not PageDonw, skip
+                    }
                     if (history_index > 0) {
                         --history_index;
                         buffer = history[history.size() - 1 - history_index];
