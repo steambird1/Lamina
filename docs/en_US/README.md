@@ -18,7 +18,7 @@
 
 ## A procedural programming language focusing on precise mathematical computation
 
-[Quick Start](#quick-start) • [Syntax Guide](#basic-syntax) • [Mathematical Features](#precise-mathematics) • [Sample Code](#sample-code) • [Compilation Guide](/docs/en_US/Compile.md) • [Contributing Guide](/docs/en_US/CONTRIBUTING.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [Dynamic Library Plugin Development](/docs/en_US/PLUGIN_GUIDE.md)
+[Quick Start](#quick-start) • [Syntax Guide](#basic-syntax) • [Mathematical Features](#precise-mathematics) • [Sample Code](#sample-code) • [Compilation Guide](Compile.md) • [Contributing Guide](CONTRIBUTING.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [Dynamic Library Plugin Development](PLUGIN_GUIDE.md)
 
 ---
 ## Contents

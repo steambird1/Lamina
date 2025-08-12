@@ -18,7 +18,7 @@
 
 ## 一種專注於精確數學計算的程序式程式語言
 
-[快速開始](#快速開始) • [語法指南](#基礎語法) • [數學特性](#精確數學特性) • [範例程式碼](#範例程式碼) • [編譯指南](/documents/Compile-zh_TW.md) • [貢獻指南](/documents/CONTRIBUTING-zh_TW.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [動態庫插件開發](/documents/PLUGIN_GUIDE-zh_TW.md) 
+[快速開始](#快速開始) • [語法指南](#基礎語法) • [數學特性](#精確數學特性) • [範例程式碼](#範例程式碼) • [編譯指南](Compile.md) • [貢獻指南](CONTRIBUTING.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [動態庫插件開發](PLUGIN_GUIDE.md)
 
 ---
 
