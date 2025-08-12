@@ -1,35 +1,34 @@
 #include "interpreter.hpp"
+#include "bigint.hpp"
+#include "lamina.hpp"
 #include "lexer.hpp"
 #include "module_loader.hpp"
-#include "lamina.hpp"
 #include "parser.hpp"
-#include "bigint.hpp"
-#include <iostream>
 #include <cmath>
+#include <cstdlib>// For std::exit
+#include <cstring>// For strcmp
 #include <exception>
 #include <fstream>
+#include <iostream>
 #include <sstream>
-#include <cstdlib> // For std::exit
-#include <cstring> // For strcmp
 #ifdef _WIN32
-#include <windows.h>
-#include <io.h>
 #include <direct.h>
+#include <io.h>
+#include <windows.h>
 #elif __linux__
-#include <limits.h>
-#include <unistd.h>
-#include <unistd.h> // For isatty
-#include <cstdlib>  // For getenv
+#include <cstdlib>// For getenv
 #include <dlfcn.h>
+#include <limits.h>
 #include <link.h>
+#include <unistd.h>
+#include <unistd.h>// For isatty
 #else
+#include <cstdlib>// For getenv
+#include <dlfcn.h>
 #include <limits.h>
 #include <unistd.h>
-#include <unistd.h> // For isatty
-#include <cstdlib>  // For getenv
-#include <dlfcn.h>
+#include <unistd.h>// For isatty
 #endif
-
 
 
 // 这些异常类已经移到了 interpreter.hpp
@@ -68,7 +67,7 @@ Value Interpreter::get_variable(const std::string& name) const {
     RuntimeError error("Undefined variable '" + name + "'");
     error.stack_trace = get_stack_trace();
     throw error;
-    return Value(); // Unreachable, but suppress compiler warning
+    return Value();// Unreachable, but suppress compiler warning
 }
 
 void Interpreter::set_variable(const std::string& name, const Value& val) {
@@ -86,16 +85,16 @@ void Interpreter::set_global_variable(const std::string& name, const Value& val)
 void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     if (!node) return;
 
-    if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {        if (v->expr) {
-        Value val = eval(v->expr.get());
-        set_variable(v->name, val);
-    } else {
-        RuntimeError error("Variable '" + v->name + "' declaration has null expression");
-        error.stack_trace = get_stack_trace();
-        throw error;
-    }
-    }
-    else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
+    if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
+        if (v->expr) {
+            Value val = eval(v->expr.get());
+            set_variable(v->name, val);
+        } else {
+            RuntimeError error("Variable '" + v->name + "' declaration has null expression");
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
+    } else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
         if (!d->value) {
             error_and_exit("Null expression in define statement for '" + d->name + "'");
         }
@@ -111,10 +110,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
             // 已替换
-
         }
-    }
-    else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
+    } else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
         if (bi->init_value) {
             Value val = eval(bi->init_value.get());
             if (val.is_bigint()) {
@@ -130,34 +127,31 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                     ::BigInt big_val(std::get<std::string>(val.data));
                     set_variable(bi->name, Value(big_val));
                 } catch (const std::exception& e) {
-                    error_and_exit("Invalid BigInt string '" + std::get<std::string>(val.data)
-                                + "' in declaration of " + bi->name);
+                    error_and_exit("Invalid BigInt string '" + std::get<std::string>(val.data) + "' in declaration of " + bi->name);
                 }
             } else {
                 // 默认初始化为0
-                error_and_exit("Cannot convert " + val.to_string()
-                            + " to BigInt in declaration of " + bi->name);
+                error_and_exit("Cannot convert " + val.to_string() + " to BigInt in declaration of " + bi->name);
             }
         } else {
             set_variable(bi->name, Value(::BigInt(0)));
         }
-    }
-    else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
+    } else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
         if (!a->expr) {
             error_and_exit("Null expression in assignment to '" + a->name + "'");
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
-    }    else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
+    } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
             error_and_exit("Null condition in if statement");
         }
         Value cond = eval(ifs->condition.get());
         bool cond_true = cond.as_bool();
         if (cond_true) {
-            for (auto& stmt : ifs->thenBlock->statements) execute(stmt);
+            for (auto& stmt: ifs->thenBlock->statements) execute(stmt);
         } else if (ifs->elseBlock) {
-            for (auto& stmt : ifs->elseBlock->statements) execute(stmt);
+            for (auto& stmt: ifs->elseBlock->statements) execute(stmt);
         }
     } else if (auto* ws = dynamic_cast<WhileStmt*>(node.get())) {
         if (!ws->condition) {
@@ -168,14 +162,15 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
 
         // 更健壮的while循环实现
         int iteration_count = 0;
-        const int MAX_ITERATIONS = 100000; // 防止无限循环
+        const int MAX_ITERATIONS = 100000;// 防止无限循环
 
         try {
             while (true) {
                 // 安全检查：防止无限循环
                 if (++iteration_count > MAX_ITERATIONS) {
                     Interpreter::print_warning("Loop exceeded " + std::to_string(MAX_ITERATIONS) +
-                                              " iterations, possible infinite loop, terminating", true);
+                                                       " iterations, possible infinite loop, terminating",
+                                               true);
                     RuntimeError error("Possible infinite loop terminated");
                     error.stack_trace = get_stack_trace();
                     throw error;
@@ -200,7 +195,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 bool continue_encountered = false;
 
                 // 执行循环体
-                for (auto& stmt : ws->body->statements) {
+                for (auto& stmt: ws->body->statements) {
                     if (continue_encountered) continue;
 
                     try {
@@ -228,23 +223,18 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
         functions[func->name] = func;
-    }
-    else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
-        for (auto& stmt : block->statements) execute(stmt);
-    }
-    else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
+    } else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
+        for (auto& stmt: block->statements) execute(stmt);
+    } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
         Value val = eval(ret->expr.get());
         throw ReturnException(val);
-    }
-    else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
-        (void)breakStmt; // 避免未使用变量警告
+    } else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
+        (void) breakStmt;// 避免未使用变量警告
         throw BreakException();
-    }
-    else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
-        (void)contStmt; // 避免未使用变量警告
+    } else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
+        (void) contStmt;// 避免未使用变量警告
         throw ContinueException();
-    }
-    else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
+    } else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
         if (!load_module(includeStmt->module)) {
             error_and_exit("Failed to include module '" + includeStmt->module + "'");
         }
@@ -274,8 +264,8 @@ Value Interpreter::eval(const ASTNode* node) {
         if (lit->type == Value::Type::Int) {
             // Check if it contains scientific notation (e or E) or decimal point
             std::string value = lit->value;
-            if (value.find('.') != std::string::npos || 
-                value.find('e') != std::string::npos || 
+            if (value.find('.') != std::string::npos ||
+                value.find('e') != std::string::npos ||
                 value.find('E') != std::string::npos) {
                 // Parse as double for floating point numbers and scientific notation
                 double d = std::stod(lit->value);
@@ -299,14 +289,11 @@ Value Interpreter::eval(const ASTNode* node) {
             // Otherwise it's a string
             return Value(lit->value);
         }
-    }
-    else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
+    } else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
         return get_variable(id->name);
-    }
-    else if (auto* var = dynamic_cast<const VarExpr*>(node)) {
+    } else if (auto* var = dynamic_cast<const VarExpr*>(node)) {
         return get_variable(var->name);
-    }
-    else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
+    } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         Value l = eval(bin->left.get());
         Value r = eval(bin->right.get());
 
@@ -339,16 +326,15 @@ Value Interpreter::eval(const ASTNode* node) {
                     return Value(result);
                 }
 
-                double result = l.as_number() + r.as_number();                // Return int if both operands are int and result is whole
+                double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
                 if (l.is_int() && r.is_int()) {
                     return Value(static_cast<int>(result));
                 }
                 return Value(result);
-            }
-            else {
+            } else {
                 error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
             }
-        }        // Arithmetic operations (require numeric operands or vector operations)
+        }// Arithmetic operations (require numeric operands or vector operations)
         if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
             bin->op == "%" || bin->op == "^") {
 
@@ -480,7 +466,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     // For rational exponentiation, use integer exponent if possible
                     if (rr.is_integer() && rr.get_denominator() == 1) {
                         int exp = static_cast<int>(rr.get_numerator());
-                        if (exp >= -1000 && exp <= 1000) { // Reasonable range
+                        if (exp >= -1000 && exp <= 1000) {// Reasonable range
                             return Value(lr.pow(exp));
                         }
                     }
@@ -493,7 +479,7 @@ Value Interpreter::eval(const ASTNode* node) {
             if (l.is_bigint() || r.is_bigint()) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                
+
                 if (bin->op == "-") {
                     return Value(lb - rb);
                 }
@@ -544,18 +530,18 @@ Value Interpreter::eval(const ASTNode* node) {
                 if (l.is_bigint() || r.is_bigint()) {
                     ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                     ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                    
+
                     // 使用字符串比较来判断大小（这是一个简化的实现）
                     std::string ls = lb.to_string();
                     std::string rs = rb.to_string();
-                    
+
                     if (bin->op == "==") return Value(ls == rs);
                     if (bin->op == "!=") return Value(ls != rs);
-                    
+
                     // 对于大小比较，需要考虑符号和长度
                     bool lb_neg = ls[0] == '-';
                     bool rb_neg = rs[0] == '-';
-                    
+
                     if (lb_neg && !rb_neg) {
                         // 左负右正
                         if (bin->op == "<") return Value(true);
@@ -572,16 +558,16 @@ Value Interpreter::eval(const ASTNode* node) {
                         // 同号比较：比较绝对值的长度和字典序
                         std::string labs = lb_neg ? ls.substr(1) : ls;
                         std::string rabs = rb_neg ? rs.substr(1) : rs;
-                        
+
                         bool abs_less;
                         if (labs.length() != rabs.length()) {
                             abs_less = labs.length() < rabs.length();
                         } else {
                             abs_less = labs < rabs;
                         }
-                        
+
                         bool result_less = lb_neg ? !abs_less : abs_less;
-                        
+
                         if (bin->op == "<") return Value(result_less);
                         if (bin->op == "<=") return Value(result_less || ls == rs);
                         if (bin->op == ">") return Value(!result_less && ls != rs);
@@ -598,8 +584,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     if (bin->op == ">") return Value(ld > rd);
                     if (bin->op == ">=") return Value(ld >= rd);
                 }
-            }
-            else if (l.is_string() && r.is_string()) {
+            } else if (l.is_string() && r.is_string()) {
                 std::string ls = std::get<std::string>(l.data);
                 std::string rs = std::get<std::string>(r.data);
 
@@ -609,8 +594,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 if (bin->op == "<=") return Value(ls <= rs);
                 if (bin->op == ">") return Value(ls > rs);
                 if (bin->op == ">=") return Value(ls >= rs);
-            }
-            else if (l.is_bool() && r.is_bool()) {
+            } else if (l.is_bool() && r.is_bool()) {
                 bool lb = std::get<bool>(l.data);
                 bool rb = std::get<bool>(r.data);
 
@@ -621,10 +605,9 @@ Value Interpreter::eval(const ASTNode* node) {
                 if (bin->op == "<=") return Value(lb <= rb);
                 if (bin->op == ">") return Value(lb > rb);
                 if (bin->op == ">=") return Value(lb >= rb);
-            }
-            else {
+            } else {
                 // Type mismatch - only equality/inequality make sense
-                if (bin->op == "==") return Value(false); // Different types are never equal
+                if (bin->op == "==") return Value(false);// Different types are never equal
                 if (bin->op == "!=") return Value(true); // Different types are always not equal
 
                 error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
@@ -634,10 +617,9 @@ Value Interpreter::eval(const ASTNode* node) {
 
         error_and_exit("Unknown binary operator '" + bin->op + "'");
 
-    }
-    else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
+    } else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
-          if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
+        if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
             RuntimeError error("Unary operator requires integer or big integer operand");
             error.stack_trace = get_stack_trace();
             throw error;
@@ -686,10 +668,10 @@ Value Interpreter::eval(const ASTNode* node) {
 
         std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;
         return Value("<unknown op>");
-    }    // Support function calls
+    }// Support function calls
     else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         std::string actual_callee = call->callee;
-//        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
+        //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
 
         // 检查调用的名称是否是一个参数，如果是，获取其实际值
         try {
@@ -697,35 +679,35 @@ Value Interpreter::eval(const ASTNode* node) {
             if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
                 // 这是一个函数参数，提取实际的函数名
                 actual_callee = std::get<std::string>(callee_value.data).substr(11);
-             //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
+                //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
             }
         } catch (const RuntimeError&) {
             // 如果不是变量，保持原名称
-           // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
+            // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
         }
 
         // Check builtin functions first
-     //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
-     //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
+        //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
+        //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
         // for (const auto& pair : builtin_functions) {
         //     std::cout << "  - '" << pair.first << "'" << std::endl;
         // }
-        
+
         auto builtin_it = builtin_functions.find(actual_callee);
         if (builtin_it != builtin_functions.end()) {
-       //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
-            
+            //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
+
             // 检查是否是模块函数
             bool is_module_func = actual_callee.find(".") != std::string::npos;
             if (is_module_func) {
-         //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
+                //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
             }
-            
+
             // Handle builtin call with stack frame and unified error handling
             push_frame(actual_callee, "<builtin>", 0);
 
             std::vector<Value> args;
-            for (const auto& arg : call->args) {
+            for (const auto& arg: call->args) {
                 if (!arg) {
                     pop_frame();
                     RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
@@ -765,13 +747,14 @@ Value Interpreter::eval(const ASTNode* node) {
 
             recursion_depth++;
             push_scope();
-            push_frame(actual_callee, "<script>", 0); // Add to call stack
+            push_frame(actual_callee, "<script>", 0);// Add to call stack
 
             // Check parameter count
             if (call->args.size() > func->params.size()) {
                 Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
-                                          "'. Expected " + std::to_string(func->params.size()) +
-                                          ", got " + std::to_string(call->args.size()), true);
+                                                   "'. Expected " + std::to_string(func->params.size()) +
+                                                   ", got " + std::to_string(call->args.size()),
+                                           true);
             }
 
             // Pass arguments
@@ -780,7 +763,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     if (call->args[j]) {
                         set_variable(func->params[j], eval(call->args[j].get()));
                     } else {
-                        Interpreter::print_error("Null argument " + std::to_string(j+1) + " in call to function '" + actual_callee + "'", true);
+                        Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
                         set_variable(func->params[j], Value("<null arg>"));
                     }
                 } else {
@@ -791,7 +774,7 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // Execute function body, capture return
             try {
-                for (const auto& stmt : func->body->statements) {
+                for (const auto& stmt: func->body->statements) {
                     try {
                         execute(stmt);
                     } catch (const ReturnException& re) {
@@ -806,7 +789,7 @@ Value Interpreter::eval(const ASTNode* node) {
                         if (re.stack_trace.empty()) {
                             enriched.stack_trace = get_stack_trace();
                         } else {
-                            enriched.stack_trace = re.stack_trace; // Preserve existing trace
+                            enriched.stack_trace = re.stack_trace;// Preserve existing trace
                         }
                         pop_frame();
                         pop_scope();
@@ -815,7 +798,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     } catch (const std::exception& e) {
                         // Wrap standard exception as RuntimeError
                         RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
-                        enriched.stack_trace = get_stack_trace(); // Get stack trace before cleanup
+                        enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
                         pop_frame();
                         pop_scope();
                         recursion_depth--;
@@ -833,7 +816,7 @@ Value Interpreter::eval(const ASTNode* node) {
             pop_frame();
             pop_scope();
             recursion_depth--;
-            return Value(); // Default value when no return
+            return Value();// Default value when no return
         }
 
         // Check if it's a module function before reporting undefined
@@ -841,7 +824,7 @@ Value Interpreter::eval(const ASTNode* node) {
         if (is_module_func) {
             // Prepare arguments for module function call
             std::vector<Value> args;
-            for (const auto& arg : call->args) {
+            for (const auto& arg: call->args) {
                 if (!arg) {
                     std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
                     args.push_back(Value());
@@ -849,10 +832,10 @@ Value Interpreter::eval(const ASTNode* node) {
                     args.push_back(eval(arg.get()));
                 }
             }
-            
+
             // Try to call the module function
             Value result = call_module_function(actual_callee, args);
-            if (result.to_string() != "null") {  // 检查是否成功调用
+            if (result.to_string() != "null") {// 检查是否成功调用
                 return result;
             }
             // If module function call failed, fall through to undefined function error
@@ -860,10 +843,9 @@ Value Interpreter::eval(const ASTNode* node) {
 
         std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
         return Value("<undefined function>");
-    }
-    else if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
+    } else if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
         std::vector<Value> elements;
-        for (const auto& element : arr->elements) {
+        for (const auto& element: arr->elements) {
             if (element) {
                 elements.push_back(eval(element.get()));
             } else {
@@ -881,7 +863,7 @@ Value Interpreter::eval(const ASTNode* node) {
 bool Interpreter::load_module(const std::string& module_name) {
     // Check if already loaded to avoid circular imports
     if (loaded_modules.find(module_name) != loaded_modules.end()) {
-        return true;  // Already loaded
+        return true;// Already loaded
     }
     // 立即插入，防止递归 include
     loaded_modules.insert(module_name);
@@ -892,14 +874,14 @@ bool Interpreter::load_module(const std::string& module_name) {
         clean_name = clean_name.substr(3);
     }
 
-    // 平台相关动态库扩展名
-    #if defined(_WIN32)
+// 平台相关动态库扩展名
+#if defined(_WIN32)
     const std::string lib_ext = ".dll";
-    #elif defined(__APPLE__)
+#elif defined(__APPLE__)
     const std::string lib_ext = ".dylib";
-    #else
+#else
     const std::string lib_ext = ".so";
-    #endif
+#endif
 
     // Handle built-in hidden library "splash"
     if (module_name == "splash") {
@@ -937,14 +919,14 @@ bool Interpreter::load_module(const std::string& module_name) {
     std::string filename = module_name;
     bool has_lm = filename.find(".lm") != std::string::npos;
     bool has_lib = filename.find(lib_ext) != std::string::npos;
-    
+
     // Try different paths: current directory, examples directory, etc.
     std::vector<std::string> search_paths = {"", "./", "include/", "extensions/"};
     std::string full_path;
 
     // 如果指定了动态库扩展名，直接尝试加载动态库
     if (has_lib) {
-        for (const auto& path : search_paths) {
+        for (const auto& path: search_paths) {
             full_path = path + filename;
             std::ifstream testfile(full_path, std::ios::binary);
             if (testfile) {
@@ -975,7 +957,7 @@ bool Interpreter::load_module(const std::string& module_name) {
     }
 
     std::ifstream file;
-    for (const auto& path : search_paths) {
+    for (const auto& path: search_paths) {
         full_path = path + filename;
         file.open(full_path);
         if (file) break;
@@ -984,13 +966,12 @@ bool Interpreter::load_module(const std::string& module_name) {
     // 如果没找到脚本文件，尝试查找动态库（lib前缀和无前缀，自动适配扩展名）
     if (!file) {
         std::vector<std::string> lib_names = {
-            "lib" + clean_name + lib_ext,
-            clean_name + lib_ext
-        };
+                "lib" + clean_name + lib_ext,
+                clean_name + lib_ext};
         is_shared_lib = true;
         bool found = false;
-        for (const auto& libfile : lib_names) {
-            for (const auto& path : search_paths) {
+        for (const auto& libfile: lib_names) {
+            for (const auto& path: search_paths) {
                 full_path = path + libfile;
                 std::ifstream testfile(full_path, std::ios::binary);
                 if (testfile) {
@@ -1016,8 +997,8 @@ bool Interpreter::load_module(const std::string& module_name) {
         if (!found) {
             std::cerr << "Error: Cannot load module '" << module_name << "'\n";
             std::cerr << "  Searched in: ";
-            for (const auto& libfile : lib_names) {
-                for (const auto& path : search_paths) {
+            for (const auto& libfile: lib_names) {
+                for (const auto& path: search_paths) {
                     std::cerr << path + libfile << " ";
                 }
             }
@@ -1041,20 +1022,20 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     if (!ast) {
         std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;
-        loaded_modules.erase(module_name); // Remove from loaded modules on failure
+        loaded_modules.erase(module_name);// Remove from loaded modules on failure
         return false;
-    }    // Execute module code (should be a block statement)
+    }// Execute module code (should be a block statement)
     auto* block = dynamic_cast<BlockStmt*>(ast.get());
     if (block) {
         // Execute module code in the current scope (not a new scope)
         // This allows variables and functions to be accessible after inclusion
         try {
-            for (auto& stmt : block->statements) {
+            for (auto& stmt: block->statements) {
                 execute(stmt);
             }
         } catch (const std::exception& e) {
             std::cerr << "Error: Exception while executing module '" << module_name << "': " << e.what() << std::endl;
-            loaded_modules.erase(module_name); // 失败时移除，防止死锁
+            loaded_modules.erase(module_name);// 失败时移除，防止死锁
             return false;
         }
 
@@ -1077,9 +1058,8 @@ void Interpreter::register_entry(EntryFunction func) {
 }
 
 // Register builtin mathematical functions
-void Interpreter::register_builtin_functions()
-{
-    for (auto entry : get_entry_functions()) {
+void Interpreter::register_builtin_functions() {
+    for (auto entry: get_entry_functions()) {
         entry(*this);
     }
 }
@@ -1109,7 +1089,7 @@ void Interpreter::printVariables() const {
     bool hasVars = false;
     for (auto it = variable_stack.rbegin(); it != variable_stack.rend(); ++it) {
         const auto& scope = *it;
-        for (const auto& [name, value] : scope) {
+        for (const auto& [name, value]: scope) {
             std::cout << name << " = " << value.to_string() << std::endl;
             hasVars = true;
         }
@@ -1123,7 +1103,7 @@ void Interpreter::printVariables() const {
     if (!functions.empty()) {
         std::cout << "\nDefined functions:" << std::endl;
         std::cout << "------------------" << std::endl;
-        for (const auto& [name, _] : functions) {
+        for (const auto& [name, _]: functions) {
             std::cout << name << "()" << std::endl;
         }
     }
@@ -1159,7 +1139,7 @@ void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) 
         }
 
         // Print stack frames
-        for (const auto& frame : trace) {
+        for (const auto& frame: trace) {
             if (colors_enabled) {
                 std::cerr << "  File \"\033[1;34m" << frame.file_name << "\033[0m\", line "
                           << frame.line_number << ", in \033[1;33m" << frame.function_name << "\033[0m\n";
@@ -1191,7 +1171,7 @@ bool Interpreter::supports_colors() {
             return colors_supported;
         }
 
-        #ifdef _WIN32
+#ifdef _WIN32
         // On Windows, check if we're in a modern terminal that supports ANSI escape codes
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
         DWORD mode;
@@ -1209,9 +1189,9 @@ bool Interpreter::supports_colors() {
 
         // Also check if output is redirected
         if (colors_supported && _isatty(_fileno(stderr)) == 0) {
-            colors_supported = false; // Output is redirected, don't use colors
+            colors_supported = false;// Output is redirected, don't use colors
         }
-        #else
+#else
         // On Unix-like systems, check if stderr is a terminal and TERM is set
         colors_supported = isatty(STDERR_FILENO) && getenv("TERM") != nullptr;
 
@@ -1220,7 +1200,7 @@ bool Interpreter::supports_colors() {
         if (term && (strcmp(term, "dumb") == 0 || strcmp(term, "unknown") == 0)) {
             colors_supported = false;
         }
-        #endif
+#endif
     }
 
     return colors_supported;
@@ -1239,7 +1219,7 @@ void Interpreter::print_error(const std::string& message, bool use_colors) {
 // Call module function implementation
 Value Interpreter::call_module_function(const std::string& func_name, const std::vector<Value>& args) {
     // Try each loaded module
-    for (auto& loader : module_loaders) {
+    for (auto& loader: module_loaders) {
         if (loader && loader->isLoaded()) {
             // Check if this module has the function (by namespace)
             size_t dot_pos = func_name.find(".");
@@ -1252,9 +1232,9 @@ Value Interpreter::call_module_function(const std::string& func_name, const std:
             }
         }
     }
-    
+
     std::cerr << "ERROR: Module function '" << func_name << "' not found in any loaded module" << std::endl;
-    return Value(); // null value
+    return Value();// null value
 }
 
 void Interpreter::print_warning(const std::string& message, bool use_colors) {

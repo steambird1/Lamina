@@ -50,6 +50,6 @@ namespace Lamina {
     LAMINA_FUNC_MULTI_ARGS("string_find", find, 3);
     LAMINA_FUNC_MULTI_ARGS("string_sub_string", sub_string, 3);
     LAMINA_FUNC_MULTI_ARGS("string_replace_by_index", replace_by_index, 3);
-}
+}// namespace Lamina
 
 #endif

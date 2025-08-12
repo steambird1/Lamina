@@ -3,7 +3,7 @@
 /**
  * 拼接多个字符串，并返回一个新字符串
  */
-Value concat(const std::vector<Value> &args) {
+Value concat(const std::vector<Value>& args) {
     std::string str = "";
     for (size_t i = 0; i < args.size(); i++) {
         if (!args[i].is_string()) {
@@ -20,7 +20,7 @@ Value concat(const std::vector<Value> &args) {
 /**
  * 获取字符串指定位置的字符，以Int类型返回
  */
-Value char_at(const std::vector<Value> &args) {
+Value char_at(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -43,7 +43,7 @@ Value char_at(const std::vector<Value> &args) {
 /**
  * 获取字符串长度
  */
-Value length(const std::vector<Value> &args) {
+Value length(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -62,7 +62,7 @@ Value length(const std::vector<Value> &args) {
  * 参数2：start_index（开始位置索引）
  * 参数3：sub_str（子字符串）
  */
-Value find(const std::vector<Value> &args) {
+Value find(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -99,7 +99,7 @@ Value find(const std::vector<Value> &args) {
  * 参数2：start_index（子字符串起始位置）
  * 参数3：len（子字符串长度）
  */
-Value sub_string(const std::vector<Value> &args) {
+Value sub_string(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -132,7 +132,7 @@ Value sub_string(const std::vector<Value> &args) {
  * 参数2：start_index(开始位置)
  * 参数3：sub_str(子字符串)
  */
-Value replace_by_index(const std::vector<Value> &args) {
+Value replace_by_index(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -162,7 +162,7 @@ Value replace_by_index(const std::vector<Value> &args) {
         size_t sufix_index = start_index + sub_str.length();
         sufix = str.substr(sufix_index, str.length() - sufix_index);
     }
-    
+
     std::string result_str = prefix + sub_str + sufix;
     return Value(result_str);
 }

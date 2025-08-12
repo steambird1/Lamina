@@ -1,12 +1,12 @@
 #ifndef SOCKETS_HPP
 #define SOCKETS_HPP
 
+#include "lamina.hpp"
+#include <atomic>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <atomic>
-#include "lamina.hpp"
 
 #ifdef _WIN32
 #ifndef USE_LIBUV
@@ -27,10 +27,10 @@
 constexpr int DEFAULT_BACKLOG = 128;
 
 #ifdef USE_LIBUV
-#include <queue>
 #include <mutex>
+#include <queue>
 namespace lamina::net {
-    
+
     enum SocketType {
         TCP = 0,
         UDP = 1
@@ -120,7 +120,7 @@ namespace lamina::net {
     LAMINA_FUNC("socket_bind", socket_bind, 2);
     LAMINA_FUNC("socket_listen", socket_listen, 2);
     LAMINA_FUNC("socket_accept", socket_accept, 1);
-}
+}// namespace lamina::net
 #endif
 
-#endif // SOCKETS_HPP
+#endif// SOCKETS_HPP

@@ -10,9 +10,7 @@ Value randstr(const std::vector<Value>& args);
 namespace lamina {
     LAMINA_FUNC("randint", randint, 2);
     LAMINA_FUNC("randstr", randstr, 1);
-}
+}// namespace lamina
 
 
-
-
-#endif // RANDOM_HPP
+#endif// RANDOM_HPP
