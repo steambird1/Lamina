@@ -9,7 +9,16 @@
 #include <typeinfo>
 #include "repl_input.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    // 设置控制台输出编码为UTF-8
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
     if (argc < 2) {
         std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit.\n";
         std::cout << "Type :help for help.\n";
