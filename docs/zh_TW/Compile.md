@@ -1,7 +1,7 @@
 ## 編譯方法 
 
 <div align="right">
-  <strong>🇹🇼 繁體中文</strong> | <a href="../zh_CN/Compile.md">🇨🇳 简体中文</a> | <a href="../en_US/Compile.md">🇺🇸 English</a>
+  <strong>繁體中文</strong> | <a href="../zh_CN/Compile.md">简体中文</a> | <a href="../en_US/Compile.md">English</a>
 </div>
 <br>
 
