@@ -1,7 +1,7 @@
 ## Compile
 
 <div align="right">
-  <a href="../zh_TW/Compile.md">🇹🇼 繁體中文</a> | <a href="../zh_CN/Compile.md">🇨🇳 简体中文</a> | <strong>🇺🇸 English</strong>
+  <a href="../zh_TW/Compile.md">繁體中文</a> | <a href="../zh_CN/Compile.md">简体中文</a> | <strong>English</strong>
 </div>
 <br>
 
