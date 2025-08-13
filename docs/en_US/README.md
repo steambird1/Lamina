@@ -2,7 +2,7 @@
 <img src="/assets/logo.svg" width="100%">
 
 <div align="right">
-  <a href="../zh_TW/README.md">🇹🇼 繁體中文</a> | <a href="/README.md">🇨🇳 简体中文</a> | <strong>🇺🇸 English</strong>
+  <a href="../zh_TW/README.md">繁體中文</a> | <a href="/README.md">简体中文</a> | <strong>English</strong>
 </div>
 <br>
 
