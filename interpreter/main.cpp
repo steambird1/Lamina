@@ -14,12 +14,13 @@
 #endif
 
 int main(int argc, char* argv[]) {
+    try {
 #ifdef _WIN32
-    // 设置控制台输出编码为UTF-8
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+        // 设置控制台输出编码为UTF-8
+        SetConsoleOutputCP(CP_UTF8);
+        SetConsoleCP(CP_UTF8);
 #endif
-    if (argc < 2) {
+        if (argc < 2) {
         std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit.\n";
         std::cout << "Type :help for help.\n";
         Interpreter interpreter;
@@ -204,4 +205,14 @@ int main(int argc, char* argv[]) {
         std::cout << "\nProgram execution completed." << std::endl;
     }
     return 0;
+    } catch (const CtrlCException&) {
+        std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。" << std::endl;
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "程序发生异常: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cerr << "程序发生未知异常。" << std::endl;
+        return 1;
+    }
 }
