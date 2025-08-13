@@ -1,7 +1,7 @@
 ## 编译方法 
 
 <div align="right">
-  <a href="../zh_TW/Compile.md">🇹🇼 繁體中文</a> | <strong>🇨🇳 简体中文</strong> | <a href="../en_US/Compile.md">🇺🇸 English</a>
+  <a href="../zh_TW/Compile.md">繁體中文</a> | <strong>简体中文</strong> | <a href="../en_US/Compile.md">English</a>
 </div>
 <br>
 
