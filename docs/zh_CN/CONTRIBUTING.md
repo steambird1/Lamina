@@ -1,7 +1,7 @@
 ## 代码提交规范
 
 <div align="right">
-  <a href="../zh_TW/CONTRIBUTING.md">🇹🇼 繁體中文</a> | <strong>🇨🇳 简体中文</strong> | <a href="../en_US/CONTRIBUTING.md">🇺🇸 English</a>
+  <a href="../zh_TW/CONTRIBUTING.md">繁體中文</a> | <strong>简体中文</strong> | <a href="../en_US/CONTRIBUTING.md">English</a>
 </div>
 <br>
 
