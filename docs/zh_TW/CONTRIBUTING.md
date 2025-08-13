@@ -1,7 +1,7 @@
 ## 程式碼提交規範
 
 <div align="right">
-  <strong>🇹🇼 繁體中文</strong> | <a href="../zh_CN/CONTRIBUTING.md">🇨🇳 简体中文</a> | <a href="../en_US/CONTRIBUTING.md">🇺🇸 English</a>
+  <strong>繁體中文</strong> | <a href="../zh_CN/CONTRIBUTING.md">简体中文</a> | <a href="../en_US/CONTRIBUTING.md">English</a>
 </div>
 <br>
 
