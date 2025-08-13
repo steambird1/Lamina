@@ -114,9 +114,75 @@ inline Value file_get_content(const std::vector<Value>& args) {
     return Value(content);
 }
 
+/**
+ * 终端内执行系统指令
+ */
+inline Value exec(const std::vector<Value>& args) {
+    if (args.empty()) {
+        L_ERR("exec requires 1 argument: command");
+    }
+
+    if (!args[0].is_string()) {
+        L_ERR("The first argument of exec must be a string (command).");
+    }
+
+    std::string command = args[0].to_string();
+    int result = std::system(command.c_str());
+
+    if (result != 0) {
+        L_ERR("Command execution failed: " + command);
+    }
+
+    return Value(result);
+}
+
+inline Value exist(const std::vector<Value>& args) {
+    if (args.empty()) {
+        L_ERR("exist() requires 1 argument: filename");
+        return Value(false);
+    }
+
+    if (!args[0].is_string()) {
+        L_ERR("The first argument of exist must be a string (filename).");
+        return Value(false);
+    }
+
+    std::string filename = args[0].to_string();
+    bool exists = std::filesystem::exists(filename);
+    return Value(exists);
+}
+
+inline Value touch_file(const std::vector<Value>& args) {
+    if (args.empty()) {
+        L_ERR("touch_file() requires 1 argument: filename");
+        return Value(false);
+    }
+
+    if (!args[0].is_string()) {
+        L_ERR("The first argument of touch_file must be a string (filename).");
+        return Value(false);
+    }
+
+    std::string filename = args[0].to_string();
+
+    std::ofstream file(filename, std::ios::app);
+    if (!file.is_open()) {
+        L_ERR("Failed to touch file: " + filename);
+        return Value(false);
+    }
+
+    std::filesystem::last_write_time(filename, std::filesystem::file_time_type::clock::now());
+
+    return Value(true);
+}
+
+
 namespace lamina {
     LAMINA_FUNC_MULTI_ARGS("input", input, 1);
     LAMINA_FUNC_WIT_ANY_ARGS("print", print);
-    LAMINA_FUNC_MULTI_ARGS("file_put_content", file_put_content, 2);
-    LAMINA_FUNC_MULTI_ARGS("file_get_content", file_get_content, 1);
+    LAMINA_FUNC("file_put_content", file_put_content, 2);
+    LAMINA_FUNC("file_get_content", file_get_content, 1);
+    LAMINA_FUNC("exec", exec, 1);
+    LAMINA_FUNC("exist", exist, 1);
+    LAMINA_FUNC("touch_file", touch_file, 1);
 }// namespace lamina
