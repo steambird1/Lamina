@@ -1,0 +1,105 @@
+prj_name = input("Project Name: ");
+version = input("Version: ");
+description = input("Description: ");
+path = input("Ext Path: ");
+exec("mkdir " + path + "/" + prj_name);
+// Create CMakeLists.txt
+touch_file(path + "/" + prj_name + "/CMakeLists.txt");
+touch_file(path + "/" + prj_name + "/" + prj_name + ".cpp");
+
+func put_skel_cmake_lists(path, prj_name){
+       file_put_content(
+                       path + "/" + prj_name + "/CMakeLists.txt",
+
+                       "cmake_minimum_required(VERSION 3.10)\n\n" +
+                       "set(MODULE_NAME " + prj_name + ")\n\n" +
+                       "add_library(${MODULE_NAME} SHARED\n" + prj_name + ".cpp\n" +
+                       ")\n\n" +
+                       "set_target_properties(${MODULE_NAME} PROPERTIES \n\n" +
+                       " RUNTIME_OUTPUT_DIRECTORY " + '"' + "${CMAKE_BINARY_DIR}/Debug" + '"' + "\n" +
+                       " LIBRARY_OUTPUT_DIRECTORY " + '"' + "${CMAKE_BINARY_DIR}/Debug" + '"' + "\n" +
+                       " ARCHIVE_OUTPUT_DIRECTORY " + '"' + "${CMAKE_BINARY_DIR}/Debug" + '"' + "\n" +
+                       ")\n\n" +
+                       "if(WIN32)\n\n" +
+                       " target_compile_definitions(${MODULE_NAME} PRIVATE \n" +
+                       "   _CRT_SECURE_NO_WARNINGS\n" +
+                       ")\n\n" +
+                       " if(MSVC)\n"+
+                       "  target_compile_options(${MODULE_NAME} PRIVATE" +
+                       "     /std:c++17\n" +
+                       "     /EHsc\n" +
+                       "     /MD\n" +
+                       "     /W4\n" +
+                       "  )\n\n" +
+                       "  set_property(TARGET ${MODULE_NAME} PROPERTY" + "\n" +
+                       "  MSVC_RUNTIME_LIBRARY" + '"' + "MultiThreadedDLL" + '"' + "\n" +
+                       ")\n"+
+                       "  else()\n" +
+                       "    message(" + "WARNING" + '"' + "构建${MODULE_NAME}模块时推荐使用MSVC，以避免ABI兼容性问题" + '"' + ")\n" +
+                       "        target_compile_options(${MODULE_NAME} PRIVATE\n" +
+                       "            -std=c++17\n" +
+                       "            -fexceptions\n " +
+                       "            -shared\n " +
+                       "        )\n\n" +
+                       "    endif()\n" +
+                       "elseif(UNIX AND NOT APPLE)\n" +
+                       "        target_compile_options(${MODULE_NAME} PRIVATE\n" +
+                       "        -fPIC\n"+
+                       "        -std=c++17\n" +
+                       "        -fvisibility=hidden\n" +
+                       ")\n"+
+                       "    target_compile_definitions(${MODULE_NAME} PRIVATE\n" +
+                       "        -DLAMINA_EXPORT=__attribute__((visibility(" + '"' + "default" + '"' + ")))\n" +
+                       "    )\n" +
+                       "elseif(APPLE)\n"+
+                       "    target_compile_options(${MODULE_NAME} PRIVATE\n" +
+                       "        -fPIC\n"+
+                       "        -std=c++17\n"+
+                       "        -fvisibility=hidden\n"+
+                       ")\n" +
+                       "    target_compile_definitions(${MODULE_NAME} PRIVATE\n"+
+                       "        -DLAMINA_EXPORT=__attribute__((visibility(" + '"' + "default" + '"' + ")))\n" +
+                       "    )\n" +
+                       "endif()\n" +
+                       "target_include_directories(${MODULE_NAME} PRIVATE\n" +
+                       "    ${CMAKE_CURRENT_SOURCE_DIR}\n" +
+                       ")\n"
+       );
+}
+
+
+func put_skel_cpp(path, prj_name){
+            file_put_content(
+                            path + "/" + prj_name + "/" + prj_name + ".cpp",
+
+                            "#include " + '"' + "../../interpreter/module_api.hpp" + '"\n' +
+                            "#include <cstdio>\n "+
+                            "#include <cstring>\n"+
+                            "LAMINA_EXPORT LaminaValue LAMINA_CALL " + prj_name + "_example" +
+                            "(const LaminaValue* args, int argc) {\n" +
+                            "}\n\n" +
+                            "static LaminaFunctionEntry export_functions[] = {\n" +
+                            "};\n\n" +
+                            "static LaminaModuleExports exports = {\n" +
+                            "{\n" +
+                            '      "' + prj_name + '", //Namespace\n' +
+                            '      "' + version + '", //Version\n' +
+                            '      "' + description + '", //Description\n' +
+                            "},\n" +
+                            "   export_functions" + ", // Functions\n" +
+                            "   1, // Func Count\n" +
+                            "   nullptr, // Variables\n" +
+                            "   0, // Variable Count\n" +
+                            "};\n\n" +
+                            "LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {\n" +
+                            "    return &exports;\n" +
+                            "}\n\n" +
+                            "LAMINA_EXPORT const char* LAMINA_CALL lamina_module_signature() {\n" +
+                            "    return LAMINA_MODULE_SIGNATURE;\n" +
+                            "}\n\n"
+            );
+}
+
+
+put_skel_cmake_lists(path, prj_name);
+put_skel_cpp(path, prj_name);
