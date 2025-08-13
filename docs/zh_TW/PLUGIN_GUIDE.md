@@ -1,7 +1,7 @@
 # Lamina 模組開發指南
 
 <div align="right">
-  <strong>🇹🇼 繁體中文</strong> | <a href="../zh_CN/PLUGIN_GUIDE.md">🇨🇳 简体中文</a> | <a href="../en_US/PLUGIN_GUIDE.md">🇺🇸 English</a>
+  <strong>繁體中文</strong> | <a href="../zh_CN/PLUGIN_GUIDE.md">简体中文</a> | <a href="../en_US/PLUGIN_GUIDE.md">English</a>
 </div>
 
 ## 概述
