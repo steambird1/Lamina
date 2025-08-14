@@ -630,10 +630,9 @@ Value Interpreter::eval(const ASTNode* node) {
                 int vi = std::get<int>(v.data);
                 return Value(-vi);
             } else {
-                // For BigInt, we need to implement negation
+                // For BigInt, negate directly
                 ::BigInt big_val = std::get<::BigInt>(v.data);
-                // For now, convert to int if possible
-                return Value(-big_val.to_int());
+                return Value(big_val.negate());
             }
         }
 
