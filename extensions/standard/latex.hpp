@@ -9,7 +9,7 @@
 #include <string>
 
 // 包含 ExprTk 头文件
-#include "exprtk.hpp"
+//#include "exprtk.hpp"
 
 class ImprovedLaTeXCalculator {
 private:
