@@ -90,6 +90,8 @@ add_library(lamina_core SHARED
       #  extensions/standard/latex.hpp
         extensions/standard/string.hpp
         extensions/standard/string.cpp
+        extensions/standard/cas.hpp
+        extensions/standard/cas_module.cpp
 )
 
 # Set lamina_core properties
