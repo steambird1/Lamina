@@ -1,6 +1,6 @@
 #include "interpreter.hpp"
 #include "lamina.hpp"
-#include "latex.hpp"
+// #include "latex.hpp"
 #include "value.hpp"
 
 inline Value sqrt(const std::vector<Value>& args) {
@@ -189,7 +189,7 @@ inline Value decimal(const std::vector<Value>& args) {
     return Value(val);
 }
 
-namespace latex {
+/** namespace latex {
     ImprovedLaTeXCalculator* improved_la_te_x_calculator = new ImprovedLaTeXCalculator();
 
     Value Initialize(const std::vector<Value>& args) {
@@ -234,7 +234,7 @@ namespace latex {
     LAMINA_FUNC("set_var", set_var, 2);
     LAMINA_FUNC("calculate", calculate, 1);
 
-}// namespace latex
+}// namespace latex**/
 
 namespace lamina {
     LAMINA_FUNC("sqrt", sqrt, 1);
