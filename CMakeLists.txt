@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(WIN32)
     if(MSVC)
         # Set MSVC compile options - add exception handling, calling convention and parallel PDB write support
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MD /Gz /FS")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MD /Gz /FS /utf-8")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MD /Gz /FS")
         
         # Set to multi-threaded dynamic link library
