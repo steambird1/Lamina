@@ -34,4 +34,4 @@ Use xmake
 xmake
 ```
 
-# WARNING: If you cannot compile it with cmake in MacOS, try to use xmake or use gcc/g++ rather than clang/clang++
+# WARNING: If you cannot compile it with cmake in MacOS, try to use Unix makefiles rather than Xcode
