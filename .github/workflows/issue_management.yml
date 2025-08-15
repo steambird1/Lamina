@@ -15,18 +15,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Welcome new issue
-        uses: actions/github-script@v6
+        uses: peter-evans/create-or-update-comment@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issue = context.payload.issue;
-            // 为新issue添加欢迎消息
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.number,
-              body: `👋 感谢您提交 issue！\n\n我们已经收到您的反馈，维护者会尽快查看并回复。\n\n在等待回复期间，您可以：\n- 📖 查看 [项目文档](https://github.com/lamina-dev/Lamina/wiki)\n- 💬 加入 [QQ 交流群](https://qm.qq.com/q/QwPXCgsJea) 进行实时讨论\n- 🔍 搜索 [现有 issues](https://github.com/lamina-dev/Lamina/issues) 看是否有类似问题\n\n如果这是您的第一次贡献，欢迎阅读我们的 [贡献指南](https://github.com/lamina-dev/Lamina/blob/main/documents/CONTRIBUTING-CN.md)。`
-            });
+          comment-id: ${{ github.event.issue.number }}
+          body: |
+            👋 感谢您提交issue！
+
+            我们已经收到您的反馈，维护者会尽快查看并回复。
+
+            在等待回复期间，您可以：
+            - 📖 查看[项目文档](https://github.com/lamina-dev/Lamina/wiki)
+            - 💬 加入[QQ交流群](https://qm.qq.com/q/QwPXCgsJea) 进行实时讨论
+            - 🔍 搜索[现有issues](https://github.com/lamina-dev/Lamina/issues) 看是否有类似问题
+
+            如果这是您的第一次贡献，欢迎阅读我们的[贡献指南](https://github.com/lamina-dev/Lamina/blob/main/docs/zh_CN/CONTRIBUTING.md)。
 
   auto-assign-labels:
     if: github.event.action == 'opened'
@@ -64,16 +66,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add help resources
-        uses: actions/github-script@v6
+        uses: peter-evans/create-or-update-comment@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              body: `🆘 需要帮助？\n\n这里有一些可能对您有用的资源：\n\n📚 **文档资源**\n- [语法指南](https://github.com/lamina-dev/Lamina/wiki)\n- [编译指南](https://github.com/lamina-dev/Lamina/blob/main/documents/compile-cn.md)\n- [插件开发指南](https://github.com/lamina-dev/Lamina/blob/main/documents/PLUGIN_GUIDE.md)\n\n🔍 **常见问题**\n- 搜索 [已关闭的 issues](https://github.com/lamina-dev/Lamina/issues?q=is%3Aissue+is%3Aclosed)\n- 查看 [示例代码](https://github.com/lamina-dev/Lamina/tree/main/examples)\n\n💬 **即时帮助**\n- 加入 QQ 群：https://qm.qq.com/q/QwPXCgsJea\n\n如果以上资源无法解决您的问题，请提供更多详细信息，我们会尽快为您解答！`
-            });
+          comment-id: ${{ github.event.issue.number }}
+          body: |
+            🆘 需要帮助？
+
+            这里有一些可能对您有用的资源：
+
+            📚 **文档资源**
+            - [语法指南](https://github.com/lamina-dev/Lamina/wiki)
+            - [编译指南](https://github.com/Lamina-dev/Lamina/blob/main/docs/zh_CN/Compile.md)
+            - [插件开发指南](https://github.com/Lamina-dev/Lamina/blob/main/docs/zh_CN/PLUGIN_GUIDE.md)
+
+            🔍 **常见问题**
+            - 搜索[已关闭的issues](https://github.com/lamina-dev/Lamina/issues?q=is%3Aissue+is%3Aclosed)
+            - 查看[示例代码](https://github.com/lamina-dev/Lamina/tree/main/examples)
+
+            💬 **即时帮助**
+            - 加入QQ群：https://qm.qq.com/q/QwPXCgsJea
+
+            如果以上资源无法解决您的问题，请提供更多详细信息，我们会尽快为您解答！
 
   stale-issues:
     if: github.event.action == 'opened'
