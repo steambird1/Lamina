@@ -2,9 +2,9 @@ name: Build Lamina Interpreter
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   build:
@@ -35,7 +35,7 @@ jobs:
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.31.6'
+          cmake-version: "3.31.6"
 
       - name: Set up build environment (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
@@ -69,18 +69,18 @@ jobs:
         shell: bash
         run: |
           echo "Testing basic functionality..."
-          
+
           # Create a simple test file
           echo 'print("Hello, Lamina!");' > test.lm
           echo 'var x = 2 + 3;' >> test.lm
           echo 'print("2 + 3 =", x);' >> test.lm
-          
+
           if [ "${{ matrix.os }}" = "windows-2025" ]; then
             ./${{ matrix.build_type }}/Lamina.exe test.lm
           else
             ./Lamina test.lm
           fi
-          
+
           echo "Basic test passed!"
 
       - name: Run example programs
@@ -88,10 +88,10 @@ jobs:
         shell: bash
         run: |
           echo "Running example programs..."
-          
+
           # Test all example files if they exist
-          if [ -d "../interpreter/examples" ]; then
-            for example in ../interpreter/examples/*.lm; do
+          if [ -d "../examples" ]; then
+            for example in ../examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $example..."
                 if [ "${{ matrix.os }}" = "windows-2025" ]; then
@@ -112,5 +112,5 @@ jobs:
           path: |
             build/${{ matrix.os == 'windows-2025' && format('{0}/Lamina.exe', matrix.build_type) || 'Lamina' }}
             build/${{ matrix.os == 'windows-2025' && format('{0}/*.dll', matrix.build_type) || '*.so' }}
-            interpreter/examples/
+            examples/
           retention-days: 30

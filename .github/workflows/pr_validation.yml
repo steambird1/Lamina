@@ -11,196 +11,196 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-    
+
     steps:
-    - name: Check PR Description
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const pr = context.payload.pull_request;
-          const body = pr.body || '';
-          
-          // 检查PR描述是否包含基本信息
-          const requiredSections = [
-            '变更描述',
-            '测试',
-            '检查清单'
-          ];
-          
-          const missingSections = requiredSections.filter(section => 
-            !body.includes(section)
-          );
-          
-          if (missingSections.length > 0) {
-            core.setFailed(`PR描述缺少以下必要部分: ${missingSections.join(', ')}`);
-          }
-          
-          // 检查是否填写了变更类型
-          const hasChangeType = /- \[x\]/.test(body);
-          if (!hasChangeType) {
-            core.warning('请在PR描述中选择至少一种变更类型');
-          }
-          
-          // 检查是否有相关的issue链接（可选）
-          const hasIssueLink = /Closes #\d+|Related to #\d+/.test(body);
-          if (!hasIssueLink) {
-            core.info('建议在PR中关联相关的issue');
-          }
-          
-          console.log('PR描述验证完成');
+      - name: Check PR Description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
 
-    - name: Check for Breaking Changes
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const pr = context.payload.pull_request;
-          const body = pr.body || '';
-          const title = pr.title || '';
-          
-          // 检查是否有破坏性变更
-          const hasBreakingChange = 
-            title.includes('BREAKING') || 
-            body.includes('破坏性变更') ||
-            body.includes('breaking change');
-          
-          if (hasBreakingChange) {
-            try {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                labels: ['breaking-change']
-              });
-              
-              core.warning('⚠️ 此PR包含破坏性变更，请确保：\n1. 在描述中详细说明变更内容\n2. 更新相关文档\n3. 考虑版本号变更');
-            } catch (error) {
-              core.warning(`无法添加标签：${error.message}`);
+            // 检查PR描述是否包含基本信息
+            const requiredSections = [
+              '变更描述',
+              '测试',
+              '检查清单'
+            ];
+
+            const missingSections = requiredSections.filter(section => 
+              !body.includes(section)
+            );
+
+            if (missingSections.length > 0) {
+              core.setFailed(`PR描述缺少以下必要部分: ${missingSections.join(', ')}`);
             }
-          }
 
-    - name: Welcome First Time Contributors
-      uses: actions/first-interaction@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        pr-message: |
-          🎉 感谢您的第一次贡献！
-          
-          欢迎加入Lamina社区！我们很高兴看到您的贡献。
-          
-          在您的PR被review期间，请确保：
-          - ✅ 代码符合项目规范
-          - ✅ 包含必要的测试
-          - ✅ 更新了相关文档
-          
-          如果您有任何问题，可以：
-          - 💬 加入我们的QQ群：https://qm.qq.com/q/QwPXCgsJea
-          - 📖 查看贡献指南：https://github.com/lamina-dev/Lamina/blob/main/documents/CONTRIBUTING-CN.md
-          
-          再次感谢您的贡献！🚀
+            // 检查是否填写了变更类型
+            const hasChangeType = /- \[x\]/.test(body);
+            if (!hasChangeType) {
+              core.warning('请在PR描述中选择至少一种变更类型');
+            }
 
-    - name: Validate PR Title
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const pr = context.payload.pull_request;
-          const title = pr.title || '';
-          
-          // 检查标题格式
-          const titlePattern = /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+/;
-          
-          if (!titlePattern.test(title)) {
-            core.warning(`⚠️ PR标题建议使用约定式提交格式：
-            - feat: 新功能
-            - fix: 修复bug
-            - docs: 文档变更
-            - style: 代码格式变更
-            - refactor: 代码重构
-            - test: 测试相关
-            - chore: 其他杂项
-            - perf: 性能优化
-            - ci: CI/CD相关
-            - build: 构建相关
-            
-            示例: "feat(interpreter): 添加新的数据类型支持"`);
-          }
-          
-          // 检查标题长度
-          if (title.length > 72) {
-            core.warning('⚠️ PR标题过长，建议控制在72个字符以内');
-          }
-          
-          if (title.length < 10) {
-            core.warning('⚠️ PR标题过短，请提供更详细的描述');
-          }
+            // 检查是否有相关的issue链接（可选）
+            const hasIssueLink = /Closes #\d+|Related to #\d+/.test(body);
+            if (!hasIssueLink) {
+              core.info('建议在PR中关联相关的issue');
+            }
 
-    - name: Check File Changes
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const pr = context.payload.pull_request;
-          
-          // 获取变更的文件
-          const { data: files } = await github.rest.pulls.listFiles({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            pull_number: pr.number
-          });
-          
-          const changedFiles = files.map(file => file.filename);
-          
-          // 检查是否修改了核心文件
-          const coreFiles = changedFiles.filter(file => 
-            file.startsWith('interpreter/') && (file.endsWith('.cpp') || file.endsWith('.hpp'))
-          );
-          
-          if (coreFiles.length > 0) {
-            core.info(`🔧 检测到核心解释器文件变更: ${coreFiles.join(', ')}`);
-          }
-          
-          // 检查是否修改了构建文件
-          const buildFiles = changedFiles.filter(file => 
-            file.includes('CMakeLists.txt') || file.startsWith('.github/workflows/')
-          );
-          
-          if (buildFiles.length > 0) {
-            core.info(`🏗️ 检测到构建系统文件变更: ${buildFiles.join(', ')}`);
-          }
-          
-          // 检查大型文件变更
-          const largeFiles = files.filter(file => file.additions + file.deletions > 500);
-          
-          if (largeFiles.length > 0) {
-            core.warning(`⚠️ 检测到大型文件变更 (>500行): ${largeFiles.map(f => f.filename).join(', ')}`);
-          }
-          
-          console.log(`📊 变更统计: ${files.length} 个文件, +${files.reduce((sum, f) => sum + f.additions, 0)} -${files.reduce((sum, f) => sum + f.deletions, 0)} 行`);
+            console.log('PR描述验证完成');
 
-    - name: Security Check
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const pr = context.payload.pull_request;
-          const body = pr.body || '';
-          const title = pr.title || '';
-          
-          // 检查是否包含敏感信息
-          const sensitivePatterns = [
-            /password/i,
-            /secret/i,
-            /token/i,
-            /api[_-]?key/i,
-            /private[_-]?key/i
-          ];
-          
-          const foundSensitive = sensitivePatterns.some(pattern => 
-            pattern.test(title) || pattern.test(body)
-          );
-          
-          if (foundSensitive) {
-            core.warning('⚠️ PR描述中可能包含敏感信息，请检查并确保没有泄露密钥或密码');
-          }
-          
-          // 检查是否添加了新的依赖
-          if (body.includes('dependency') || body.includes('依赖')) {
-            core.info('ℹ️ 检测到可能的依赖变更，请确保新依赖是必要的且安全的');
-          }
+      - name: Check for Breaking Changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const title = pr.title || '';
+
+            // 检查是否有破坏性变更
+            const hasBreakingChange = 
+              title.includes('BREAKING') || 
+              body.includes('破坏性变更') ||
+              body.includes('breaking change');
+
+            if (hasBreakingChange) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: ['breaking-change']
+                });
+                
+                core.warning('⚠️ 此PR包含破坏性变更，请确保：\n1. 在描述中详细说明变更内容\n2. 更新相关文档\n3. 考虑版本号变更');
+              } catch (error) {
+                core.warning(`无法添加标签：${error.message}`);
+              }
+            }
+
+      - name: Welcome First Time Contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            🎉 感谢您的第一次贡献！
+
+            欢迎加入Lamina社区！我们很高兴看到您的贡献。
+
+            在您的PR被review期间，请确保：
+            - ✅ 代码符合项目规范
+            - ✅ 包含必要的测试
+            - ✅ 更新了相关文档
+
+            如果您有任何问题，可以：
+            - 💬 加入我们的QQ群：https://qm.qq.com/q/QwPXCgsJea
+            - 📖 查看贡献指南：https://github.com/lamina-dev/Lamina/blob/main/documents/CONTRIBUTING-CN.md
+
+            再次感谢您的贡献！🚀
+
+      - name: Validate PR Title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title || '';
+
+            // 检查标题格式
+            const titlePattern = /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+/;
+
+            if (!titlePattern.test(title)) {
+              core.warning(`⚠️ PR标题建议使用约定式提交格式：
+              - feat: 新功能
+              - fix: 修复 bug
+              - docs: 文档变更
+              - style: 代码格式变更
+              - refactor: 代码重构
+              - test: 测试相关
+              - chore: 其他杂项
+              - perf: 性能优化
+              - ci: CI/CD相关
+              - build: 构建相关
+              
+              示例: "feat(interpreter): 添加新的数据类型支持"`);
+            }
+
+            // 检查标题长度
+            if (title.length > 72) {
+              core.warning('⚠️ PR标题过长，建议控制在72个字符以内');
+            }
+
+            if (title.length < 10) {
+              core.warning('⚠️ PR标题过短，请提供更详细的描述');
+            }
+
+      - name: Check File Changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // 获取变更的文件
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const changedFiles = files.map(file => file.filename);
+
+            // 检查是否修改了核心文件
+            const coreFiles = changedFiles.filter(file => 
+              file.startsWith('interpreter/') && (file.endsWith('.cpp') || file.endsWith('.hpp'))
+            );
+
+            if (coreFiles.length > 0) {
+              core.info(`🔧 检测到核心解释器文件变更: ${coreFiles.join(', ')}`);
+            }
+
+            // 检查是否修改了构建文件
+            const buildFiles = changedFiles.filter(file => 
+              file.includes('CMakeLists.txt') || file.startsWith('.github/workflows/')
+            );
+
+            if (buildFiles.length > 0) {
+              core.info(`🏗️ 检测到构建系统文件变更: ${buildFiles.join(', ')}`);
+            }
+
+            // 检查大型文件变更
+            const largeFiles = files.filter(file => file.additions + file.deletions > 500);
+
+            if (largeFiles.length > 0) {
+              core.warning(`⚠️ 检测到大型文件变更 (>500行): ${largeFiles.map(f => f.filename).join(', ')}`);
+            }
+
+            console.log(`📊 变更统计: ${files.length} 个文件，+${files.reduce((sum, f) => sum + f.additions, 0)} -${files.reduce((sum, f) => sum + f.deletions, 0)} 行`);
+
+      - name: Security Check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const title = pr.title || '';
+
+            // 检查是否包含敏感信息
+            const sensitivePatterns = [
+              /password/i,
+              /secret/i,
+              /token/i,
+              /api[_-]?key/i,
+              /private[_-]?key/i
+            ];
+
+            const foundSensitive = sensitivePatterns.some(pattern => 
+              pattern.test(title) || pattern.test(body)
+            );
+
+            if (foundSensitive) {
+              core.warning('⚠️ PR描述中可能包含敏感信息，请检查并确保没有泄露密钥或密码');
+            }
+
+            // 检查是否添加了新的依赖
+            if (body.includes('dependency') || body.includes('依赖')) {
+              core.info('ℹ️ 检测到可能的依赖变更，请确保新依赖是必要的且安全的');
+            }
