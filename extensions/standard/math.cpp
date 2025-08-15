@@ -4,6 +4,17 @@
 #include "value.hpp"
 #include "symbolic.hpp"
 
+/**
+ * @brief 计算数值的平方根
+ * 
+ * 根据输入参数的类型（整数、大整数、有理数或浮点数）进行相应的处理：
+ * - 对于整数和大整数，若为完全平方数则返回精确结果，否则返回符号表达式；
+ * - 对于有理数，若分子分母均为完全平方数则返回精确结果，否则返回符号表达式；
+ * - 对于浮点数等其他类型，使用标准库函数计算近似值。
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 平方根的结果，可能为数值或符号表达式
+ */
 inline Value sqrt(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: sqrt() requires numeric argument" << std::endl;
@@ -83,14 +94,34 @@ inline Value sqrt(const std::vector<Value>& args) {
     return Value(std::sqrt(val));
 }
 
+/**
+ * @brief 返回圆周率π的值
+ * 
+ * @param args 无参数
+ * @return Value 圆周率π的表示
+ */
 inline Value pi(const std::vector<Value>& /* args */) {
     return Value(::Irrational::pi());
 }
 
+/**
+ * @brief 返回自然常数e的值
+ * 
+ * @param args 无参数
+ * @return Value 自然常数e的表示
+ */
 inline Value e(const std::vector<Value>& /* args */) {
     return Value(::Irrational::e());
 }
 
+/**
+ * @brief 计算数值的绝对值
+ * 
+ * 支持整数、大整数和浮点数等类型。对于大整数，调用其abs方法；其他类型转换为double后计算。
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 绝对值结果
+ */
 inline Value abs(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: abs() requires numeric argument" << std::endl;
@@ -108,6 +139,12 @@ inline Value abs(const std::vector<Value>& args) {
     return Value(std::abs(val));
 }
 
+/**
+ * @brief 计算正弦值
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数（弧度）
+ * @return Value 正弦值结果
+ */
 inline Value sin(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: sin() requires numeric argument" << std::endl;
@@ -116,6 +153,12 @@ inline Value sin(const std::vector<Value>& args) {
     return Value(std::sin(args[0].as_number()));
 }
 
+/**
+ * @brief 计算余弦值
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数（弧度）
+ * @return Value 余弦值结果
+ */
 inline Value cos(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: cos() requires numeric argument" << std::endl;
@@ -124,6 +167,12 @@ inline Value cos(const std::vector<Value>& args) {
     return Value(std::cos(args[0].as_number()));
 }
 
+/**
+ * @brief 计算正切值
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数（弧度）
+ * @return Value 正切值结果
+ */
 inline Value tan(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: tan() requires numeric argument" << std::endl;
@@ -132,6 +181,12 @@ inline Value tan(const std::vector<Value>& args) {
     return Value(std::tan(args[0].as_number()));
 }
 
+/**
+ * @brief 计算自然对数
+ * 
+ * @param args 参数列表，要求包含一个正数类型的参数
+ * @return Value 自然对数值结果
+ */
 inline Value log(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("log() requires numeric argument");
@@ -143,6 +198,12 @@ inline Value log(const std::vector<Value>& args) {
     return Value(std::log(val));
 }
 
+/**
+ * @brief 四舍五入到最近的整数
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 四舍五入后的整数结果
+ */
 inline Value round(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("round() requires numeric argument");
@@ -150,6 +211,12 @@ inline Value round(const std::vector<Value>& args) {
     return Value(static_cast<int>(std::round(args[0].as_number())));
 }
 
+/**
+ * @brief 向下取整
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 向下取整后的整数结果
+ */
 inline Value floor(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("floor() requires numeric argument");
@@ -157,6 +224,12 @@ inline Value floor(const std::vector<Value>& args) {
     return Value(static_cast<int>(std::floor(args[0].as_number())));
 }
 
+/**
+ * @brief 向上取整
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 向上取整后的整数结果
+ */
 inline Value ceil(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("ceil() requires numeric argument");
@@ -164,26 +237,62 @@ inline Value ceil(const std::vector<Value>& args) {
     return Value(static_cast<int>(std::ceil(args[0].as_number())));
 }
 
+/**
+ * @brief 计算两个向量的点积
+ * 
+ * @param args 参数列表，要求包含两个向量类型的参数
+ * @return Value 点积结果
+ */
 inline Value dot(const std::vector<Value>& args) {
     return args[0].dot_product(args[1]);
 }
 
+/**
+ * @brief 计算两个向量的叉积
+ * 
+ * @param args 参数列表，要求包含两个向量类型的参数
+ * @return Value 叉积结果
+ */
 inline Value cross(const std::vector<Value>& args) {
     return args[0].cross_product(args[1]);
 }
 
+/**
+ * @brief 计算向量的模长
+ * 
+ * @param args 参数列表，要求包含一个向量类型的参数
+ * @return Value 模长结果
+ */
 inline Value norm(const std::vector<Value>& args) {
     return args[0].magnitude();
 }
 
+/**
+ * @brief 将向量归一化
+ * 
+ * @param args 参数列表，要求包含一个向量类型的参数
+ * @return Value 归一化后的单位向量
+ */
 inline Value normalize(const std::vector<Value>& args) {
     return args[0].normalize();
 }
 
+/**
+ * @brief 计算矩阵的行列式
+ * 
+ * @param args 参数列表，要求包含一个矩阵类型的参数
+ * @return Value 行列式结果
+ */
 inline Value det(const std::vector<Value>& args) {
     return args[0].determinant();
 }
 
+/**
+ * @brief 获取数组、矩阵或字符串的大小
+ * 
+ * @param args 参数列表，要求包含一个数组、矩阵或字符串类型的参数
+ * @return Value 大小结果（整数）
+ */
 inline Value size(const std::vector<Value>& args) {
     if (args[0].is_array()) {
         const auto& arr = std::get<std::vector<Value>>(args[0].data);
@@ -198,6 +307,12 @@ inline Value size(const std::vector<Value>& args) {
     return Value(1);// Scalar values have size 1
 }
 
+/**
+ * @brief 整数除法
+ * 
+ * @param args 参数列表，要求包含两个数值类型的参数
+ * @return Value 整数除法结果（整数）
+ */
 inline Value idiv(const std::vector<Value>& args) {
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
         error_and_exit("idiv() requires numeric arguments");
@@ -210,6 +325,12 @@ inline Value idiv(const std::vector<Value>& args) {
     return Value(static_cast<int>(dividend / divisor));
 }
 
+/**
+ * @brief 将数值转换为分数形式
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 分数形式的结果
+ */
 inline Value fraction(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: fraction() requires numeric argument" << std::endl;
@@ -232,6 +353,12 @@ inline Value fraction(const std::vector<Value>& args) {
     }
 }
 
+/**
+ * @brief 将数值转换为小数形式
+ * 
+ * @param args 参数列表，要求包含一个数值类型的参数
+ * @return Value 小数形式的结果
+ */
 inline Value decimal(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: decimal() requires numeric argument" << std::endl;
@@ -243,6 +370,12 @@ inline Value decimal(const std::vector<Value>& args) {
     return Value(val);
 }
 
+/**
+ * @brief 计算幂运算
+ * 
+ * @param args 参数列表，要求包含两个数值类型的参数（底数和指数）
+ * @return Value 幂运算结果
+ */
 inline Value pow(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: pow() requires two arguments (base, exponent)" << std::endl;
@@ -285,6 +418,12 @@ inline Value pow(const std::vector<Value>& args) {
     return Value(std::pow(base_val, exp_val));
 }
 
+/**
+ * @brief 计算两个数的最大公约数
+ * 
+ * @param args 参数列表，要求包含两个数值类型的参数
+ * @return Value 最大公约数结果
+ */
 inline Value gcd(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: gcd() requires two arguments" << std::endl;
@@ -335,6 +474,12 @@ inline Value gcd(const std::vector<Value>& args) {
     return Value(static_cast<int>(a));
 }
 
+/**
+ * @brief 计算两个数的最小公倍数
+ * 
+ * @param args 参数列表，要求包含两个数值类型的参数
+ * @return Value 最小公倍数结果
+ */
 inline Value lcm(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: lcm() requires two arguments" << std::endl;
