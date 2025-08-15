@@ -32,10 +32,10 @@ public:
 
     void unload();
     bool isLoaded() const { return m_handle != nullptr && m_exports != nullptr; }
-    bool registerToInterpreter(Interpreter& interpreter);
+    bool registerToInterpreter(Interpreter& interpreter) const;
 
     // 安全的函数调用方法
-    Value callModuleFunction(const std::string& func_name, const std::vector<Value>& args);
+    Value callModuleFunction(const std::string& func_name, const std::vector<Value>& args) const;
 
     const std::string& getPath() const { return m_path; }
     const LaminaModuleInfo* getModuleInfo() const {

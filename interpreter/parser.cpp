@@ -108,10 +108,13 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
     } else if (tokens[i].type == TokenType::String) {
         return std::make_unique<LiteralExpr>(tokens[i++].text, Value::Type::String);
     } else if (tokens[i].type == TokenType::True) {
+        i++;
         return std::make_unique<LiteralExpr>("true", Value::Type::Bool);
     } else if (tokens[i].type == TokenType::False) {
+        i++;
         return std::make_unique<LiteralExpr>("false", Value::Type::Bool);
     } else if (tokens[i].type == TokenType::Null) {
+        i++;
         return std::make_unique<LiteralExpr>("null", Value::Type::Null);
     } else if (tokens[i].type == TokenType::LBracket) {
         // Parse array literal [expr1, expr2, ...]
