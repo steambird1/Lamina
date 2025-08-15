@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,7 +17,7 @@ jobs:
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.16.3'
+          cmake-version: "3.16.3"
 
       - name: Install dependencies
         run: |
@@ -42,27 +42,27 @@ jobs:
         working-directory: build
         run: |
           echo "Running basic tests..."
-          
+
           # Test 1: Hello World
           echo 'print("Hello, Lamina!");' > test1.lm
           ./Lamina test1.lm
-          
+
           # Test 2: Basic arithmetic
           echo 'var x = 2 + 3 * 4;' > test2.lm
           echo 'print("2 + 3 * 4 =", x);' >> test2.lm
           ./Lamina test2.lm
-          
+
           # Test 3: Precise fractions
           echo 'var fraction = 16 / 9;' > test3.lm
           echo 'print("16/9 =", fraction);' >> test3.lm
           ./Lamina test3.lm
-          
+
           # Test 4: Functions
           echo 'func add(a, b) { return a + b; }' > test4.lm
           echo 'var result = add(10, 20);' >> test4.lm
           echo 'print("add(10, 20) =", result);' >> test4.lm
           ./Lamina test4.lm
-          
+
           # Test 5: Include statement syntax (should show error for old syntax)
           echo 'include test_module;' > test5.lm
           echo 'print("This should not execute");' >> test5.lm
@@ -72,7 +72,7 @@ jobs:
             echo "❌ Include syntax enforcement failed"
             exit 1
           fi
-          
+
           # Test 6: Correct include syntax (should parse correctly)
           echo 'print("Testing correct include syntax");' > test6.lm
           echo 'include "nonexistent";' >> test6.lm
@@ -82,16 +82,16 @@ jobs:
             echo "❌ Correct include syntax parsing failed"
             exit 1
           fi
-          
+
           echo "✅ All basic tests passed!"
 
       - name: Test example programs
         working-directory: build
         run: |
           echo "Testing example programs..."
-          
-          if [ -d "../interpreter/examples" ]; then
-            for example in ../interpreter/examples/*.lm; do
+
+          if [ -d "../examples" ]; then
+            for example in ../examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $(basename "$example")..."
                 ./Lamina "$example" || echo "⚠️  Warning: $example execution failed"
@@ -106,10 +106,10 @@ jobs:
         run: |
           echo "Installing valgrind for memory leak detection..."
           sudo apt-get install -y valgrind
-          
+
           echo "Running memory leak test..."
           echo 'var x = 42; print("x =", x);' > memtest.lm
-          
+
           if valgrind --leak-check=full --error-exitcode=1 ./Lamina memtest.lm 2>&1; then
             echo "✅ No memory leaks detected"
           else

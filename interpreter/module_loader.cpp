@@ -22,7 +22,7 @@ LaminaValue ModuleLoader::valueToLamina(const Value& val) {
     } else if (val.type == Value::Type::Int) {
         result = LAMINA_MAKE_INT(std::get<int>(val.data));
     } else if (val.type == Value::Type::Float) {
-        result = LAMINA_MAKE_INT((int) val.as_number());
+        result = LAMINA_MAKE_INT(static_cast<int>(val.as_number()));
     } else if (val.type == Value::Type::String) {
         result = LAMINA_MAKE_STRING(val.to_string().c_str());
     } else {
@@ -52,6 +52,7 @@ Value ModuleLoader::laminaToValue(const LaminaValue& val) {
 
 std::vector<LaminaValue> ModuleLoader::vectorToLamina(const std::vector<Value>& vals) {
     std::vector<LaminaValue> result;
+    result.reserve(vals.size());
     for (const auto& val: vals) {
         result.push_back(valueToLamina(val));
     }
@@ -60,6 +61,7 @@ std::vector<LaminaValue> ModuleLoader::vectorToLamina(const std::vector<Value>& 
 
 std::vector<Value> ModuleLoader::laminaToVector(const LaminaValue* vals, int count) {
     std::vector<Value> result;
+    result.reserve(count);
     for (int i = 0; i < count; ++i) {
         result.push_back(laminaToValue(vals[i]));
     }
@@ -114,8 +116,7 @@ ModuleLoader::ModuleLoader(const std::string& path) : m_handle(nullptr), m_path(
         return;
     }
 
-    const char* signature = sig_func();
-    if (!signature || strcmp(signature, "LAMINA_MODULE_V2") != 0) {
+    if (const auto signature = sig_func(); !signature || strcmp(signature, "LAMINA_MODULE_V2") != 0) {
         std::cerr << "Invalid module signature: " << (signature ? signature : "null") << std::endl;
         unload();
         return;
@@ -166,27 +167,27 @@ void ModuleLoader::unload() {
     m_exports = nullptr;
 }
 
-Value ModuleLoader::callModuleFunction(const std::string& full_func_name, const std::vector<Value>& args) {
+Value ModuleLoader::callModuleFunction(const std::string& full_func_name, const std::vector<Value>& args) const {
     if (!isLoaded()) {
         std::cerr << "ERROR: Module not loaded" << std::endl;
-        return Value();
+        return {};
     }
 
     // 处理带命名空间的函数名
     std::string actual_name = full_func_name;
-    size_t dot_pos = full_func_name.find(".");
+    size_t dot_pos = full_func_name.find('.');
     if (dot_pos != std::string::npos) {
         std::string ns = full_func_name.substr(0, dot_pos);
         actual_name = full_func_name.substr(dot_pos + 1);
         if (ns != m_exports->info.namespace_name) {
             std::cerr << "ERROR: Namespace mismatch. Expected '" << m_exports->info.namespace_name
                       << "' but got '" << ns << "'" << std::endl;
-            return Value();
+            return {};
         }
     }
 
     // 查找函数
-    LaminaFunctionEntry* target_func = nullptr;
+    const LaminaFunctionEntry* target_func = nullptr;
     for (int i = 0; i < m_exports->function_count; ++i) {
         if (m_exports->functions[i].name &&
             std::string(m_exports->functions[i].name) == actual_name) {
@@ -197,33 +198,33 @@ Value ModuleLoader::callModuleFunction(const std::string& full_func_name, const 
 
     if (!target_func) {
         std::cerr << "ERROR: Function '" << actual_name << "' not found in module" << std::endl;
-        return Value();
+        return {};
     }
 
     if (!target_func->func) {
         std::cerr << "ERROR: Function '" << actual_name << "' has null pointer" << std::endl;
-        return Value();
+        return {};
     }
 
     // 转换参数
-    std::vector<LaminaValue> lamina_args = vectorToLamina(args);
+    const std::vector<LaminaValue> lamina_args = vectorToLamina(args);
 
     // 调用函数
     try {
-        LaminaValue result = target_func->func(
+        const LaminaValue result = target_func->func(
                 lamina_args.empty() ? nullptr : lamina_args.data(),
-                (int) lamina_args.size());
+                static_cast<int>(lamina_args.size()));
 
         // 转换返回值
         Value ret_val = laminaToValue(result);
         return ret_val;
     } catch (...) {
         std::cerr << "ERROR: Exception during function call" << std::endl;
-        return Value();
+        return {};
     }
 }
 
-bool ModuleLoader::registerToInterpreter(Interpreter& interpreter) {
+bool ModuleLoader::registerToInterpreter(Interpreter& interpreter) const {
     if (!isLoaded()) {
         std::cerr << "ERROR: Cannot register unloaded module" << std::endl;
         return false;

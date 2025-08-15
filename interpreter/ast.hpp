@@ -27,13 +27,13 @@ struct LiteralExpr : public Expression {
 // 标识符
 struct IdentifierExpr : public Expression {
     std::string name;
-    IdentifierExpr(const std::string& n) : name(n) {}
+    explicit IdentifierExpr(const std::string& n) : name(n) {}
 };
 
 // 变量引用
 struct VarExpr : public Expression {
     std::string name;
-    VarExpr(const std::string& n) : name(n) {}
+    explicit VarExpr(const std::string& n) : name(n) {}
 };
 
 // 二元运算
@@ -120,42 +120,42 @@ struct NamespaceCallExpr : public Expression {
 // 数组字面量
 struct ArrayExpr : public Expression {
     std::vector<std::unique_ptr<Expression>> elements;
-    ArrayExpr(std::vector<std::unique_ptr<Expression>> elems)
+    explicit ArrayExpr(std::vector<std::unique_ptr<Expression>> elems)
         : elements(std::move(elems)) {}
 };
 
 // return 语句
 struct ReturnStmt : public Statement {
     std::unique_ptr<Expression> expr;
-    ReturnStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
+    explicit ReturnStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };
 
 // include 语句
 struct IncludeStmt : public Statement {
     std::string module;
-    IncludeStmt(const std::string& m) : module(m) {}
+    explicit IncludeStmt(const std::string& m) : module(m) {}
 };
 
 // use 语句
 struct UseStmt : public Statement {
     std::string module;
-    UseStmt(const std::string& m) : module(m) {}
+    explicit UseStmt(const std::string& m) : module(m) {}
 };
 
 // break 语句
 struct BreakStmt : public Statement {
-    BreakStmt() {}
+    BreakStmt() = default;
 };
 
 // continue 语句
 struct ContinueStmt : public Statement {
-    ContinueStmt() {}
+    ContinueStmt() = default;
 };
 
 // 表达式语句
 struct ExprStmt : public Statement {
     std::unique_ptr<Expression> expr;
-    ExprStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
+    explicit ExprStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };
 
 // Define语句（用于设置常量，如递归深度）
@@ -170,6 +170,6 @@ struct DefineStmt : public Statement {
 struct BigIntDeclStmt : public Statement {
     std::string name;
     std::unique_ptr<Expression> init_value;
-    BigIntDeclStmt(const std::string& n, std::unique_ptr<Expression> v = nullptr)
+    explicit BigIntDeclStmt(const std::string& n, std::unique_ptr<Expression> v = nullptr)
         : name(n), init_value(std::move(v)) {}
 };

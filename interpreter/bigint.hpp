@@ -17,7 +17,7 @@ public:
     // 构造函数
     BigInt() : negative(false) { digits.push_back(0); }
 
-    BigInt(int n) : negative(n < 0) {
+    explicit BigInt(int n) : negative(n < 0) {
         if (n == 0) {
             digits.push_back(0);
             return;
@@ -26,7 +26,7 @@ public:
         // 处理 INT_MIN 的特殊情况
         if (n == INT_MIN) {
             // INT_MIN 的绝对值超出 int 范围，直接处理
-            long long ln = static_cast<long long>(n);
+            auto ln = static_cast<long long>(n);
             ln = -ln;// 现在安全了
             while (ln > 0) {
                 digits.push_back(ln % 10);
@@ -41,7 +41,7 @@ public:
         }
     }
 
-    BigInt(const std::string& str) : negative(false) {
+    explicit BigInt(const std::string& str) : negative(false) {
         if (str.empty() || str == "0") {
             digits.push_back(0);
             return;
@@ -79,7 +79,7 @@ public:
     }
 
     // 转换为字符串
-    std::string to_string() const {
+    [[nodiscard]] std::string to_string() const {
         if (digits.size() == 1 && digits[0] == 0) {
             return "0";
         }
@@ -88,7 +88,7 @@ public:
         if (negative) result += "-";
 
         for (int i = digits.size() - 1; i >= 0; i--) {
-            result += char('0' + digits[i]);
+            result += static_cast<char>('0' + digits[i]);
         }
 
         return result;
@@ -123,7 +123,7 @@ public:
             result.digits.clear();
             int carry = 0;
             for (size_t i = 0; i < digits.size() || i < other.digits.size() || carry; ++i) {
-                int sum = carry + (i < digits.size() ? digits[i] : 0) + (i < other.digits.size() ? other.digits[i] : 0);
+                const int sum = carry + (i < digits.size() ? digits[i] : 0) + (i < other.digits.size() ? other.digits[i] : 0);
                 result.digits.push_back(sum % 10);
                 carry = sum / 10;
             }
@@ -151,7 +151,7 @@ public:
         }
 
         // 同号相减
-        const BigInt* p1 = this;
+        auto p1 = this;
         const BigInt* p2 = &other;
         bool result_negative = negative;
 
@@ -192,7 +192,7 @@ public:
     }
 
     // 转换为int（如果可能）
-    int to_int() const {
+    [[nodiscard]] int to_int() const {
         if (is_zero()) return 0;
 
         if (digits.size() > 10) {// 太大了
@@ -207,7 +207,7 @@ public:
                 return INT_MAX;
             }
             // For negative numbers, the check is against -(long long)INT_MIN
-            if (negative && result > -(long long) INT_MIN) {
+            if (negative && result > -static_cast<long long>(INT_MIN)) {
                 return INT_MIN;
             }
         }
@@ -222,7 +222,7 @@ public:
     }
 
     // 检查是否为零
-    bool is_zero() const {
+    [[nodiscard]] bool is_zero() const {
         return digits.size() == 1 && digits[0] == 0;
     }
 
@@ -279,7 +279,7 @@ public:
     }
 
     // 幂运算
-    BigInt power(const BigInt& exponent) const {
+    [[nodiscard]] BigInt power(const BigInt& exponent) const {
         if (exponent.negative) {
             throw std::runtime_error("Negative exponent not supported for integer power");
         }
@@ -366,14 +366,14 @@ public:
     // Mathematical functions
     
     // Absolute value - returns a copy with positive sign
-    BigInt abs() const {
+    [[nodiscard]] BigInt abs() const {
         BigInt result = *this;
         result.negative = false;
         return result;
     }
     
     // Negate - returns a copy with opposite sign
-    BigInt negate() const {
+    [[nodiscard]] BigInt negate() const {
         BigInt result = *this;
         if (!result.is_zero()) {
             result.negative = !result.negative;
@@ -383,7 +383,7 @@ public:
     
     // Square root using Newton's method for integer square root
     // Returns the floor of the square root
-    BigInt sqrt() const {
+    [[nodiscard]] BigInt sqrt() const {
         if (negative) {
             throw std::runtime_error("Square root of negative BigInt is undefined");
         }
@@ -410,7 +410,7 @@ public:
     }
     
     // Check if this BigInt is a perfect square
-    bool is_perfect_square() const {
+    [[nodiscard]] bool is_perfect_square() const {
         if (negative) {
             return false;
         }
@@ -420,7 +420,7 @@ public:
     }
     
     // Power function for non-negative integer exponents (alias for existing power method)
-    BigInt pow(const BigInt& exponent) const {
+    [[nodiscard]] BigInt pow(const BigInt& exponent) const {
         return power(exponent);
     }
     
@@ -447,7 +447,7 @@ public:
     }
     
     // Convert to double (with potential precision loss warning)
-    double to_double() const {
+    [[nodiscard]] double to_double() const {
         if (is_zero()) {
             return 0.0;
         }

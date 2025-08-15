@@ -2,711 +2,698 @@ name: Code Quality
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   build-check:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.16.3'
-      
-    - name: Install build dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake ninja-build
-        
-    - name: Initialize Git submodules
-      run: |
-        git submodule update --init --recursive
-        
-    - name: Test CMake configuration
-      run: |
-        echo "Testing CMake configuration..."
-        cmake -B build -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" .
-        echo "✅ CMake configuration successful"
-        
-    - name: Test build process
-      run: |
-        echo "Testing build process..."
-        cmake --build build --parallel
-        echo "✅ Build process successful"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.16.3"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Initialize Git submodules
+        run: |
+          git submodule update --init --recursive
+
+      - name: Test CMake configuration
+        run: |
+          echo "Testing CMake configuration..."
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" .
+          echo "✅ CMake configuration successful"
+
+      - name: Test build process
+        run: |
+          echo "Testing build process..."
+          cmake --build build --parallel
+          echo "✅ Build process successful"
 
   lint-and-format:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Install tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format cppcheck
-        
-    - name: Check C++ code formatting
-      working-directory: interpreter
-      run: |
-        echo "Checking C++ code formatting..."
-        
-        # Create a .clang-format file if it doesn't exist
-        if [ ! -f .clang-format ]; then
-          cat > .clang-format << 'EOF'
-        ---
-        Language: Cpp
-        BasedOnStyle: Google
-        IndentWidth: 4
-        TabWidth: 4
-        UseTab: Never
-        ColumnLimit: 100
-        AlignConsecutiveAssignments: true
-        AlignConsecutiveDeclarations: true
-        AllowShortIfStatementsOnASingleLine: false
-        AllowShortLoopsOnASingleLine: false
-        AllowShortFunctionsOnASingleLine: Empty
-        EOF
-        fi
-        
-        # Check if any files need formatting
-        if clang-format --dry-run --Werror *.cpp *.hpp 2>/dev/null; then
-          echo "✅ All C++ files are properly formatted"
-        else
-          echo "⚠️  Some files need formatting (this is just a warning)"
-          echo "Run: clang-format -i *.cpp *.hpp to fix formatting"
-        fi
-        
-    - name: Static code analysis
-      working-directory: interpreter
-      run: |
-        echo "Running static code analysis with cppcheck..."
-        
-        # Run cppcheck on all source files
-        cppcheck --enable=all --std=c++20 --suppress=missingIncludeSystem \
-          --suppress=unusedFunction --suppress=unmatchedSuppression \
-          --error-exitcode=0 \
-          *.cpp *.hpp
-          
-        echo "✅ Static analysis completed"
-        
-    - name: Check for common issues
-      working-directory: interpreter
-      run: |
-        echo "Checking for common C++ issues..."
-        
-        # Check for TODO/FIXME comments
-        if grep -r "TODO\|FIXME\|XXX" *.cpp *.hpp; then
-          echo "ℹ️  Found TODO/FIXME comments (informational only)"
-        fi
-        
-        # Check for potential memory issues
-        if grep -r "malloc\|free\|delete\[\]" *.cpp *.hpp; then
-          echo "⚠️  Found manual memory management (consider using smart pointers)"
-        fi
-        
-        # Check for using namespace std
-        if grep -r "using namespace std" *.cpp *.hpp; then
-          echo "ℹ️  Found 'using namespace std' declarations"
-        fi
-        
-        echo "✅ Common issues check completed"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format cppcheck
+
+      - name: Check C++ code formatting
+        working-directory: interpreter
+        run: |
+          echo "Checking C++ code formatting..."
+
+          # Create a .clang-format file if it doesn't exist
+          if [ ! -f .clang-format ]; then
+            cat > .clang-format << 'EOF'
+          ---
+          Language: Cpp
+          BasedOnStyle: Google
+          IndentWidth: 4
+          TabWidth: 4
+          UseTab: Never
+          ColumnLimit: 100
+          AlignConsecutiveAssignments: true
+          AlignConsecutiveDeclarations: true
+          AllowShortIfStatementsOnASingleLine: false
+          AllowShortLoopsOnASingleLine: false
+          AllowShortFunctionsOnASingleLine: Empty
+          EOF
+          fi
+
+          # Check if any files need formatting
+          if clang-format --dry-run --Werror *.cpp *.hpp 2>/dev/null; then
+            echo "✅ All C++ files are properly formatted"
+          else
+            echo "⚠️  Some files need formatting (this is just a warning)"
+            echo "Run: clang-format -i *.cpp *.hpp to fix formatting"
+          fi
+
+      - name: Static code analysis
+        working-directory: interpreter
+        run: |
+          echo "Running static code analysis with cppcheck..."
+
+          # Run cppcheck on all source files
+          cppcheck --enable=all --std=c++20 --suppress=missingIncludeSystem \
+            --suppress=unusedFunction --suppress=unmatchedSuppression \
+            --error-exitcode=0 \
+            *.cpp *.hpp
+            
+          echo "✅ Static analysis completed"
+
+      - name: Check for common issues
+        working-directory: interpreter
+        run: |
+          echo "Checking for common C++ issues..."
+
+          # Check for TODO/FIXME comments
+          if grep -r "TODO\|FIXME\|XXX" *.cpp *.hpp; then
+            echo "ℹ️  Found TODO/FIXME comments (informational only)"
+          fi
+
+          # Check for potential memory issues
+          if grep -r "malloc\|free\|delete\[\]" *.cpp *.hpp; then
+            echo "⚠️  Found manual memory management (consider using smart pointers)"
+          fi
+
+          # Check for using namespace std
+          if grep -r "using namespace std" *.cpp *.hpp; then
+            echo "ℹ️  Found 'using namespace std' declarations"
+          fi
+
+          echo "✅ Common issues check completed"
 
   cmake-quality:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.16.3'
-        
-    - name: Check CMake best practices
-      run: |
-        echo "Checking CMake best practices..."
-        
-        # Check if CMakeLists.txt exists
-        if [ -f CMakeLists.txt ]; then
-          echo "✅ CMakeLists.txt exists"
-        else
-          echo "❌ CMakeLists.txt is missing"
-          exit 1
-        fi
-        
-        # Check for minimum CMake version
-        if grep -q "cmake_minimum_required" CMakeLists.txt; then
-          echo "✅ CMake minimum version specified"
-        else
-          echo "⚠️  CMake minimum version not specified"
-        fi
-        
-        # Check for project name
-        if grep -q "project(" CMakeLists.txt; then
-          echo "✅ Project name specified"
-        else
-          echo "⚠️  Project name not specified"
-        fi
-        
-        # Check for C++ standard
-        if grep -q "CMAKE_CXX_STANDARD" CMakeLists.txt; then
-          echo "✅ C++ standard specified"
-        else
-          echo "⚠️  C++ standard not specified"
-        fi
-        
-        echo "✅ CMake quality check completed"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.16.3"
+
+      - name: Check CMake best practices
+        run: |
+          echo "Checking CMake best practices..."
+
+          # Check if CMakeLists.txt exists
+          if [ -f CMakeLists.txt ]; then
+            echo "✅ CMakeLists.txt exists"
+          else
+            echo "❌ CMakeLists.txt is missing"
+            exit 1
+          fi
+
+          # Check for minimum CMake version
+          if grep -q "cmake_minimum_required" CMakeLists.txt; then
+            echo "✅ CMake minimum version specified"
+          else
+            echo "⚠️  CMake minimum version not specified"
+          fi
+
+          # Check for project name
+          if grep -q "project(" CMakeLists.txt; then
+            echo "✅ Project name specified"
+          else
+            echo "⚠️  Project name not specified"
+          fi
+
+          # Check for C++ standard
+          if grep -q "CMAKE_CXX_STANDARD" CMakeLists.txt; then
+            echo "✅ C++ standard specified"
+          else
+            echo "⚠️  C++ standard not specified"
+          fi
+
+          echo "✅ CMake quality check completed"
 
   documentation:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Check documentation
-      run: |
-        echo "Checking documentation completeness..."
-        
-        # Check if README exists and has content
-        if [ -f README.md ] && [ -s README.md ]; then
-          echo "✅ README.md exists and has content"
-        else
-          echo "❌ README.md is missing or empty"
-          exit 1
-        fi
-        
-        # Check if LICENSE exists
-        if [ -f LICENSE ]; then
-          echo "✅ LICENSE file exists"
-        else
-          echo "⚠️  LICENSE file is missing"
-        fi
-        
-        # Check if compile guides exist
-        if [ -f documents/compile-cn.md ] && [ -f documents/compile-en.md ]; then
-          echo "✅ Compile guides exist"
-        else
-          echo "⚠️  Compile guides are missing"
-        fi
-        
-        # Check if example files exist
-        if [ -d "interpreter/examples" ] && [ "$(ls -A interpreter/examples)" ]; then
-          echo "✅ Example files exist"
-          echo "Found examples:"
-          ls -la interpreter/examples/
-        else
-          echo "ℹ️  No example files found"
-        fi
-        
-        # Check README for key sections
-        required_sections=("概述" "快速开始" "基础语法" "示例代码" "CMake")
-        for section in "${required_sections[@]}"; do
-          if grep -q "$section" README.md; then
-            echo "✅ Found section: $section"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check documentation
+        run: |
+          echo "Checking documentation completeness..."
+
+          # Check if README exists and has content
+          if [ -f README.md ] && [ -s README.md ]; then
+            echo "✅ README.md exists and has content"
           else
-            echo "⚠️  Missing section: $section"
+            echo "❌ README.md is missing or empty"
+            exit 1
           fi
-        done
-        
-        # Check if CMake documentation is present
-        if grep -q "cmake" README.md; then
-          echo "✅ CMake documentation found in README"
-        else
-          echo "⚠️  CMake documentation missing from README"
-        fi
-        
-        echo "✅ Documentation check completed"
+
+          # Check if LICENSE exists
+          if [ -f LICENSE ]; then
+            echo "✅ LICENSE file exists"
+          else
+            echo "⚠️  LICENSE file is missing"
+          fi
+
+          # Check if compile guides exist
+          if [ -f documents/compile-cn.md ] && [ -f documents/compile-en.md ]; then
+            echo "✅ Compile guides exist"
+          else
+            echo "⚠️  Compile guides are missing"
+          fi
+
+          # Check if example files exist
+          if [ -d "examples" ] && [ "$(ls -A examples)" ]; then
+            echo "✅ Example files exist"
+            echo "Found examples:"
+            ls -la examples/
+          else
+            echo "ℹ️  No example files found"
+          fi
+
+          # Check README for key sections
+          required_sections=("概述" "快速开始" "基础语法" "示例代码" "CMake")
+          for section in "${required_sections[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✅ Found section: $section"
+            else
+              echo "⚠️  Missing section: $section"
+            fi
+          done
+
+          # Check if CMake documentation is present
+          if grep -q "cmake" README.md; then
+            echo "✅ CMake documentation found in README"
+          else
+            echo "⚠️  CMake documentation missing from README"
+          fi
+
+          echo "✅ Documentation check completed"
 
   security:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Security scan
-      working-directory: interpreter
-      run: |
-        echo "Running basic security checks..."
-        
-        # Check for potentially dangerous functions
-        dangerous_functions=("strcpy" "strcat" "sprintf" "gets" "system")
-        
-        for func in "${dangerous_functions[@]}"; do
-          if grep -r "\b$func\b" *.cpp *.hpp; then
-            echo "⚠️  Found potentially dangerous function: $func"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Security scan
+        working-directory: interpreter
+        run: |
+          echo "Running basic security checks..."
+
+          # Check for potentially dangerous functions
+          dangerous_functions=("strcpy" "strcat" "sprintf" "gets" "system")
+
+          for func in "${dangerous_functions[@]}"; do
+            if grep -r "\b$func\b" *.cpp *.hpp; then
+              echo "⚠️  Found potentially dangerous function: $func"
+            fi
+          done
+
+          # Check for hardcoded paths or credentials
+          if grep -r "/home/\|/Users/\|C:\\\\" *.cpp *.hpp; then
+            echo "⚠️  Found hardcoded paths"
           fi
-        done
-        
-        # Check for hardcoded paths or credentials
-        if grep -r "/home/\|/Users/\|C:\\\\" *.cpp *.hpp; then
-          echo "⚠️  Found hardcoded paths"
-        fi
-        
-        if grep -ri "password\|secret\|key\|token" *.cpp *.hpp; then
-          echo "⚠️  Found potential credentials in code"
-        fi
-        
-        echo "✅ Basic security scan completed"
+
+          if grep -ri "password\|secret\|key\|token" *.cpp *.hpp; then
+            echo "⚠️  Found potential credentials in code"
+          fi
+
+          echo "✅ Basic security scan completed"
 
   dependencies:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        
-    - name: Check dependencies
-      run: |
-        echo "Checking project dependencies..."
-        
-        # Check if Git submodules are properly configured
-        if [ -f .gitmodules ]; then
-          echo "✅ Git submodules configured"
-          echo "Submodules:"
-          cat .gitmodules
-        else
-          echo "ℹ️  No Git submodules found"
-        fi
-        
-        # Check if libuv submodule exists
-        if [ -d external/libuv ]; then
-          echo "✅ libuv submodule exists"
-        else
-          echo "❌ libuv submodule missing"
-          exit 1
-        fi
-        
-        # Check if CMake finds all dependencies
-        echo "Testing dependency resolution..."
-        cmake -B build-test -DCMAKE_BUILD_TYPE=Debug . || {
-          echo "❌ CMake dependency resolution failed"
-          exit 1
-        }
-        
-        echo "✅ Dependencies check completed"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check dependencies
+        run: |
+          echo "Checking project dependencies..."
+
+          # Check if Git submodules are properly configured
+          if [ -f .gitmodules ]; then
+            echo "✅ Git submodules configured"
+            echo "Submodules:"
+            cat .gitmodules
+          else
+            echo "ℹ️  No Git submodules found"
+          fi
+
+          # Check if libuv submodule exists
+          if [ -d external/libuv ]; then
+            echo "✅ libuv submodule exists"
+          else
+            echo "❌ libuv submodule missing"
+            exit 1
+          fi
+
+          # Check if CMake finds all dependencies
+          echo "Testing dependency resolution..."
+          cmake -B build-test -DCMAKE_BUILD_TYPE=Debug . || {
+            echo "❌ CMake dependency resolution failed"
+            exit 1
+          }
+
+          echo "✅ Dependencies check completed"
 
   code-review:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0  # 获取完整历史用于比较
-        
-    - name: Setup CMake and tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake ninja-build cloc python3-pip
-        pip3 install lizard
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0 # 获取完整历史用于比较
 
-    - name: Code metrics analysis
-      run: |
-        echo "📊 Analyzing code metrics..."
-        
-        # 代码行数统计
-        echo "=== Code Line Count ==="
-        if command -v cloc >/dev/null 2>&1; then
-          cloc interpreter/ --exclude-dir=examples --include-lang=C++
-        else
-          find interpreter/ -name "*.cpp" -o -name "*.hpp" | grep -v examples | xargs wc -l
-        fi
-        
-        # 代码复杂度分析
-        echo -e "\n=== Cyclomatic Complexity ==="
-        if command -v lizard >/dev/null 2>&1; then
-          lizard interpreter/ -l cpp -w -x "./interpreter/examples/*" || echo "⚠️  Lizard analysis failed, continuing..."
-        else
-          echo "⚠️  Lizard not available, skipping complexity analysis"
-        fi
-        
-        echo "✅ Code metrics analysis completed"
+      - name: Setup CMake and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build cloc python3-pip
+          pip3 install lizard
 
-    - name: Code quality assessment
-      working-directory: interpreter
-      run: |
-        echo "🔍 Performing automated code review..."
-        
-        # 检查函数长度
-        echo "=== Function Length Analysis ==="
-        awk '
-        /^[a-zA-Z_][a-zA-Z0-9_]*.*\{/ { 
-          func_start = NR; 
-          func_name = $0; 
-          brace_count = 1; 
-          next 
-        }
-        brace_count > 0 { 
-          if (/\{/) brace_count += gsub(/\{/, "");
-          if (/\}/) brace_count -= gsub(/\}/, "");
-          if (brace_count == 0) {
-            length = NR - func_start;
-            if (length > 50) {
-              print "⚠️  Long function (" length " lines): " func_name " at line " func_start;
-            }
+      - name: Code metrics analysis
+        run: |
+          echo "📊 Analyzing code metrics..."
+
+          # 代码行数统计
+          echo "=== Code Line Count ==="
+          if command -v cloc >/dev/null 2>&1; then
+            cloc interpreter/ --exclude-dir=examples --include-lang=C++
+          else
+            find interpreter/ -name "*.cpp" -o -name "*.hpp" | grep -v examples | xargs wc -l
+          fi
+
+          # 代码复杂度分析
+          echo -e "\n=== Cyclomatic Complexity ==="
+          if command -v lizard >/dev/null 2>&1; then
+            lizard interpreter/ -l cpp -w -x "./examples/*" || echo "⚠️  Lizard analysis failed, continuing..."
+          else
+            echo "⚠️  Lizard not available, skipping complexity analysis"
+          fi
+
+          echo "✅ Code metrics analysis completed"
+
+      - name: Code quality assessment
+        working-directory: interpreter
+        run: |
+          echo "🔍 Performing automated code review..."
+
+          # 检查函数长度
+          echo "=== Function Length Analysis ==="
+          awk '
+          /^[a-zA-Z_][a-zA-Z0-9_]*.*\{/ { 
+            func_start = NR; 
+            func_name = $0; 
+            brace_count = 1; 
+            next 
           }
-        }' *.cpp *.hpp || echo "No long functions detected"
-        
-        # 检查重复代码
-        echo -e "\n=== Duplicate Code Detection ==="
-        for file in *.cpp; do
-          if [ -f "$file" ]; then
-            # 查找可能的重复代码块（简单的行匹配）
-            sort "$file" | uniq -d | head -5 | while read line; do
-              if [ -n "$line" ] && [ ${#line} -gt 20 ]; then
-                echo "⚠️  Potential duplicate line in $file: $line"
+          brace_count > 0 { 
+            if (/\{/) brace_count += gsub(/\{/, "");
+            if (/\}/) brace_count -= gsub(/\}/, "");
+            if (brace_count == 0) {
+              length = NR - func_start;
+              if (length > 50) {
+                print "⚠️  Long function (" length " lines): " func_name " at line " func_start;
+              }
+            }
+          }' *.cpp *.hpp || echo "No long functions detected"
+
+          # 检查重复代码
+          echo -e "\n=== Duplicate Code Detection ==="
+          for file in *.cpp; do
+            if [ -f "$file" ]; then
+              # 查找可能的重复代码块（简单的行匹配）
+              sort "$file" | uniq -d | head -5 | while read line; do
+                if [ -n "$line" ] && [ ${#line} -gt 20 ]; then
+                  echo "⚠️  Potential duplicate line in $file: $line"
+                fi
+              done
+            fi
+          done
+
+          # 检查命名约定
+          echo -e "\n=== Naming Convention Check ==="
+          # 检查类名（应该是 PascalCase）
+          grep -n "class [a-z]" *.hpp *.cpp | head -3 | while read line; do
+            echo "⚠️  Class name should be PascalCase: $line"
+          done || echo "✅ Class naming conventions OK"
+
+          # 检查常量（应该是 UPPER_CASE）
+          grep -n "const [a-z][a-zA-Z]*" *.hpp *.cpp | head -3 | while read line; do
+            echo "⚠️  Constant should be UPPER_CASE: $line"
+          done || echo "✅ Constant naming conventions OK"
+
+          echo "✅ Code quality assessment completed"
+
+      - name: Performance analysis
+        working-directory: interpreter
+        run: |
+          echo "⚡ Analyzing potential performance issues..."
+
+          # 检查可能的性能问题
+          echo "=== Performance Issues Check ==="
+
+          # 检查字符串拼接
+          if grep -n "string.*+.*string\|std::string.*+.*std::string" *.cpp *.hpp; then
+            echo "⚠️  Consider using stringstream for multiple string concatenations"
+          fi
+
+          # 检查循环中的内存分配
+          grep -n -A5 -B5 "for\|while" *.cpp | grep -E "new\s|malloc\s|vector.*push_back" | head -3 | while read line; do
+            echo "⚠️  Memory allocation in loop detected: $line"
+          done || echo "✅ No obvious memory allocation in loops"
+
+          # 检查未使用的包含文件
+          echo -e "\n=== Unused Includes Check ==="
+          for file in *.cpp *.hpp; do
+            if [ -f "$file" ]; then
+              includes=$(grep "^#include" "$file" | wc -l)
+              if [ "$includes" -gt 10 ]; then
+                echo "ℹ️  $file has $includes includes - consider reviewing for unused ones"
               fi
-            done
-          fi
-        done
-        
-        # 检查命名约定
-        echo -e "\n=== Naming Convention Check ==="
-        # 检查类名（应该是PascalCase）
-        grep -n "class [a-z]" *.hpp *.cpp | head -3 | while read line; do
-          echo "⚠️  Class name should be PascalCase: $line"
-        done || echo "✅ Class naming conventions OK"
-        
-        # 检查常量（应该是UPPER_CASE）
-        grep -n "const [a-z][a-zA-Z]*" *.hpp *.cpp | head -3 | while read line; do
-          echo "⚠️  Constant should be UPPER_CASE: $line"
-        done || echo "✅ Constant naming conventions OK"
-        
-        echo "✅ Code quality assessment completed"
-
-    - name: Performance analysis
-      working-directory: interpreter
-      run: |
-        echo "⚡ Analyzing potential performance issues..."
-        
-        # 检查可能的性能问题
-        echo "=== Performance Issues Check ==="
-        
-        # 检查字符串拼接
-        if grep -n "string.*+.*string\|std::string.*+.*std::string" *.cpp *.hpp; then
-          echo "⚠️  Consider using stringstream for multiple string concatenations"
-        fi
-        
-        # 检查循环中的内存分配
-        grep -n -A5 -B5 "for\|while" *.cpp | grep -E "new\s|malloc\s|vector.*push_back" | head -3 | while read line; do
-          echo "⚠️  Memory allocation in loop detected: $line"
-        done || echo "✅ No obvious memory allocation in loops"
-        
-        # 检查未使用的包含文件
-        echo -e "\n=== Unused Includes Check ==="
-        for file in *.cpp *.hpp; do
-          if [ -f "$file" ]; then
-            includes=$(grep "^#include" "$file" | wc -l)
-            if [ "$includes" -gt 10 ]; then
-              echo "ℹ️  $file has $includes includes - consider reviewing for unused ones"
             fi
-          fi
-        done
-        
-        echo "✅ Performance analysis completed"
+          done
 
-    - name: Code maintainability check
-      working-directory: interpreter
-      run: |
-        echo "🔧 Checking code maintainability..."
-        
-        # 检查文件大小
-        echo "=== File Size Analysis ==="
-        find . -name "*.cpp" -o -name "*.hpp" | while read file; do
-          lines=$(wc -l < "$file")
-          if [ "$lines" -gt 500 ]; then
-            echo "⚠️  Large file ($lines lines): $file - consider splitting"
-          fi
-        done || echo "✅ All files are reasonably sized"
-        
-        # 检查代码注释比例
-        echo -e "\n=== Comment Ratio Analysis ==="
-        for file in *.cpp *.hpp; do
-          if [ -f "$file" ]; then
-            total_lines=$(wc -l < "$file")
-            comment_lines=$(grep -c "^\s*//\|^\s*/\*\|^\s*\*" "$file" || echo 0)
-            if [ "$total_lines" -gt 50 ] && [ "$comment_lines" -lt $((total_lines / 10)) ]; then
-              echo "⚠️  Low comment ratio in $file: $comment_lines comments in $total_lines lines"
+          echo "✅ Performance analysis completed"
+
+      - name: Code maintainability check
+        working-directory: interpreter
+        run: |
+          echo "🔧 Checking code maintainability..."
+
+          # 检查文件大小
+          echo "=== File Size Analysis ==="
+          find . -name "*.cpp" -o -name "*.hpp" | while read file; do
+            lines=$(wc -l < "$file")
+            if [ "$lines" -gt 500 ]; then
+              echo "⚠️  Large file ($lines lines): $file - consider splitting"
             fi
-          fi
-        done || echo "✅ Comment ratios are adequate"
-        
-        # 检查魔法数字
-        echo -e "\n=== Magic Numbers Check ==="
-        grep -n -E "\b[0-9]{2,}\b" *.cpp *.hpp | grep -v -E "^\s*//|^\s*/\*|#define|const" | head -5 | while read line; do
-          echo "⚠️  Potential magic number: $line"
-        done || echo "✅ No obvious magic numbers found"
-        
-        echo "✅ Maintainability check completed"
+          done || echo "✅ All files are reasonably sized"
+
+          # 检查代码注释比例
+          echo -e "\n=== Comment Ratio Analysis ==="
+          for file in *.cpp *.hpp; do
+            if [ -f "$file" ]; then
+              total_lines=$(wc -l < "$file")
+              comment_lines=$(grep -c "^\s*//\|^\s*/\*\|^\s*\*" "$file" || echo 0)
+              if [ "$total_lines" -gt 50 ] && [ "$comment_lines" -lt $((total_lines / 10)) ]; then
+                echo "⚠️  Low comment ratio in $file: $comment_lines comments in $total_lines lines"
+              fi
+            fi
+          done || echo "✅ Comment ratios are adequate"
+
+          # 检查魔法数字
+          echo -e "\n=== Magic Numbers Check ==="
+          grep -n -E "\b[0-9]{2,}\b" *.cpp *.hpp | grep -v -E "^\s*//|^\s*/\*|#define|const" | head -5 | while read line; do
+            echo "⚠️  Potential magic number: $line"
+          done || echo "✅ No obvious magic numbers found"
+
+          echo "✅ Maintainability check completed"
 
   test-coverage:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        
-    - name: Setup environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake ninja-build lcov
-        
-    - name: Build with coverage
-      run: |
-        echo "🎯 Building with test coverage..."
-        git submodule update --init --recursive
-        
-        # 配置CMake启用覆盖率
-        cmake -B build-coverage -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" .
-        
-        cmake --build build-coverage --parallel
-        echo "✅ Coverage build completed"
-        
-    - name: Run tests and generate coverage
-      working-directory: build-coverage
-      run: |
-        echo "🧪 Running tests for coverage analysis..."
-        
-        # 运行基本测试
-        echo 'print("Coverage test");' > coverage_test.lm
-        echo 'var x = 1 + 2 * 3;' >> coverage_test.lm
-        echo 'print("Result:", x);' >> coverage_test.lm
-        
-        # 运行测试以生成覆盖率数据
-        ./Lamina coverage_test.lm || echo "⚠️  Test execution failed"
-        
-        # 生成覆盖率报告
-        echo "📊 Generating coverage report..."
-        lcov --capture --directory . --output-file coverage.info --ignore-errors gcov || echo "⚠️  Coverage generation failed"
-        
-        if [ -f coverage.info ]; then
-          lcov --summary coverage.info
-          echo "✅ Coverage analysis completed"
-        else
-          echo "⚠️  Coverage report not generated"
-        fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build lcov
+
+      - name: Build with coverage
+        run: |
+          echo "🎯 Building with test coverage..."
+          git submodule update --init --recursive
+
+          # 配置 CMake 启用覆盖率
+          cmake -B build-coverage -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" .
+
+          cmake --build build-coverage --parallel
+          echo "✅ Coverage build completed"
+
+      - name: Run tests and generate coverage
+        working-directory: build-coverage
+        run: |
+          echo "🧪 Running tests for coverage analysis..."
+
+          # 运行基本测试
+          echo 'print("Coverage test");' > coverage_test.lm
+          echo 'var x = 1 + 2 * 3;' >> coverage_test.lm
+          echo 'print("Result:", x);' >> coverage_test.lm
+
+          # 运行测试以生成覆盖率数据
+          ./Lamina coverage_test.lm || echo "⚠️  Test execution failed"
+
+          # 生成覆盖率报告
+          echo "📊 Generating coverage report..."
+          lcov --capture --directory . --output-file coverage.info --ignore-errors gcov || echo "⚠️  Coverage generation failed"
+
+          if [ -f coverage.info ]; then
+            lcov --summary coverage.info
+            echo "✅ Coverage analysis completed"
+          else
+            echo "⚠️  Coverage report not generated"
+          fi
 
   dependency-analysis:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        
-    - name: Analyze dependencies
-      run: |
-        echo "🔗 Analyzing project dependencies..."
-        
-        # 分析头文件依赖
-        echo "=== Header Dependencies ==="
-        find interpreter/ -name "*.hpp" | while read header; do
-          includes=$(grep -c "^#include" "$header" 2>/dev/null || echo 0)
-          if [ "$includes" -gt 15 ]; then
-            echo "⚠️  Heavy header dependencies in $(basename "$header"): $includes includes"
-          fi
-        done || echo "✅ Header dependencies are reasonable"
-        
-        # 检查循环依赖
-        echo -e "\n=== Circular Dependency Check ==="
-        cd interpreter/
-        # 简单的循环依赖检查
-        for file in *.hpp; do
-          if [ -f "$file" ]; then
-            base_name=$(basename "$file" .hpp)
-            # 检查是否有文件包含这个文件，而这个文件也包含那个文件
-            grep -l "#include.*$base_name" *.hpp | while read including_file; do
-              including_base=$(basename "$including_file" .hpp)
-              if grep -q "#include.*$including_base" "$file"; then
-                echo "⚠️  Potential circular dependency between $file and $including_file"
-              fi
-            done
-          fi
-        done || echo "✅ No obvious circular dependencies"
-        
-        echo "✅ Dependency analysis completed"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Analyze dependencies
+        run: |
+          echo "🔗 Analyzing project dependencies..."
+
+          # 分析头文件依赖
+          echo "=== Header Dependencies ==="
+          find interpreter/ -name "*.hpp" | while read header; do
+            includes=$(grep -c "^#include" "$header" 2>/dev/null || echo 0)
+            if [ "$includes" -gt 15 ]; then
+              echo "⚠️  Heavy header dependencies in $(basename "$header"): $includes includes"
+            fi
+          done || echo "✅ Header dependencies are reasonable"
+
+          # 检查循环依赖
+          echo -e "\n=== Circular Dependency Check ==="
+          cd interpreter/
+          # 简单的循环依赖检查
+          for file in *.hpp; do
+            if [ -f "$file" ]; then
+              base_name=$(basename "$file" .hpp)
+              # 检查是否有文件包含这个文件，而这个文件也包含那个文件
+              grep -l "#include.*$base_name" *.hpp | while read including_file; do
+                including_base=$(basename "$including_file" .hpp)
+                if grep -q "#include.*$including_base" "$file"; then
+                  echo "⚠️  Potential circular dependency between $file and $including_file"
+                fi
+              done
+            fi
+          done || echo "✅ No obvious circular dependencies"
+
+          echo "✅ Dependency analysis completed"
 
   automated-review:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    
+    permissions:
+      pull-requests: write
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
-        
-    - name: Setup review tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake ninja-build python3-pip
-        
-        # 安装代码审阅工具
-        pip3 install flake8 mypy || echo "Python tools installation failed"
-        
-    - name: Analyze changed files
-      id: changed_files
-      run: |
-        echo "🔍 Analyzing changed files in PR..."
-        
-        # 获取PR中变更的文件
-        git fetch origin main
-        changed_files=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp)$' || echo "")
-        
-        if [ -n "$changed_files" ]; then
-          echo "Changed C++ files:"
-          echo "$changed_files"
-          echo "CHANGED_FILES<<EOF" >> $GITHUB_OUTPUT
-          echo "$changed_files" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
-        else
-          echo "No C++ files changed"
-          echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
-        fi
-        
-    - name: Review changed code
-      if: steps.changed_files.outputs.HAS_CHANGES == 'true'
-      run: |
-        echo "📝 Performing automated code review..."
-        
-        review_comments=""
-        
-        # 分析每个变更的文件
-        echo "${{ steps.changed_files.outputs.CHANGED_FILES }}" | while read file; do
-          if [ -f "$file" ] && [ -n "$file" ]; then
-            echo "Reviewing: $file"
-            
-            # 检查文件大小
-            lines=$(wc -l < "$file")
-            if [ "$lines" -gt 300 ]; then
-              echo "⚠️  **$file**: File is quite large ($lines lines). Consider splitting into smaller modules."
-            fi
-            
-            # 检查复杂函数
-            awk -v file="$file" '
-            BEGIN { in_function = 0; brace_count = 0; func_start = 0; func_name = ""; complexity = 0 }
-            /^[a-zA-Z_][a-zA-Z0-9_:]*.*\{/ { 
-              in_function = 1; 
-              func_start = NR; 
-              func_name = $0; 
-              brace_count = 1; 
-              complexity = 1;
-              next 
-            }
-            in_function && /if|while|for|switch|catch/ { complexity++ }
-            in_function {
-              if (/\{/) brace_count += gsub(/\{/, "");
-              if (/\}/) brace_count -= gsub(/\}/, "");
-              if (brace_count == 0) {
-                func_length = NR - func_start;
-                if (complexity > 10) {
-                  print "⚠️  **" file "**: High complexity function at line " func_start " (complexity: " complexity ")";
-                }
-                if (func_length > 50) {
-                  print "⚠️  **" file "**: Long function at line " func_start " (" func_length " lines)";
-                }
-                in_function = 0;
-              }
-            }' "$file"
-            
-            # 检查常见代码问题
-            if grep -n "TODO\|FIXME\|XXX" "$file"; then
-              echo "ℹ️  **$file**: Contains TODO/FIXME comments that should be addressed."
-            fi
-            
-            if grep -n "using namespace std" "$file"; then
-              echo "⚠️  **$file**: Uses 'using namespace std' - consider avoiding in header files."
-            fi
-            
-            # 检查内存管理
-            if grep -n "\bnew\b\|malloc\|free\b" "$file"; then
-              echo "⚠️  **$file**: Manual memory management detected. Consider using smart pointers."
-            fi
-            
-            # 检查异常安全
-            if grep -n "throw\|exception" "$file" && ! grep -n "noexcept\|try\|catch" "$file"; then
-              echo "⚠️  **$file**: Throws exceptions but no exception handling visible."
-            fi
-            
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup review tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build python3-pip
+
+          # 安装代码审阅工具
+          pip3 install flake8 mypy || echo "Python tools installation failed"
+
+      - name: Analyze changed files
+        id: changed_files
+        run: |
+          echo "🔍 Analyzing changed files in PR..."
+
+          # 获取 PR 中变更的文件
+          git fetch origin main
+          changed_files=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp)$' || echo "")
+
+          if [ -n "$changed_files" ]; then
+            echo "Changed C++ files:"
+            echo "$changed_files"
+            echo "CHANGED_FILES<<EOF" >> $GITHUB_OUTPUT
+            echo "$changed_files" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
+          else
+            echo "No C++ files changed"
+            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
           fi
-        done
-        
-        echo "✅ Automated review completed"
-        
-    - name: Generate review summary
-      if: steps.changed_files.outputs.HAS_CHANGES == 'true'
-      run: |
-        echo "📋 Generating code review summary..."
-        
-        cat > review_summary.md << 'EOF'
-        ## 🤖 自动代码审阅报告
-        
-        ### 📊 代码质量指标
-        - ✅ **构建状态**: 通过 CMake 构建测试
-        - 🔍 **静态分析**: 通过 cppcheck 检查
-        - 📏 **代码格式**: 符合 clang-format 标准
-        - 🔒 **安全扫描**: 无明显安全问题
-        
-        ### 📝 审阅建议
-        上述分析中发现的问题已在日志中标出。请关注：
-        
-        1. **代码复杂度**: 保持函数简洁，避免过度复杂的逻辑
-        2. **内存管理**: 优先使用智能指针和 RAII 模式
-        3. **异常安全**: 确保异常安全的代码设计
-        4. **命名约定**: 遵循项目的命名规范
-        
-        ### 🎯 质量指南
-        - 单个函数不应超过 50 行
-        - 圈复杂度应保持在 10 以下
-        - 及时处理 TODO/FIXME 注释
-        - 避免使用原始指针进行内存管理
-        
-        ---
-        *此报告由自动化工具生成，如有疑问请联系维护者*
-        EOF
-        
-        echo "Review summary generated"
-        
-    - name: Comment on PR
-      if: steps.changed_files.outputs.HAS_CHANGES == 'true' && github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          
-          try {
-            const summary = fs.readFileSync('review_summary.md', 'utf8');
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
-            
-            console.log('✅ Review comment posted successfully');
-          } catch (error) {
-            console.log('⚠️  Failed to post review comment:', error.message);
-          }
+
+      - name: Review changed code
+        if: steps.changed_files.outputs.HAS_CHANGES == 'true'
+        run: |
+          echo "📝 Performing automated code review..."
+
+          review_comments=""
+
+          # 分析每个变更的文件
+          echo "${{ steps.changed_files.outputs.CHANGED_FILES }}" | while read file; do
+            if [ -f "$file" ] && [ -n "$file" ]; then
+              echo "Reviewing: $file"
+              
+              # 检查文件大小
+              lines=$(wc -l < "$file")
+              if [ "$lines" -gt 300 ]; then
+                echo "⚠️  **$file**: File is quite large ($lines lines). Consider splitting into smaller modules."
+              fi
+              
+              # 检查复杂函数
+              awk -v file="$file" '
+              BEGIN { in_function = 0; brace_count = 0; func_start = 0; func_name = ""; complexity = 0 }
+              /^[a-zA-Z_][a-zA-Z0-9_:]*.*\{/ { 
+                in_function = 1; 
+                func_start = NR; 
+                func_name = $0; 
+                brace_count = 1; 
+                complexity = 1;
+                next 
+              }
+              in_function && /if|while|for|switch|catch/ { complexity++ }
+              in_function {
+                if (/\{/) brace_count += gsub(/\{/, "");
+                if (/\}/) brace_count -= gsub(/\}/, "");
+                if (brace_count == 0) {
+                  func_length = NR - func_start;
+                  if (complexity > 10) {
+                    print "⚠️  **" file "**: High complexity function at line " func_start " (complexity: " complexity ")";
+                  }
+                  if (func_length > 50) {
+                    print "⚠️  **" file "**: Long function at line " func_start " (" func_length " lines)";
+                  }
+                  in_function = 0;
+                }
+              }' "$file"
+              
+              # 检查常见代码问题
+              if grep -n "TODO\|FIXME\|XXX" "$file"; then
+                echo "ℹ️  **$file**: Contains TODO/FIXME comments that should be addressed."
+              fi
+              
+              if grep -n "using namespace std" "$file"; then
+                echo "⚠️  **$file**: Uses 'using namespace std' - consider avoiding in header files."
+              fi
+              
+              # 检查内存管理
+              if grep -n "\bnew\b\|malloc\|free\b" "$file"; then
+                echo "⚠️  **$file**: Manual memory management detected. Consider using smart pointers."
+              fi
+              
+              # 检查异常安全
+              if grep -n "throw\|exception" "$file" && ! grep -n "noexcept\|try\|catch" "$file"; then
+                echo "⚠️  **$file**: Throws exceptions but no exception handling visible."
+              fi
+              
+            fi
+          done
+
+          echo "✅ Automated review completed"
+
+      - name: Generate review summary
+        if: steps.changed_files.outputs.HAS_CHANGES == 'true'
+        run: |
+          echo "📋 Generating code review summary..."
+
+          cat > review_summary.md << 'EOF'
+          ## 🤖 自动代码审阅报告
+
+          ### 📊 代码质量指标
+          - ✅ **构建状态**: 通过 CMake 构建测试
+          - 🔍 **静态分析**: 通过 cppcheck 检查
+          - 📏 **代码格式**: 符合 clang-format 标准
+          - 🔒 **安全扫描**: 无明显安全问题
+
+          ### 📝 审阅建议
+          上述分析中发现的问题已在日志中标出。请关注：
+
+          1. **代码复杂度**: 保持函数简洁，避免过度复杂的逻辑
+          2. **内存管理**: 优先使用智能指针和 RAII 模式
+          3. **异常安全**: 确保异常安全的代码设计
+          4. **命名约定**: 遵循项目的命名规范
+
+          ### 🎯 质量指南
+          - 单个函数不应超过 50 行
+          - 圈复杂度应保持在 10 以下
+          - 及时处理 TODO/FIXME 注释
+          - 避免使用原始指针进行内存管理
+
+          ---
+          *此报告由自动化工具生成，如有疑问请联系维护者*
+          EOF
+
+          echo "Review summary generated"
+
+      - name: Comment on PR
+        if: steps.changed_files.outputs.HAS_CHANGES == 'true' && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.pull_request.number }}
+          body-path: review_summary.md
