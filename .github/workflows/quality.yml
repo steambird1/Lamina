@@ -203,10 +203,10 @@ jobs:
           fi
 
           # Check if example files exist
-          if [ -d "interpreter/examples" ] && [ "$(ls -A interpreter/examples)" ]; then
+          if [ -d "examples" ] && [ "$(ls -A examples)" ]; then
             echo "✅ Example files exist"
             echo "Found examples:"
-            ls -la interpreter/examples/
+            ls -la examples/
           else
             echo "ℹ️  No example files found"
           fi
@@ -332,7 +332,7 @@ jobs:
           # 代码复杂度分析
           echo -e "\n=== Cyclomatic Complexity ==="
           if command -v lizard >/dev/null 2>&1; then
-            lizard interpreter/ -l cpp -w -x "./interpreter/examples/*" || echo "⚠️  Lizard analysis failed, continuing..."
+            lizard interpreter/ -l cpp -w -x "./examples/*" || echo "⚠️  Lizard analysis failed, continuing..."
           else
             echo "⚠️  Lizard not available, skipping complexity analysis"
           fi

@@ -2,114 +2,114 @@ name: Update Badges
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # Run daily at 6 AM UTC
-    - cron: '0 6 * * *'
+    - cron: "0 6 * * *"
 
 jobs:
   update-badges:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Get latest release
-      id: release
-      uses: actions/github-script@v7
-      with:
-        script: |
-          try {
-            const release = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-            return release.data.tag_name;
-          } catch (error) {
-            console.log('No releases found');
-            return 'none';
-          }
-        result-encoding: string
-        
-    - name: Count commits
-      id: commits
-      run: |
-        COMMIT_COUNT=$(git rev-list --count HEAD)
-        echo "count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
-        
-    - name: Get repository stats
-      id: stats
-      run: |
-        # Count lines of code
-        CPP_LINES=$(find interpreter -name "*.cpp" -o -name "*.hpp" | xargs wc -l | tail -1 | awk '{print $1}')
-        echo "cpp_lines=$CPP_LINES" >> $GITHUB_OUTPUT
-        
-        # Count example files
-        if [ -d "interpreter/examples" ]; then
-          EXAMPLE_COUNT=$(ls -1 interpreter/examples/*.lm 2>/dev/null | wc -l)
-        else
-          EXAMPLE_COUNT=0
-        fi
-        echo "examples=$EXAMPLE_COUNT" >> $GITHUB_OUTPUT
-        
-    - name: Update README badges
-      run: |
-        echo "Updating badges in README.md..."
-        
-        # Create backup
-        cp README.md README.md.backup
-        
-        # Update badges section
-        sed -i 's|[![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)|[![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)|g' README.md
-        sed -i 's|[![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)|[![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)|g' README.md
-        
-        # Add build status badge if not present
-        if ! grep -q "Build Status" README.md; then
-          sed -i '/Badge/a [![Build Status](https://github.com/${{ github.repository }}/workflows/CI/badge.svg)](https://github.com/${{ github.repository }}/actions)' README.md
-        fi
-        
-        # Add release badge
-        if [ "${{ steps.release.outputs.result }}" != "none" ]; then
-          if ! grep -q "Latest Release" README.md; then
-            sed -i '/Badge/a [![Latest Release](https://img.shields.io/badge/release-${{ steps.release.outputs.result }}-green.svg)](https://github.com/${{ github.repository }}/releases/latest)' README.md
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get latest release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const release = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              return release.data.tag_name;
+            } catch (error) {
+              console.log('No releases found');
+              return 'none';
+            }
+          result-encoding: string
+
+      - name: Count commits
+        id: commits
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Get repository stats
+        id: stats
+        run: |
+          # Count lines of code
+          CPP_LINES=$(find interpreter -name "*.cpp" -o -name "*.hpp" | xargs wc -l | tail -1 | awk '{print $1}')
+          echo "cpp_lines=$CPP_LINES" >> $GITHUB_OUTPUT
+
+          # Count example files
+          if [ -d "examples" ]; then
+            EXAMPLE_COUNT=$(ls -1 examples/*.lm 2>/dev/null | wc -l)
+          else
+            EXAMPLE_COUNT=0
           fi
-        fi
-        
-        # Add commit count badge
-        if ! grep -q "Commits" README.md; then
-          sed -i '/Badge/a [![Commits](https://img.shields.io/badge/commits-${{ steps.commits.outputs.count }}-blue.svg)](https://github.com/${{ github.repository }}/commits)' README.md
-        fi
-        
-        # Add lines of code badge
-        if ! grep -q "Lines of Code" README.md; then
-          sed -i '/Badge/a [![Lines of Code](https://img.shields.io/badge/lines%20of%20code-${{ steps.stats.outputs.cpp_lines }}-yellow.svg)](https://github.com/${{ github.repository }})' README.md
-        fi
-        
-        # Add examples count badge
-        if ! grep -q "Examples" README.md; then
-          sed -i '/Badge/a [![Examples](https://img.shields.io/badge/examples-${{ steps.stats.outputs.examples }}-purple.svg)](https://github.com/${{ github.repository }}/tree/main/interpreter/examples)' README.md
-        fi
-        
-        echo " Badges updated"
-        
-    - name: Check if changes were made
-      id: changes
-      run: |
-        if ! diff -q README.md README.md.backup > /dev/null; then
-          echo "changed=true" >> $GITHUB_OUTPUT
-          echo "Changes detected in README.md"
-          git diff README.md
-        else
-          echo "changed=false" >> $GITHUB_OUTPUT
-          echo "No changes in README.md"
-        fi
-        
-    - name: Commit changes
-      if: steps.changes.outputs.changed == 'true'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add README.md
-        git commit -m "chore: update README badges [skip ci]"
-        git push
+          echo "examples=$EXAMPLE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Update README badges
+        run: |
+          echo "Updating badges in README.md..."
+
+          # Create backup
+          cp README.md README.md.backup
+
+          # Update badges section
+          sed -i 's|[![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)|[![License](https://img.shields.io/badge/license-GNUv3-blue.svg)](LICENSE)|g' README.md
+          sed -i 's|[![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)|[![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)|g' README.md
+
+          # Add build status badge if not present
+          if ! grep -q "Build Status" README.md; then
+            sed -i '/Badge/a [![Build Status](https://github.com/${{ github.repository }}/workflows/CI/badge.svg)](https://github.com/${{ github.repository }}/actions)' README.md
+          fi
+
+          # Add release badge
+          if [ "${{ steps.release.outputs.result }}" != "none" ]; then
+            if ! grep -q "Latest Release" README.md; then
+              sed -i '/Badge/a [![Latest Release](https://img.shields.io/badge/release-${{ steps.release.outputs.result }}-green.svg)](https://github.com/${{ github.repository }}/releases/latest)' README.md
+            fi
+          fi
+
+          # Add commit count badge
+          if ! grep -q "Commits" README.md; then
+            sed -i '/Badge/a [![Commits](https://img.shields.io/badge/commits-${{ steps.commits.outputs.count }}-blue.svg)](https://github.com/${{ github.repository }}/commits)' README.md
+          fi
+
+          # Add lines of code badge
+          if ! grep -q "Lines of Code" README.md; then
+            sed -i '/Badge/a [![Lines of Code](https://img.shields.io/badge/lines%20of%20code-${{ steps.stats.outputs.cpp_lines }}-yellow.svg)](https://github.com/${{ github.repository }})' README.md
+          fi
+
+          # Add examples count badge
+          if ! grep -q "Examples" README.md; then
+            sed -i '/Badge/a [![Examples](https://img.shields.io/badge/examples-${{ steps.stats.outputs.examples }}-purple.svg)](https://github.com/${{ github.repository }}/tree/main/examples)' README.md
+          fi
+
+          echo " Badges updated"
+
+      - name: Check if changes were made
+        id: changes
+        run: |
+          if ! diff -q README.md README.md.backup > /dev/null; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in README.md"
+            git diff README.md
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes in README.md"
+          fi
+
+      - name: Commit changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: update README badges [skip ci]"
+          git push
