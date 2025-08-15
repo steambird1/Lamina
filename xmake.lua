@@ -1,5 +1,5 @@
 add_rules("mode.debug", "mode.release")
-
+set_policy("package.include_external_headers", false)
 add_requires("libuv 056e180e11c3a2ff7120f484da9d0f15a5776fd4")
 add_requires("exprtk cc1b800c2bd1ac3ac260478c915d2aec6f4eb41c")
 
