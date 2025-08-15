@@ -33,3 +33,5 @@ Use xmake
 ```shell
 xmake
 ```
+
+# WARNING: If you cannot compile it with cmake in MacOS, try to use xmake or use gcc/g++ rather than clang/clang++
