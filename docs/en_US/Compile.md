@@ -5,7 +5,7 @@
 </div>
 <br>
 
-Linux Platform:
+Linux:
 ```shell
 mkdir build
 cd build
@@ -13,10 +13,23 @@ cmake ..
 make
 ```
 
-Windows Platform:
+Windows With MinGW:
 ```shell
 mkdir build
 cd build
 cmake .. -G "MinGW Makefiles"
 mingw32-make
+```
+
+Windows With MSVC:
+```shell
+mkdir build
+cd build
+cmake .. -G "Visual Studio 17 2022"
+msbuild ALL_BUILD.vcxproj
+```
+
+Use xmake
+```shell
+xmake
 ```
