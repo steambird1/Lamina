@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
+#include "symbolic.hpp"
 #include <sstream>
 #include <string>
 #include <vector>
@@ -19,6 +21,50 @@
 // 无理数类，支持常见无理数的精确表示
 class Irrational {
 public:
+    // 转为符号表达式
+    std::shared_ptr<SymbolicExpr> to_symbolic() const {
+        switch (type) {
+            case Type::SQRT: {
+                // 只要系数不为0，始终输出表达式
+                auto sqrtExpr = SymbolicExpr::sqrt(SymbolicExpr::number(static_cast<int>(radicand)));
+                if (std::abs(coefficient) < 1e-15) {
+                    return SymbolicExpr::number(0);
+                } else if (std::abs(coefficient - 1.0) < 1e-15) {
+                    return sqrtExpr;
+                } else {
+                    return SymbolicExpr::multiply(SymbolicExpr::number(::Rational(coefficient)), sqrtExpr);
+                }
+            }
+            case Type::PI:
+                if (std::abs(coefficient) < 1e-15) {
+                    return SymbolicExpr::number(0);
+                } else if (std::abs(coefficient - 1.0) < 1e-15) {
+                    return SymbolicExpr::variable("π");
+                } else {
+                    return SymbolicExpr::multiply(SymbolicExpr::number(::Rational(coefficient)), SymbolicExpr::variable("π"));
+                }
+            case Type::E:
+                if (std::abs(coefficient) < 1e-15) {
+                    return SymbolicExpr::number(0);
+                } else if (std::abs(coefficient - 1.0) < 1e-15) {
+                    return SymbolicExpr::variable("e");
+                } else {
+                    return SymbolicExpr::multiply(SymbolicExpr::number(::Rational(coefficient)), SymbolicExpr::variable("e"));
+                }
+            case Type::LOG:
+                // log(n) 仅支持变量形式
+                if (std::abs(coefficient) < 1e-15) {
+                    return SymbolicExpr::number(0);
+                } else {
+                    return SymbolicExpr::multiply(SymbolicExpr::number(::Rational(coefficient)), SymbolicExpr::variable("log(" + std::to_string(radicand) + ")"));
+                }
+            case Type::COMPLEX:
+                // 复杂形式暂不支持符号化，返回常数
+                return SymbolicExpr::number(::Rational(constant_term));
+            default:
+                return SymbolicExpr::number(0);
+        }
+    }
     enum class Type {
         SQRT,  // √n 形式
         PI,    // π 的倍数

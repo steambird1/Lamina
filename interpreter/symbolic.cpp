@@ -1,6 +1,8 @@
 #include "symbolic.hpp"
 #include <algorithm>
 #include <cmath>
+#include <map>
+#include <functional>
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
@@ -108,23 +110,87 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     if (operands.size() != 2) return std::make_shared<SymbolicExpr>(*this);
-    
+
     auto left = operands[0]->simplify();
     auto right = operands[1]->simplify();
-    
+
     // 如果两个操作数都是数字，直接相加
     if (left->is_number() && right->is_number()) {
         auto left_num = left->get_number();
         auto right_num = right->get_number();
-        
-        // 简化：只处理整数加法
         if (std::holds_alternative<int>(left_num) && std::holds_alternative<int>(right_num)) {
             int result = std::get<int>(left_num) + std::get<int>(right_num);
             return SymbolicExpr::number(result);
         }
+        // Rational 加法
+        if (std::holds_alternative<::Rational>(left_num) && std::holds_alternative<::Rational>(right_num)) {
+            ::Rational result = std::get<::Rational>(left_num) + std::get<::Rational>(right_num);
+            return SymbolicExpr::number(result);
+        }
     }
-    
-    return SymbolicExpr::add(left, right);
+
+    // 根式同类项合并：如 a√n + b√n = (a+b)√n
+    auto extract_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, int& radicand) -> bool {
+        if (expr->type == SymbolicExpr::Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
+            coeff = ::Rational(1);
+            radicand = std::get<int>(expr->operands[0]->get_number());
+            return true;
+        }
+        if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() == 2) {
+            // 左系数，右根式
+            if (expr->operands[0]->is_number() && expr->operands[1]->type == SymbolicExpr::Type::Sqrt && expr->operands[1]->operands.size() == 1 && expr->operands[1]->operands[0]->is_number()) {
+                coeff = std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
+                radicand = std::get<int>(expr->operands[1]->operands[0]->get_number());
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // 递归合并同类项：如 √2+2√2+3√2 合并为 6√2
+    std::vector<std::shared_ptr<SymbolicExpr>> terms;
+    std::function<void(const std::shared_ptr<SymbolicExpr>&)> flatten_add;
+    flatten_add = [&](const std::shared_ptr<SymbolicExpr>& expr) {
+        if (expr->type == SymbolicExpr::Type::Add && expr->operands.size() == 2) {
+            flatten_add(expr->operands[0]);
+            flatten_add(expr->operands[1]);
+        } else {
+            terms.push_back(expr);
+        }
+    };
+    flatten_add(left);
+    flatten_add(right);
+
+    // 合并所有根式同类项
+    std::map<int, ::Rational> sqrt_terms; // radicand -> sum of coeffs
+    std::vector<std::shared_ptr<SymbolicExpr>> others;
+    for (const auto& term : terms) {
+        ::Rational coeff;
+        int radicand = 0;
+        if (extract_sqrt(term, coeff, radicand)) {
+            sqrt_terms[radicand] = sqrt_terms[radicand] + coeff;
+        } else {
+            others.push_back(term);
+        }
+    }
+    std::vector<std::shared_ptr<SymbolicExpr>> result_terms;
+    for (const auto& [radicand, coeff] : sqrt_terms) {
+        if (coeff.is_integer() && coeff.get_numerator() == 0) continue;
+        if (coeff == ::Rational(1)) {
+            result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));
+        } else {
+            result_terms.push_back(SymbolicExpr::multiply(SymbolicExpr::number(coeff), SymbolicExpr::sqrt(SymbolicExpr::number(radicand))));
+        }
+    }
+    result_terms.insert(result_terms.end(), others.begin(), others.end());
+    if (result_terms.empty()) return SymbolicExpr::number(0);
+    if (result_terms.size() == 1) return result_terms[0];
+    // 多项式加法
+    std::shared_ptr<SymbolicExpr> sum = result_terms[0];
+    for (size_t i = 1; i < result_terms.size(); ++i) {
+        sum = SymbolicExpr::add(sum, result_terms[i]);
+    }
+    return sum;
 }
 
 std::string SymbolicExpr::to_string() const {
