@@ -514,6 +514,6 @@ RuntimeError: Undefined variable 'unknown_variable'
 
 ## 运算符优先级
 
-`! > ^ > * / % > + - > == != > && ||`
+`! > ^ > * / % > + - > == != > && `
 
 
