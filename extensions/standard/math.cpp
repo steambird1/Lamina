@@ -67,20 +67,12 @@ inline Value sqrt(const std::vector<Value>& args) {
     // Handle rational case
     if (args[0].is_rational()) {
         const auto& rat = std::get<::Rational>(args[0].data);
-        long long num = rat.get_numerator();
-        long long den = rat.get_denominator();
-        
-        if (num < 0) {
-            std::cerr << "Error: sqrt() of negative number" << std::endl;
-            return Value();
-        }
-        
-        long long sqrt_num = static_cast<long long>(std::sqrt(num));
-        long long sqrt_den = static_cast<long long>(std::sqrt(den));
-        
-        if (sqrt_num * sqrt_num == num && sqrt_den * sqrt_den == den) {
+        auto num = rat.get_numerator();
+        auto den = rat.get_denominator();
+
+        if (num.is_perfect_square() && den.is_perfect_square()) {
             // Both are perfect squares
-            return Value(::Rational(sqrt_num, sqrt_den));
+            return Value(::Rational(num, den));
         }
         
         // Return symbolic expression for non-perfect squares
