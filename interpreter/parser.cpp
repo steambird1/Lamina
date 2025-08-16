@@ -4,8 +4,11 @@
 #include <stdexcept>
 #include <string>
 
-// Set to true to enable debug output
+#ifdef NDEBUG
 static const bool PARSER_DEBUG = false;
+#else
+static const bool PARSER_DEBUG = true;
+#endif
 
 // Debug output macro - no output if DEBUG is false
 #define DEBUG_OUT \
