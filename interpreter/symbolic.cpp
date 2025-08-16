@@ -190,7 +190,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     for (size_t i = 1; i < result_terms.size(); ++i) {
         sum = SymbolicExpr::add(sum, result_terms[i]);
     }
-    return sum;
+    return sum->simplify();
 }
 
 std::string SymbolicExpr::to_string() const {
@@ -220,9 +220,64 @@ std::string SymbolicExpr::to_string() const {
             }
             return operands[0]->to_string() + "*" + operands[1]->to_string();
             
-        case Type::Add:
+        case Type::Add: {
             if (operands.size() < 2) return "+(?)";
-            return operands[0]->to_string() + "+" + operands[1]->to_string();
+            // 展开并合并同类项，输出紧凑表达式
+            std::vector<const SymbolicExpr*> terms;
+            std::function<void(const SymbolicExpr*)> flatten_add;
+            flatten_add = [&](const SymbolicExpr* expr) {
+                if (expr->type == Type::Add && expr->operands.size() == 2) {
+                    flatten_add(expr->operands[0].get());
+                    flatten_add(expr->operands[1].get());
+                } else {
+                    terms.push_back(expr);
+                }
+            };
+            flatten_add(this);
+            // 合并根式同类项
+            std::map<int, ::Rational> sqrt_terms;
+            std::vector<std::string> others;
+            auto extract_sqrt = [](const SymbolicExpr* expr, ::Rational& coeff, int& radicand) -> bool {
+                if (expr->type == Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
+                    coeff = ::Rational(1);
+                    radicand = std::get<int>(expr->operands[0]->get_number());
+                    return true;
+                }
+                if (expr->type == Type::Multiply && expr->operands.size() == 2) {
+                    if (expr->operands[0]->is_number() && expr->operands[1]->type == Type::Sqrt && expr->operands[1]->operands.size() == 1 && expr->operands[1]->operands[0]->is_number()) {
+                        coeff = std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
+                        radicand = std::get<int>(expr->operands[1]->operands[0]->get_number());
+                        return true;
+                    }
+                }
+                return false;
+            };
+            for (const auto* term : terms) {
+                ::Rational coeff;
+                int radicand = 0;
+                if (extract_sqrt(term, coeff, radicand)) {
+                    sqrt_terms[radicand] = sqrt_terms[radicand] + coeff;
+                } else {
+                    others.push_back(term->to_string());
+                }
+            }
+            std::vector<std::string> result_terms;
+            for (const auto& [radicand, coeff] : sqrt_terms) {
+                if (coeff.is_integer() && coeff.get_numerator() == 0) continue;
+                if (coeff == ::Rational(1)) {
+                    result_terms.push_back("√" + std::to_string(radicand));
+                } else {
+                    result_terms.push_back(coeff.to_string() + "√" + std::to_string(radicand));
+                }
+            }
+            result_terms.insert(result_terms.end(), others.begin(), others.end());
+            if (result_terms.empty()) return "0";
+            std::string res = result_terms[0];
+            for (size_t i = 1; i < result_terms.size(); ++i) {
+                res += "+" + result_terms[i];
+            }
+            return res;
+        }
             
         case Type::Power:
             if (operands.size() < 2) return "^(?)";
