@@ -2,6 +2,8 @@
 #include "bigint.hpp"
 #include <stdexcept>
 #include <string>
+#include <iomanip>
+#include <sstream>
 
 class Rational {
 private:
@@ -64,17 +66,35 @@ public:
         if (value == 0.0) {
             return Rational();
         }
-
-        size_t i = 0;
-        while (std::floor(value) != value) {
-            value *= 10;
-            ++i;
-            if (i > 15) break;// 解决浮点数精度问题
+        if (std::floor(value) == value) {// 是整数，分母设为1
+            return Rational(BigInt(std::to_string(value)));
         }
+        std::ostringstream oss;
+        oss << std::scientific << std::setprecision(15) << value;
+        std::string str = oss.str();
 
-        Rational r(BigInt(static_cast<long long>(value)), (i == 0) ? BigInt(1) : BigInt("1" + std::string(i, 0)));
+        // 解析科学记数法
+        size_t e_pos = str.find('e');
+        std::string base = str.substr(0, e_pos);
+        bool negative = false;
+        if (base[0] == '-') {
+            negative = true;
+            base.erase(0, 1);
+        }
+        base.erase(1, 1);// 删除小数点
+        while (base.back() == '0') {// 去除末尾0，不可能全为0
+            base.pop_back();
+        }
+        int exponent = std::stoi(str.substr(e_pos + 1));
+    
+        size_t decimal_places = std::max(0, static_cast<int>(base.length())-exponent-1);// 有几位小数
+
+        BigInt num(base);
+        if (negative) num = num.negate();
+        BigInt den("1"+std::string(decimal_places, '0'));
+
+        Rational r(num, den);
         r.simplify();
-        
         return r;
     }
 
