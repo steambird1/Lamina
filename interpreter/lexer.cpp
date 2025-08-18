@@ -3,9 +3,11 @@
 #include <iostream>
 #include <map>
 
-std::map<std::string, TokenType> keywords;
+static std::map<std::string, TokenType> keywords;
+static bool keywords_registered = false;
 
 void registerKeywords() {
+    if (keywords_registered) return;
     keywords["var"] = TokenType::Var;
     keywords["func"] = TokenType::Func;
     keywords["if"] = TokenType::If;
@@ -21,6 +23,7 @@ void registerKeywords() {
     keywords["true"] = TokenType::True;
     keywords["false"] = TokenType::False;
     keywords["null"] = TokenType::Null;
+    keywords_registered = true;
 }
 
 std::vector<Token> Lexer::tokenize(const std::string& src) {
