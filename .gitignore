@@ -27,6 +27,7 @@
 # IDE and editor files
 /.vs/
 /.vscode/
+/.idea/
 **/.vscode/
 *.swp
 *.swo
