@@ -591,16 +591,12 @@ Value Interpreter::eval(const ASTNode* node) {
                     if (rb.is_zero()) {
                         error_and_exit("Modulo by zero");
                     }
-                    // BigInt 模运算需要实现，这里暂时转换为int处理
-                    int li = lb.to_int();
-                    int ri = rb.to_int();
-                    return Value(li % ri);
+                    // BigInt 模运算
+                    return Value(lb % rb);
                 }
                 if (bin->op == "^") {
-                    // BigInt 幂运算，转换为double处理大数
-                    double ld = lb.to_int();
-                    double rd = rb.to_int();
-                    return Value(std::pow(ld, rd));
+                    // BigInt 幂运算
+                    return Value(lb.power(rb));
                 }
             }
 
