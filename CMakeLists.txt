@@ -152,7 +152,9 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
                # Directly include module_loader.cpp to resolve MinGW linking issues
                interpreter/module_loader.cpp
                # Include symbolic.cpp for symbolic expression support
-               interpreter/symbolic.cpp)
+               interpreter/symbolic.cpp
+        interpreter/console_ui.hpp
+        interpreter/console_ui.cpp)
 
 # Link to lamina_core
 target_link_libraries(Lamina PRIVATE lamina_core)
