@@ -392,9 +392,10 @@ Value Interpreter::eval(const ASTNode* node) {
                     return r.scalar_multiply(l.as_number());
                 }
                 // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
                     std::shared_ptr<SymbolicExpr> leftExpr;
                     std::shared_ptr<SymbolicExpr> rightExpr;
+                    // 强制所有 Irrational 都转为 SymbolicExpr
                     if (l.is_symbolic()) {
                         leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
                     } else if (l.is_irrational()) {
@@ -425,6 +426,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     } else {
                         rightExpr = SymbolicExpr::number(0);
                     }
+                    // 结果类型始终为 SymbolicExpr
                     return Value(SymbolicExpr::multiply(leftExpr, rightExpr));
                 }
                 // Regular multiplication (both must be numeric)
