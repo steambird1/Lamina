@@ -88,7 +88,7 @@ public:
     // 幂次构造函数
     static std::shared_ptr<SymbolicExpr> power(std::shared_ptr<SymbolicExpr> base, std::shared_ptr<SymbolicExpr> exponent) {
 
-        // 否则直接符号储存
+        // 直接符号储存
         auto expr = std::make_shared<SymbolicExpr>(Type::Power);
         expr->operands.push_back(base);
         expr->operands.push_back(exponent);
