@@ -8,12 +8,12 @@
 
 class BigInt {
 private:
-    std::vector<int> digits;// 存储数字，低位在前
+    std::vector<int8_t> digits;// 存储数字，低位在前
     bool negative;
 
 public:
     // 友元类声明
-    friend class Fraction;
+    friend class Rational;
     // 构造函数
     BigInt() : negative(false) { digits.push_back(0); }
 
@@ -177,6 +177,7 @@ public:
         result.remove_leading_zeros();
         return result;
     }
+
 
     // 比较绝对值大小
     static int abs_compare(const BigInt& a, const BigInt& b) {
@@ -424,6 +425,7 @@ public:
         return power(exponent);
     }
     
+
     // Greatest Common Divisor using Euclidean algorithm
     static BigInt gcd(const BigInt& a, const BigInt& b) {
         BigInt abs_a = a.abs();

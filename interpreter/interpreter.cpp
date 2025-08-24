@@ -400,36 +400,15 @@ Value Interpreter::eval(const ASTNode* node) {
                     // 强制所有 Irrational 都转为 SymbolicExpr
                     if (l.is_symbolic()) {
                         leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else if (l.is_irrational()) {
-                        leftExpr = std::get<::Irrational>(l.data).to_symbolic();
-                    } else if (l.is_rational()) {
-                        leftExpr = SymbolicExpr::number(std::get<::Rational>(l.data));
-                    } else if (l.is_bigint()) {
-                        leftExpr = SymbolicExpr::number(std::get<::BigInt>(l.data));
-                    } else if (l.is_int()) {
-                        leftExpr = SymbolicExpr::number(std::get<int>(l.data));
-                    } else if (l.is_float()) {
-                        leftExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(l.data)));
                     } else {
-                        leftExpr = SymbolicExpr::number(0);
+                        leftExpr = from_number_to_symbolic(l);
                     }
                     if (r.is_symbolic()) {
                         rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else if (r.is_irrational()) {
-                        rightExpr = std::get<::Irrational>(r.data).to_symbolic();
-                    } else if (r.is_rational()) {
-                        rightExpr = SymbolicExpr::number(std::get<::Rational>(r.data));
-                    } else if (r.is_bigint()) {
-                        rightExpr = SymbolicExpr::number(std::get<::BigInt>(r.data));
-                    } else if (r.is_int()) {
-                        rightExpr = SymbolicExpr::number(std::get<int>(r.data));
-                    } else if (r.is_float()) {
-                        rightExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(r.data)));
                     } else {
-                        rightExpr = SymbolicExpr::number(0);
+                        rightExpr = from_number_to_symbolic(r);
                     }
-                    // 结果类型始终为 SymbolicExpr
-                    return Value(SymbolicExpr::multiply(leftExpr, rightExpr));
+                    return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
                 }
                 // Regular multiplication (both must be numeric)
                 if (l.is_numeric() && r.is_numeric()) {
@@ -464,6 +443,23 @@ Value Interpreter::eval(const ASTNode* node) {
 
             // For division, always use rational arithmetic for precise results
             if (bin->op == "/") {
+                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+                if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                    std::shared_ptr<SymbolicExpr> leftExpr;
+                    std::shared_ptr<SymbolicExpr> rightExpr;
+                    if (l.is_symbolic()) {
+                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                    } else {
+                        leftExpr = from_number_to_symbolic(l);
+                    }
+                    if (r.is_symbolic()) {
+                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                    } else {
+                        rightExpr = from_number_to_symbolic(r);
+                    }
+                    auto divExpr = SymbolicExpr::multiply(leftExpr, SymbolicExpr::power(rightExpr, SymbolicExpr::number(-1)));
+                    return Value(divExpr->simplify());
+                }
                 // BigInt 优先：如果任一为 BigInt，结果为 BigInt（如果整除）或 Rational
                 if (l.is_bigint() || r.is_bigint()) {
                     ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
@@ -485,43 +481,6 @@ Value Interpreter::eval(const ASTNode* node) {
                         // 如果BigInt运算失败，回退到Rational
                         return Value(::Rational(lb.to_int(), rb.to_int()));
                     }
-                }
-                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
-                    std::shared_ptr<SymbolicExpr> leftExpr;
-                    std::shared_ptr<SymbolicExpr> rightExpr;
-                    if (l.is_symbolic()) {
-                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else if (l.is_irrational()) {
-                        leftExpr = std::get<::Irrational>(l.data).to_symbolic();
-                    } else if (l.is_rational()) {
-                        leftExpr = SymbolicExpr::number(std::get<::Rational>(l.data));
-                    } else if (l.is_bigint()) {
-                        leftExpr = SymbolicExpr::number(std::get<::BigInt>(l.data));
-                    } else if (l.is_int()) {
-                        leftExpr = SymbolicExpr::number(std::get<int>(l.data));
-                    } else if (l.is_float()) {
-                        leftExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(l.data)));
-                    } else {
-                        leftExpr = SymbolicExpr::number(0);
-                    }
-                    if (r.is_symbolic()) {
-                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else if (r.is_irrational()) {
-                        rightExpr = std::get<::Irrational>(r.data).to_symbolic();
-                    } else if (r.is_rational()) {
-                        rightExpr = SymbolicExpr::number(std::get<::Rational>(r.data));
-                    } else if (r.is_bigint()) {
-                        rightExpr = SymbolicExpr::number(std::get<::BigInt>(r.data));
-                    } else if (r.is_int()) {
-                        rightExpr = SymbolicExpr::number(std::get<int>(r.data));
-                    } else if (r.is_float()) {
-                        rightExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(r.data)));
-                    } else {
-                        rightExpr = SymbolicExpr::number(0);
-                    }
-                    auto divExpr = SymbolicExpr::multiply(leftExpr, SymbolicExpr::power(rightExpr, SymbolicExpr::number(-1)));
-                    return Value(divExpr);
                 }
                 // If either operand is irrational, use irrational arithmetic
                 if (l.is_irrational() || r.is_irrational()) {
@@ -571,6 +530,23 @@ Value Interpreter::eval(const ASTNode* node) {
                     return Value(static_cast<int>(ld) % static_cast<int>(rd));
                 }
                 if (bin->op == "^") {
+                    // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+                    std::shared_ptr<SymbolicExpr> leftExpr;
+                    std::shared_ptr<SymbolicExpr> rightExpr;
+                    if (l.is_symbolic()) {
+                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                    } else {
+                        leftExpr = from_number_to_symbolic(l);
+                    }
+                    if (r.is_symbolic()) {
+                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                    } else {
+                        rightExpr = from_number_to_symbolic(r);
+                    }
+                    auto exponentExpr = SymbolicExpr::power(leftExpr, rightExpr);
+                    return Value(exponentExpr->simplify());
+                }
+                /*if (bin->op == "^") {
                     // For rational exponentiation, use integer exponent if possible
                     if (rr.is_integer() && rr.get_denominator() == 1) {
                         int exp = static_cast<int>(rr.get_numerator());
@@ -580,7 +556,7 @@ Value Interpreter::eval(const ASTNode* node) {
                     }
                     // Fall back to double arithmetic for non-integer or large exponents
                     return Value(std::pow(lr.to_double(), rr.to_double()));
-                }
+                }*/
             }
 
             // BigInt 运算优先：如果任一为 BigInt，结果为 BigInt
@@ -1173,6 +1149,27 @@ void Interpreter::register_builtin_functions() {
         entry(*this);
     }
 }
+
+// 将Number转为Symbolic(如果可能)
+std::shared_ptr<SymbolicExpr> Interpreter::from_number_to_symbolic(const Value& v) {
+    std::shared_ptr<SymbolicExpr> expr;
+    if (v.is_irrational()) {
+        expr = std::get<::Irrational>(v.data).to_symbolic();
+    } else if (v.is_rational()) {
+        expr = SymbolicExpr::number(std::get<::Rational>(v.data));
+    } else if (v.is_bigint()) {
+        expr = SymbolicExpr::number(std::get<::BigInt>(v.data));
+    } else if (v.is_int()) {
+        expr = SymbolicExpr::number(std::get<int>(v.data));
+    } else if (v.is_float()) {
+        expr = SymbolicExpr::number(::Rational::from_double(std::get<double>(v.data)));
+    } else {
+        expr = SymbolicExpr::number(0);// 失败，返回0
+    }
+
+    return expr;
+}
+
 
 // 在文件顶端添加错误处理函数
 LAMINA_EXPORT void error_and_exit(const std::string& msg) {

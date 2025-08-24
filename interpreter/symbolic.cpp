@@ -19,7 +19,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
             
         case Type::Add:
             return simplify_add();
-            
+
+        case Type::Power:
+            return simplify_power();
+        
         default:
             return std::make_shared<SymbolicExpr>(*this);
     }
@@ -207,7 +210,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     }
     std::vector<std::shared_ptr<SymbolicExpr>> result_terms;
     for (const auto& [radicand, coeff] : sqrt_terms) {
-        if (coeff.is_integer() && coeff.get_numerator() == 0) continue;
+        if (coeff.is_integer() && coeff.get_numerator().to_int() == 0) continue;
         if (coeff == ::Rational(1)) {
             result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));
         } else {
@@ -224,6 +227,50 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     }
     return sum->simplify();
 }
+
+std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
+    // 如果底数是数字，且指数是整数，用数字储存
+    auto base = operands[0]->simplify();
+    auto exponent = operands[1]->simplify();
+    if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
+        auto expr = std::make_shared<SymbolicExpr>(Type::Number);
+        // 底数是分数，结果为分数
+        if (base->is_rational() || exponent->is_rational()) {
+            if (exponent->is_int()) {
+            expr->number_value = (base->get_rational()).power(BigInt(exponent->get_int()));
+            } else if (exponent->is_big_int()) {
+            expr->number_value = (base->get_rational()).power(exponent->get_big_int());
+            }
+        } else {// 否则结果为大整数
+            BigInt b;
+            if (base->is_int()) {
+                b = BigInt(std::get<int>(base->get_number()));
+            } else {
+                b = std::get<BigInt>(base->get_number());
+            }
+            BigInt e;
+            if (exponent->is_int()) {
+                e = BigInt(std::get<int>(exponent->get_number()));
+            } else {
+                e = std::get<BigInt>(exponent->get_number());
+            }
+            if (e.to_int() >= 0) {
+                expr->number_value = b.power(e);
+            } else {
+                
+                expr->number_value = Rational(BigInt(1), b.power(e.negate()));
+            }
+        }
+
+        return expr;
+    } else if (base->is_number() && exponent->is_rational()) {
+        // 底数是数字，指数是分数
+        // TODO:暂时用符号储存
+    }
+
+    return SymbolicExpr::power(base, exponent);
+}
+
 
 std::string SymbolicExpr::to_string() const {
     switch (type) {
@@ -295,7 +342,7 @@ std::string SymbolicExpr::to_string() const {
             }
             std::vector<std::string> result_terms;
             for (const auto& [radicand, coeff] : sqrt_terms) {
-                if (coeff.is_integer() && coeff.get_numerator() == 0) continue;
+                if (coeff.is_integer() && coeff.get_numerator().to_int() == 0) continue;
                 if (coeff == ::Rational(1)) {
                     result_terms.push_back("√" + std::to_string(radicand));
                 } else {

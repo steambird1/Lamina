@@ -14,6 +14,7 @@ public:
     enum class Type {
         Number,      // 数字 (BigInt, Rational, int)
         Sqrt,        // 平方根 √
+        Root,        // n次方根 √[n] TODO
         Power,       // 幂次 ^
         Multiply,    // 乘法 *
         Add,         // 加法 +
@@ -65,6 +66,12 @@ public:
     // 乘法构造函数
     static std::shared_ptr<SymbolicExpr> multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) {
         auto expr = std::make_shared<SymbolicExpr>(Type::Multiply);
+        if (right->is_number()) {
+            // 将数字移至前端
+            expr->operands.push_back(right);
+            expr->operands.push_back(left);
+            return expr;
+        }
         expr->operands.push_back(left);
         expr->operands.push_back(right);
         return expr;
@@ -80,6 +87,8 @@ public:
     
     // 幂次构造函数
     static std::shared_ptr<SymbolicExpr> power(std::shared_ptr<SymbolicExpr> base, std::shared_ptr<SymbolicExpr> exponent) {
+
+        // 否则直接符号储存
         auto expr = std::make_shared<SymbolicExpr>(Type::Power);
         expr->operands.push_back(base);
         expr->operands.push_back(exponent);
@@ -101,6 +110,15 @@ public:
     
     // 检查是否为数字
     bool is_number() const { return type == Type::Number; }
+
+    // 检查是否为大整数
+    bool is_big_int() const { return is_number() && std::holds_alternative<::BigInt>(number_value);}
+
+    // 检查是否为分数（有理数）
+    bool is_rational() const { return is_number() && std::holds_alternative<::Rational>(number_value);}
+
+    // 检查是否为整数
+    bool is_int() const { return is_number() && std::holds_alternative<int>(number_value);}
     
     // 获取数字值（如果是数字的话）
     std::variant<int, ::BigInt, ::Rational> get_number() const {
@@ -108,6 +126,25 @@ public:
             return number_value;
         }
         throw std::runtime_error("Expression is not a number");
+    }
+
+    int get_int() const {
+        if (is_int()) {
+            return std::get<int>(get_number());
+        }
+        throw std::runtime_error("Expression is not a int");
+    }
+    ::BigInt get_big_int() const {
+        if (is_big_int()) {
+            return std::get<BigInt>(get_number());
+        }
+        throw std::runtime_error("Expression is not a BigInt");
+    }
+    ::Rational get_rational() const {
+        if (is_rational()) {
+            return std::get<Rational>(get_number());
+        }
+        throw std::runtime_error("Expression is not a Rational");
     }
     
     // 尝试计算数值（如果可能的话）
@@ -118,4 +155,5 @@ private:
     std::shared_ptr<SymbolicExpr> simplify_sqrt() const;
     std::shared_ptr<SymbolicExpr> simplify_multiply() const;
     std::shared_ptr<SymbolicExpr> simplify_add() const;
+    std::shared_ptr<SymbolicExpr> simplify_power() const;
 };
