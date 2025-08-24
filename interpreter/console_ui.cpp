@@ -96,22 +96,39 @@ int run_file(const std::string& path) {
 
 int argv_parser(const int argc, const char* const argv[]) {
 #ifdef _WIN32
-    // Windows平台下确保颜色字符正确显示
-    // show color style correctly
+    // Windows 平台的颜色支持
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) return 1;
-    DWORD mode = 0;
-    if (!GetConsoleMode(hOut, &mode)) {
-        std::cerr << "Can't get the console module" << std::endl;
+    if (hOut == INVALID_HANDLE_VALUE) {
+        std::cerr << "Failed to get STD_OUTPUT_HANDLE" << std::endl;
         return 1;
     }
-    if (!SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-        std::cerr << "your console unsupport the ANSI color" << std::endl;
+    DWORD outMode = 0;
+    if (!GetConsoleMode(hOut, &outMode)) {
+        std::cerr << "Can't get console mode for STD_OUTPUT_HANDLE" << std::endl;
+        return 1;
     }
-    // 设置 UTF-8 编码
-    // Set console encoding to UTF-8 on Windows for proper display of Chinese characters
-    SetConsoleOutputCP(CP_UTF8);  // 设置控制台输出编码
-    SetConsoleCP(CP_UTF8);        // 设置控制台输入编码
+    if (!SetConsoleMode(hOut, outMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+        std::cerr << "Console does not support ANSI color (STD_OUTPUT)" << std::endl;
+    }
+
+    HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);  // 修正宏的大小写
+    if (hErr == INVALID_HANDLE_VALUE) {
+        std::cerr << "Failed to get STD_ERROR_HANDLE" << std::endl;
+        return 1;
+    }
+    DWORD errMode = 0;
+    if (!GetConsoleMode(hErr, &errMode)) {
+        std::cerr << "Can't get console mode for STD_ERROR_HANDLE" << std::endl;
+        return 1;
+    }
+    // 同样启用虚拟终端模式，让 cerr 支持 ANSI 颜色码
+    if (!SetConsoleMode(hErr, errMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+        std::cerr << "Console does not support ANSI color (STD_ERROR)" << std::endl;
+    }
+
+    // UTF-8 编码设置
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 #endif
 
     if (argc < 2) {
