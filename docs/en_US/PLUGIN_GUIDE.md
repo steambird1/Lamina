@@ -1,5 +1,7 @@
 # Lamina Module Development Guide
 
+This document has been expired
+
 <div align="right">
   <a href="../zh_TW/PLUGIN_GUIDE.md">繁體中文</a> | <a href="../zh_CN/PLUGIN_GUIDE.md">简体中文</a> | <strong>English</strong>
 </div>

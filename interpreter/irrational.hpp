@@ -37,8 +37,9 @@ public:
                 }
             }
             case Type::PI:
+                // π 的所有情况都返回符号表达式
                 if (std::abs(coefficient) < 1e-15) {
-                    return SymbolicExpr::number(0);
+                    return SymbolicExpr::variable("π");
                 } else if (std::abs(coefficient - 1.0) < 1e-15) {
                     return SymbolicExpr::variable("π");
                 } else {

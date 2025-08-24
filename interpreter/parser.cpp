@@ -4,15 +4,10 @@
 #include <stdexcept>
 #include <string>
 
-#ifdef NDEBUG
-static const bool PARSER_DEBUG = false;
-#else
-static const bool PARSER_DEBUG = true;
-#endif
 
 // Debug output macro - no output if DEBUG is false
 #define DEBUG_OUT \
-    if (PARSER_DEBUG) std::cerr
+    if (false) std::cerr
 
 std::unique_ptr<Expression> Parser::parse_expression(const std::vector<Token>& tokens, size_t& i) {
     // Safety check
@@ -707,7 +702,7 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         return std::make_unique<ContinueStmt>();
     } else if (tokens[i].type == TokenType::Semicolon) {
         ++i;// Empty statement
-        return nullptr;
+        return std::make_unique<NullStmt>();
     } else if (tokens[i].type == TokenType::If && i + 1 < tokens.size()) {
         // if statement
         int if_line = tokens[i].line;

@@ -33,60 +33,97 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
     
     auto simplified_operand = operands[0]->simplify();
     
-    // 如果操作数是数字，尝试化简
     if (simplified_operand->is_number()) {
         auto num_val = simplified_operand->get_number();
-        
-        // 处理不同的数字类型
         if (std::holds_alternative<int>(num_val)) {
             int n = std::get<int>(num_val);
-            if (n < 0) {
-                throw std::runtime_error("Square root of negative number");
-            }
-            if (n == 0 || n == 1) {
-                return SymbolicExpr::number(n);
-            }
-            
-            // 检查是否为完全平方数
+            if (n < 0) throw std::runtime_error("Square root of negative number");
+            if (n == 0 || n == 1) return SymbolicExpr::number(n);
             int sqrt_n = static_cast<int>(std::sqrt(n));
-            if (sqrt_n * sqrt_n == n) {
-                return SymbolicExpr::number(sqrt_n);
-            }
-            
-            // 提取完全平方因子
-            int factor = 1;
-            int remaining = n;
+            if (sqrt_n * sqrt_n == n) return SymbolicExpr::number(sqrt_n);
+            int factor = 1, remaining = n;
             for (int i = 2; i * i <= remaining; ++i) {
                 while (remaining % (i * i) == 0) {
                     factor *= i;
                     remaining /= (i * i);
                 }
             }
-            
             if (factor > 1) {
-                if (remaining == 1) {
-                    return SymbolicExpr::number(factor);
-                } else {
-                    // 返回 factor * √remaining
-                    return SymbolicExpr::multiply(
-                        SymbolicExpr::number(factor),
-                        SymbolicExpr::sqrt(SymbolicExpr::number(remaining))
-                    );
-                }
+                if (remaining == 1) return SymbolicExpr::number(factor);
+                else return SymbolicExpr::multiply(SymbolicExpr::number(factor), SymbolicExpr::sqrt(SymbolicExpr::number(remaining)));
             }
         }
-        
-        // 处理BigInt
         if (std::holds_alternative<::BigInt>(num_val)) {
             const auto& bi = std::get<::BigInt>(num_val);
-            if (bi.is_perfect_square()) {
-                return SymbolicExpr::number(bi.sqrt());
-            }
-            // 对于非完全平方的BigInt，保持符号形式
+            if (bi.is_perfect_square()) return SymbolicExpr::number(bi.sqrt());
         }
     }
-    
-    // 无法进一步化简，返回 √(simplified_operand)
+    // sqrt(x*x) 或 sqrt(π*π) 直接返回 x 或 π
+    if (simplified_operand->type == SymbolicExpr::Type::Multiply && simplified_operand->operands.size() == 2) {
+        const auto& a = simplified_operand->operands[0];
+        const auto& b = simplified_operand->operands[1];
+        // sqrt(x*x) = x
+        if (a->type == SymbolicExpr::Type::Variable && b->type == SymbolicExpr::Type::Variable && a->identifier == b->identifier) {
+            return a;
+        }
+        // sqrt(π*π) = π
+        if (a->type == SymbolicExpr::Type::Variable && b->type == SymbolicExpr::Type::Variable &&
+            ((a->identifier == "π" && b->identifier == "π") || (a->identifier == "pi" && b->identifier == "pi"))) {
+            return a;
+        }
+        if (a->to_string() == b->to_string()) {
+            return a;
+        }
+        auto get_var = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::string {
+            if (expr->type == SymbolicExpr::Type::Variable) return expr->identifier;
+            if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() == 2) {
+                if (expr->operands[1]->type == SymbolicExpr::Type::Variable) return expr->operands[1]->identifier;
+            }
+            return "";
+        };
+        std::string var_a = get_var(a);
+        std::string var_b = get_var(b);
+        if (!var_a.empty() && var_a == var_b) {
+            // sqrt((c*π)*(d*π)) = sqrt((c*d)*π^2) = π*sqrt(c*d)
+            auto pow2 = SymbolicExpr::power(SymbolicExpr::variable(var_a), SymbolicExpr::number(2));
+            auto left_coeff = (a->type == SymbolicExpr::Type::Multiply && a->operands[0]->is_number()) ? a->operands[0] : SymbolicExpr::number(1);
+            auto right_coeff = (b->type == SymbolicExpr::Type::Multiply && b->operands[0]->is_number()) ? b->operands[0] : SymbolicExpr::number(1);
+            auto coeff_mul = SymbolicExpr::multiply(left_coeff, right_coeff)->simplify();
+            // sqrt((c*π)*(d*π)) = π*sqrt(c*d)
+            if (coeff_mul->is_number()) {
+                auto sqrt_coeff = SymbolicExpr::sqrt(coeff_mul)->simplify();
+                if (sqrt_coeff->is_number() && sqrt_coeff->to_string() == "1") {
+                    return SymbolicExpr::variable(var_a);
+                } else {
+                    return SymbolicExpr::multiply(sqrt_coeff, SymbolicExpr::variable(var_a));
+                }
+            } else {
+                // fallback: sqrt(π^2)
+                return SymbolicExpr::sqrt(pow2)->simplify();
+            }
+        }
+    }
+    // sqrt(x^2) 或 sqrt(π^2) 直接返回 x 或 π
+    if (simplified_operand->type == SymbolicExpr::Type::Power && simplified_operand->operands.size() == 2) {
+        const auto& base = simplified_operand->operands[0];
+        const auto& exp = simplified_operand->operands[1];
+        if (exp->is_number()) {
+            auto exp_val = exp->get_number();
+            int n = 0;
+            if (std::holds_alternative<int>(exp_val)) n = std::get<int>(exp_val);
+            else if (std::holds_alternative<::Rational>(exp_val)) {
+                ::Rational r = std::get<::Rational>(exp_val);
+                if (r.is_integer()) n = static_cast<int>(r.get_numerator());
+            }
+            if (n == 2) {
+                // sqrt(x^2) = x
+                if (base->type == SymbolicExpr::Type::Variable && (base->identifier == "π" || base->identifier == "pi")) {
+                    return base;
+                }
+                return base;
+            }
+        }
+    }
     return SymbolicExpr::sqrt(simplified_operand);
 }
 
@@ -117,7 +154,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     auto left = operands[0]->simplify();
     auto right = operands[1]->simplify();
 
-    // 如果两个操作数都是数字，直接相加
+
     if (left->is_number() && right->is_number()) {
         auto left_num = left->get_number();
         auto right_num = right->get_number();
@@ -125,14 +162,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
             int result = std::get<int>(left_num) + std::get<int>(right_num);
             return SymbolicExpr::number(result);
         }
-        // Rational 加法
         if (std::holds_alternative<::Rational>(left_num) && std::holds_alternative<::Rational>(right_num)) {
             ::Rational result = std::get<::Rational>(left_num) + std::get<::Rational>(right_num);
             return SymbolicExpr::number(result);
         }
     }
 
-    // 根式同类项合并：如 a√n + b√n = (a+b)√n
     auto extract_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, int& radicand) -> bool {
         if (expr->type == SymbolicExpr::Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
             coeff = ::Rational(1);
@@ -140,7 +175,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
             return true;
         }
         if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() == 2) {
-            // 左系数，右根式
             if (expr->operands[0]->is_number() && expr->operands[1]->type == SymbolicExpr::Type::Sqrt && expr->operands[1]->operands.size() == 1 && expr->operands[1]->operands[0]->is_number()) {
                 coeff = std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
                 radicand = std::get<int>(expr->operands[1]->operands[0]->get_number());
@@ -150,7 +184,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         return false;
     };
 
-    // 递归合并同类项：如 √2+2√2+3√2 合并为 6√2
+
     std::vector<std::shared_ptr<SymbolicExpr>> terms;
     std::function<void(const std::shared_ptr<SymbolicExpr>&)> flatten_add;
     flatten_add = [&](const std::shared_ptr<SymbolicExpr>& expr) {
@@ -163,8 +197,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     };
     flatten_add(left);
     flatten_add(right);
-
-    // 合并所有根式同类项
     std::map<int, ::Rational> sqrt_terms; // radicand -> sum of coeffs
     std::vector<std::shared_ptr<SymbolicExpr>> others;
     for (const auto& term : terms) {
@@ -188,7 +220,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     result_terms.insert(result_terms.end(), others.begin(), others.end());
     if (result_terms.empty()) return SymbolicExpr::number(0);
     if (result_terms.size() == 1) return result_terms[0];
-    // 多项式加法
+
     std::shared_ptr<SymbolicExpr> sum = result_terms[0];
     for (size_t i = 1; i < result_terms.size(); ++i) {
         sum = SymbolicExpr::add(sum, result_terms[i]);
@@ -261,7 +293,7 @@ std::string SymbolicExpr::to_string() const {
             
         case Type::Multiply:
             if (operands.size() < 2) return "*(?)";
-            // 特殊处理：如果左操作数是数字且右操作数是平方根，使用紧凑形式
+
             if (operands[0]->is_number() && operands[1]->type == Type::Sqrt) {
                 return operands[0]->to_string() + operands[1]->to_string();
             }
@@ -269,7 +301,7 @@ std::string SymbolicExpr::to_string() const {
             
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
-            // 展开并合并同类项，输出紧凑表达式
+
             std::vector<const SymbolicExpr*> terms;
             std::function<void(const SymbolicExpr*)> flatten_add;
             flatten_add = [&](const SymbolicExpr* expr) {
@@ -281,7 +313,7 @@ std::string SymbolicExpr::to_string() const {
                 }
             };
             flatten_add(this);
-            // 合并根式同类项
+
             std::map<int, ::Rational> sqrt_terms;
             std::vector<std::string> others;
             auto extract_sqrt = [](const SymbolicExpr* expr, ::Rational& coeff, int& radicand) -> bool {
@@ -346,19 +378,30 @@ double SymbolicExpr::to_double() const {
                 return std::get<::Rational>(number_value).to_double();
             }
             return 0.0;
-            
+
+        case Type::Variable:
+            if (identifier == "π" || identifier == "pi") {
+                #ifdef M_PI
+                return M_PI;
+                #else
+                return 3.14159265358979323846;
+                #endif
+            }
+            // 其他变量仍抛异常
+            throw std::runtime_error("Symbolic variable cannot be converted to double");
+
         case Type::Sqrt:
             if (!operands.empty()) {
                 return std::sqrt(operands[0]->to_double());
             }
             return 0.0;
-            
+
         case Type::Multiply:
             if (operands.size() >= 2) {
                 return operands[0]->to_double() * operands[1]->to_double();
             }
             return 0.0;
-            
+
         default:
             return 0.0;
     }

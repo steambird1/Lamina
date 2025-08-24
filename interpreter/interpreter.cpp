@@ -252,6 +252,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             error_and_exit("Empty expression statement");
         }
+    } else if (auto *nullstmt = dynamic_cast<NullStmt*>(node.get())) {
+        (void) nullstmt;
     }
 }
 
@@ -392,9 +394,10 @@ Value Interpreter::eval(const ASTNode* node) {
                     return r.scalar_multiply(l.as_number());
                 }
                 // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
                     std::shared_ptr<SymbolicExpr> leftExpr;
                     std::shared_ptr<SymbolicExpr> rightExpr;
+                    // 强制所有 Irrational 都转为 SymbolicExpr
                     if (l.is_symbolic()) {
                         leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
                     } else {
@@ -568,16 +571,12 @@ Value Interpreter::eval(const ASTNode* node) {
                     if (rb.is_zero()) {
                         error_and_exit("Modulo by zero");
                     }
-                    // BigInt 模运算需要实现，这里暂时转换为int处理
-                    int li = lb.to_int();
-                    int ri = rb.to_int();
-                    return Value(li % ri);
+                    // BigInt 模运算
+                    return Value(lb % rb);
                 }
                 if (bin->op == "^") {
-                    // BigInt 幂运算，转换为double处理大数
-                    double ld = lb.to_int();
-                    double rd = rb.to_int();
-                    return Value(std::pow(ld, rd));
+                    // BigInt 幂运算
+                    return Value(lb.power(rb));
                 }
             }
 

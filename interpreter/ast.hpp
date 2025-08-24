@@ -136,10 +136,9 @@ struct IncludeStmt : public Statement {
     explicit IncludeStmt(const std::string& m) : module(m) {}
 };
 
-// use 语句
-struct UseStmt : public Statement {
-    std::string module;
-    explicit UseStmt(const std::string& m) : module(m) {}
+// 空语句
+struct NullStmt : public Statement {
+    NullStmt() = default;
 };
 
 // break 语句
