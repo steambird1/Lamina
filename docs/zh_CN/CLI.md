@@ -32,3 +32,9 @@ libwinpthread-1.dll
 ```
 如果有输出，就成功了
 
+### 添加lamina到PATH变量
+如果你是**Windows**系统
+运行add_path_debug.bat(需要管理员身份运行)
+
+如果你**不**是**Windows**系统
+运行add_path_debug.sh(需要管理员身份运行)
