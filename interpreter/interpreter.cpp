@@ -252,6 +252,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             error_and_exit("Empty expression statement");
         }
+    } else if (auto *nullstmt = dynamic_cast<NullStmt*>(node.get())) {
+        (void) nullstmt;
     }
 }
 
