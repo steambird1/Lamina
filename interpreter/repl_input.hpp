@@ -3,9 +3,9 @@
 #include <string>
 
 // Ctrl+C 中断异常
-class CtrlCException : public std::exception {
+class CtrlCException final : public std::exception {
 public:
-    const char* what() const noexcept override {
+    [[nodiscard]] const char* what() const noexcept override {
         return "Ctrl+C interrupt";
     }
 };

@@ -13,6 +13,10 @@
 #include <iostream>
 #include <string>
 
+
+// Lamina 版本号
+#define LAMINA_VERSION "0.1.0"
+
 /*
     对LAMINA核心资源操作的头文件
  */
