@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "repl_input.hpp"
 #include "trackback.hpp"
+#include "lamina.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -11,6 +12,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <winnls.h>
 #endif
 
 #include <string>
@@ -93,7 +95,24 @@ int run_file(const std::string& path) {
 }
 
 int argv_parser(const int argc, const char* const argv[]) {
-    const std::string VERSION = "0.1.0";
+#ifdef _WIN32
+    // Windows平台下确保颜色字符正确显示
+    // show color style correctly
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return 1;
+    DWORD mode = 0;
+    if (!GetConsoleMode(hOut, &mode)) {
+        std::cerr << "Can't get the console module" << std::endl;
+        return 1;
+    }
+    if (!SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+        std::cerr << "your console unsupport the ANSI color" << std::endl;
+    }
+    // 设置 UTF-8 编码
+    // Set console encoding to UTF-8 on Windows for proper display of Chinese characters
+    SetConsoleOutputCP(CP_UTF8);  // 设置控制台输出编码
+    SetConsoleCP(CP_UTF8);        // 设置控制台输入编码
+#endif
 
     if (argc < 2) {
         try {
@@ -148,7 +167,7 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
 
     if (arguments[1]=="version") {
-        std::cout << VERSION << std::endl;
+        std::cout << LAMINA_VERSION << std::endl;
         return 0;
     }
 
@@ -202,7 +221,7 @@ int repl() {
                 // 根据终端是否支持颜色，设置不同的提示符样式
                 // Set prompt style based on whether the terminal supports color
                 std::string prompt = Interpreter::supports_colors()
-                    ? "\033[1;32m>\033[0m "  // 带绿色高亮的提示符（ANSI转义序列）
+                    ? "\033[1;32m> \033[0m "  // 带绿色高亮的提示符（ANSI转义序列）
                     : "> ";                  // 普通提示符
 
                 std::string line;           // 存储用户输入的一行内容

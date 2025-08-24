@@ -154,7 +154,8 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
                # Include symbolic.cpp for symbolic expression support
                interpreter/symbolic.cpp
         interpreter/console_ui.hpp
-        interpreter/console_ui.cpp)
+        interpreter/console_ui.cpp
+        interpreter/color_style.hpp)
 
 # Link to lamina_core
 target_link_libraries(Lamina PRIVATE lamina_core)
