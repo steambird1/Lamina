@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DEBUG_DIR="$HOME/projects/lamina/build/Debug"  # 示例：/home/你的用户名/projects/zata/build/Debug
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+DEBUG_DIR="${PROJECT_ROOT}/cmake-build-debug"
 
 # 1. 检查 Debug 目录是否存在
 if [ ! -d "$DEBUG_DIR" ]; then
