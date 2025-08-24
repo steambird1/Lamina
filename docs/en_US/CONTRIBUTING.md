@@ -3,7 +3,7 @@
 This document has been expired
 
 <div align="right">
-  <a href="../zh_TW/CONTRIBUTING.md">🇹🇼 繁體中文</a> | <a href="../zh_CN/CONTRIBUTING.md">🇨🇳 简体中文</a> | <strong>🇺🇸 English</strong>
+  <a href="../zh_TW/CONTRIBUTING.md">繁體中文</a> | <a href="../zh_CN/CONTRIBUTING.md">简体中文</a> | <strong>English</strong>
 </div>
 <br>
 
