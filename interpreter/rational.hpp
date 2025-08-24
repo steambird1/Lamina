@@ -1,179 +1,194 @@
 #pragma once
-#include <iostream>
-#include <numeric>
+#include "bigint.hpp"
+#include <stdexcept>
 #include <string>
+#include <iomanip>
+#include <sstream>
 
 class Rational {
 private:
-    long long numerator;
-    long long denominator;
+    BigInt numerator;
+    BigInt denominator;
 
-    // 最大公约数 (Euclidean algorithm)
-    static long long gcd(long long a, long long b) {
-        a = std::abs(a);
-        b = std::abs(b);
-        while (b != 0) {
-            long long temp = b;
-            b = a % b;
-            a = temp;
+    // 求最大公约数
+    static BigInt gcd(const BigInt& a, const BigInt& b) {
+        BigInt abs_a = a;
+        abs_a.negative = false;
+        BigInt abs_b = b;
+        abs_b.negative = false;
+
+        while (!abs_b.is_zero()) {
+            BigInt temp = abs_b;
+            abs_b = abs_a % abs_b;
+            abs_a = temp;
         }
-        return a;
+        return abs_a;
     }
 
     // 化简分数
     void simplify() {
-        if (denominator == 0) {
-            throw std::runtime_error("Rational: denominator cannot be zero");
+        if (denominator.is_zero()) {
+            throw std::runtime_error("Denominator cannot be zero");
         }
 
-        // 确保分母为正
-        if (denominator < 0) {
-            numerator = -numerator;
-            denominator = -denominator;
+        // 确保分母为正数
+        if (denominator.negative) {
+            numerator.negative = !numerator.negative;
+            denominator.negative = false;
         }
 
         // 化简
-        long long g = gcd(numerator, denominator);
-        if (g > 0) {
-            numerator /= g;
-            denominator /= g;
+        BigInt g = gcd(numerator, denominator);
+        if (!g.is_zero() && !(g.digits.size() == 1 && g.digits[0] == 1)) {
+            numerator = numerator / g;
+            denominator = denominator / g;
         }
     }
 
 public:
     // 构造函数
     Rational() : numerator(0), denominator(1) {}
-    Rational(long long num) : numerator(num), denominator(1) {}
-    Rational(long long num, long long den) : numerator(num), denominator(den) {
+
+    Rational(const BigInt& num) : numerator(num), denominator(1) {}
+
+    Rational(const BigInt& num, const BigInt& den) : numerator(num), denominator(den) {
         simplify();
     }
 
-    // 从double创建有理数（近似）
-    static Rational from_double(double value, long long max_denominator = 1000000) {
-        if (value == 0.0) return Rational(0, 1);
+    Rational(int num) : numerator(num), denominator(1) {}
 
-        bool negative = value < 0;
-        if (negative) value = -value;
-
-        long long integer_part = static_cast<long long>(value);
-        double fractional_part = value - integer_part;
-
-        if (fractional_part < 1e-15) {
-            return negative ? Rational(-integer_part, 1) : Rational(integer_part, 1);
-        }
-
-        // 简单的十进制转换法
-        // 先尝试常见的简单分数
-        static const std::pair<double, std::pair<long long, long long>> common_fractions[] = {
-                {0.5, {1, 2}},
-                {0.25, {1, 4}},
-                {0.75, {3, 4}},
-                {0.125, {1, 8}},
-                {0.375, {3, 8}},
-                {0.625, {5, 8}},
-                {0.875, {7, 8}},
-                {0.1, {1, 10}},
-                {0.2, {1, 5}},
-                {0.3, {3, 10}},
-                {0.4, {2, 5}},
-                {0.6, {3, 5}},
-                {0.7, {7, 10}},
-                {0.8, {4, 5}},
-                {0.9, {9, 10}},
-                {0.333333, {1, 3}},
-                {0.666667, {2, 3}}};
-
-        const double tolerance = 1e-6;
-        for (const auto& frac: common_fractions) {
-            if (std::abs(fractional_part - frac.first) < tolerance) {
-                long long num = integer_part * frac.second.second + frac.second.first;
-                return negative ? Rational(-num, frac.second.second) : Rational(num, frac.second.second);
-            }
-        }
-
-        // 如果不是常见分数，使用连分数展开
-        double x = fractional_part;
-        long long num = 0, den = 1;
-        long long prev_num = 1, prev_den = 0;
-
-        for (int i = 0; i < 20 && den <= max_denominator; i++) {
-            if (x < 1e-15) break;
-
-            long long a = static_cast<long long>(1.0 / x);
-            long long temp_num = a * num + prev_num;
-            long long temp_den = a * den + prev_den;
-
-            if (temp_den > max_denominator) break;
-
-            prev_num = num;
-            prev_den = den;
-            num = temp_num;
-            den = temp_den;
-
-            double new_x = 1.0 / x - a;
-            if (std::abs(new_x) < 1e-15) break;
-            x = new_x;
-        }
-
-        num = integer_part * den + num;
-        return negative ? Rational(-num, den) : Rational(num, den);
+    Rational(int num, int den) : numerator(num), denominator(den) {
+        simplify();
     }
 
-    // 访问器
-    long long get_numerator() const { return numerator; }
-    long long get_denominator() const { return denominator; }
+    // 由double构造
+    static Rational from_double(double value) {
+        if (value == 0.0) {
+            return Rational();
+        }
+        if (std::floor(value) == value) {// 是整数，分母设为1
+            return Rational(BigInt(std::to_string(value)));
+        }
+        std::ostringstream oss;
+        oss << std::scientific << std::setprecision(15) << value;
+        std::string str = oss.str();
+
+        // 解析科学记数法
+        size_t e_pos = str.find('e');
+        std::string base = str.substr(0, e_pos);
+        bool negative = false;
+        if (base[0] == '-') {
+            negative = true;
+            base.erase(0, 1);
+        }
+        base.erase(1, 1);// 删除小数点
+        while (base.back() == '0') {// 去除末尾0，不可能全为0
+            base.pop_back();
+        }
+        int exponent = std::stoi(str.substr(e_pos + 1));
+    
+        size_t decimal_places = std::max(0, static_cast<int>(base.length())-exponent-1);// 有几位小数
+
+        BigInt num(base);
+        if (negative) num = num.negate();
+        BigInt den("1"+std::string(decimal_places, '0'));
+
+        Rational r(num, den);
+        r.simplify();
+        return r;
+    }
+
+    // 获取分子和分母
+    BigInt get_numerator() const { return numerator; }
+    BigInt get_denominator() const { return denominator; }
 
     // 判断是否为整数
-    bool is_integer() const { return denominator == 1; }
+    bool is_integer() const {
+        return denominator.digits.size() == 1 && denominator.digits[0] == 1;
+    }
 
-    // 转换为double
-    double to_double() const {
-        return static_cast<double>(numerator) / static_cast<double>(denominator);
+    // 判断是否为零
+    bool is_zero() const {
+        return numerator.is_zero();
     }
 
     // 转换为字符串
     std::string to_string() const {
-        if (denominator == 1) {
-            return std::to_string(numerator);
+        if (is_integer()) {
+            return numerator.to_string();
         }
-        return std::to_string(numerator) + "/" + std::to_string(denominator);
+        return numerator.to_string() + "/" + denominator.to_string();
     }
 
-    // 算术运算
+    // 转换为 BigInt（如果是整数）
+    BigInt to_bigint() const {
+        if (!is_integer()) {
+            throw std::runtime_error("Cannot convert non-integer fraction to BigInt");
+        }
+        return numerator;
+    }
+
+    // 转换为 double（近似值）
+    double to_double() const {
+        return static_cast<double>(numerator.to_int()) / static_cast<double>(denominator.to_int());
+    }
+
+    // 加法
     Rational operator+(const Rational& other) const {
-        return Rational(
-                numerator * other.denominator + other.numerator * denominator,
-                denominator * other.denominator);
+        BigInt new_num = numerator * other.denominator + other.numerator * denominator;
+        BigInt new_den = denominator * other.denominator;
+        return Rational(new_num, new_den);
     }
 
+    // 减法
     Rational operator-(const Rational& other) const {
-        return Rational(
-                numerator * other.denominator - other.numerator * denominator,
-                denominator * other.denominator);
+        BigInt new_num = numerator * other.denominator - other.numerator * denominator;
+        BigInt new_den = denominator * other.denominator;
+        return Rational(new_num, new_den);
     }
 
+    // 乘法
     Rational operator*(const Rational& other) const {
-        return Rational(
-                numerator * other.numerator,
-                denominator * other.denominator);
+        BigInt new_num = numerator * other.numerator;
+        BigInt new_den = denominator * other.denominator;
+        return Rational(new_num, new_den);
     }
 
+    // 除法
     Rational operator/(const Rational& other) const {
-        if (other.numerator == 0) {
-            throw std::runtime_error("Rational: division by zero");
+        if (other.is_zero()) {
+            throw std::runtime_error("Division by zero");
         }
-        return Rational(
-                numerator * other.denominator,
-                denominator * other.numerator);
+        BigInt new_num = numerator * other.denominator;
+        BigInt new_den = denominator * other.numerator;
+        return Rational(new_num, new_den);
     }
 
-    Rational operator-() const {
-        return Rational(-numerator, denominator);
+    // 幂运算
+    Rational power(const BigInt& exponent) const {
+        if (exponent.negative) {
+            // 负指数：(a/b)^(-n) = (b/a)^n
+            if (is_zero()) {
+                throw std::runtime_error("Cannot raise zero to negative power");
+            }
+            BigInt pos_exp = exponent;
+            pos_exp.negative = false;
+            return Rational(denominator.power(pos_exp), numerator.power(pos_exp));
+        }
+
+        if (exponent.is_zero()) {
+            if (is_zero()) {
+                throw std::runtime_error("0^0 is undefined");
+            }
+            return Rational(1);
+        }
+
+        return Rational(numerator.power(exponent), denominator.power(exponent));
     }
 
-    // 比较运算
+    // 比较运算符
     bool operator==(const Rational& other) const {
-        return numerator == other.numerator && denominator == other.denominator;
+        return numerator * other.denominator == other.numerator * denominator;
     }
 
     bool operator!=(const Rational& other) const {
@@ -181,7 +196,9 @@ public:
     }
 
     bool operator<(const Rational& other) const {
-        return numerator * other.denominator < other.numerator * denominator;
+        BigInt left = numerator * other.denominator;
+        BigInt right = other.numerator * denominator;
+        return left < right;
     }
 
     bool operator<=(const Rational& other) const {
@@ -189,89 +206,32 @@ public:
     }
 
     bool operator>(const Rational& other) const {
-        return other < *this;
+        return !(*this <= other);
     }
 
     bool operator>=(const Rational& other) const {
-        return *this > other || *this == other;
-    }
-
-    // 幂运算
-    Rational pow(int exponent) const {
-        if (exponent == 0) return Rational(1, 1);
-        if (exponent > 0) {
-            long long num = 1, den = 1;
-            for (int i = 0; i < exponent; ++i) {
-                num *= numerator;
-                den *= denominator;
-            }
-            return Rational(num, den);
-        } else {
-            // 负指数
-            if (numerator == 0) {
-                throw std::runtime_error("Rational: 0 to negative power");
-            }
-            long long num = 1, den = 1;
-            for (int i = 0; i < -exponent; ++i) {
-                num *= denominator;
-                den *= numerator;
-            }
-            return Rational(num, den);
-        }
-    }
-
-    // 绝对值
-    Rational abs() const {
-        return Rational(std::abs(numerator), denominator);
-    }
-
-    // 判断是否为零
-    bool is_zero() const {
-        return numerator == 0;
-    }
-
-    // 判断是否为正数
-    bool is_positive() const {
-        return numerator > 0;
-    }
-
-    // 判断是否为负数
-    bool is_negative() const {
-        return numerator < 0;
-    }
-
-    // 转换为最简分数的字符串表示（带括号用于复杂表达式）
-    std::string to_string_parenthesized() const {
-        if (denominator == 1) {
-            return std::to_string(numerator);
-        }
-        if (numerator < 0 || denominator < 0) {
-            return "(" + std::to_string(numerator) + "/" + std::to_string(denominator) + ")";
-        }
-        return std::to_string(numerator) + "/" + std::to_string(denominator);
+        return !(*this < other);
     }
 
     // 取倒数
     Rational reciprocal() const {
-        if (numerator == 0) {
-            throw std::runtime_error("Rational: reciprocal of zero");
+        if (is_zero()) {
+            throw std::runtime_error("Cannot take reciprocal of zero");
         }
         return Rational(denominator, numerator);
     }
 
-    // 求最大公约数（静态函数，供外部调用）
-    static long long compute_gcd(long long a, long long b) {
-        return gcd(a, b);
+    // 取绝对值
+    Rational abs() const {
+        Rational result = *this;
+        result.numerator.negative = false;
+        return result;
     }
 
-    // 求最小公倍数
-    static long long lcm(long long a, long long b) {
-        return std::abs(a * b) / gcd(a, b);
-    }
-
-    // 输出流重载
-    friend std::ostream& operator<<(std::ostream& os, const Rational& r) {
-        os << r.to_string();
-        return os;
+    // 取负值
+    Rational operator-() const {
+        Rational result = *this;
+        result.numerator.negative = !result.numerator.negative;
+        return result;
     }
 };

@@ -5,17 +5,15 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 class BigInt {
-private:
-    std::vector<int> digits;// 存储数字，低位在前
-    bool negative;
-
 public:
+    bool negative;
+    std::vector<unsigned char> digits;// 存储数字，低位在前
+
     // 友元类声明
     friend class Fraction;
     // 构造函数
-    BigInt() : negative(false) { digits.push_back(0); }
+    BigInt() : digits({0}) , negative(false){}
 
     explicit BigInt(int n) : negative(n < 0) {
         if (n == 0) {
@@ -41,13 +39,13 @@ public:
         }
     }
 
-    explicit BigInt(const std::string& str) : negative(false) {
+    explicit BigInt(const std::string& str) : digits({}), negative(false) {
         if (str.empty() || str == "0") {
             digits.push_back(0);
             return;
         }
 
-        int start = 0;
+        size_t start = 0;
         if (str[0] == '-') {
             negative = true;
             start = 1;
@@ -55,7 +53,7 @@ public:
             start = 1;
         }
 
-        for (int i = str.length() - 1; i >= start; i--) {
+        for (size_t i = str.length() - 1; i >= start and i < str.length(); i--) {
             if (str[i] >= '0' && str[i] <= '9') {
                 digits.push_back(str[i] - '0');
             }
@@ -87,30 +85,89 @@ public:
         std::string result;
         if (negative) result += "-";
 
-        for (int i = digits.size() - 1; i >= 0; i--) {
+        for (size_t i = digits.size() - 1; i < digits.size(); i--) {
             result += static_cast<char>('0' + digits[i]);
         }
 
         return result;
     }
 
+    //快速乘10
+    void mul_pow10(size_t n/*乘10次数*/) {
+        if (n <= 0)return;
+        remove_leading_zeros();
+        for (size_t i = 0; i < n; i++)digits.push_back(0);
+        for (size_t i = digits.size()-1; i >= n; i--) {
+            digits[i] = digits[i - n];
+        }
+        for (size_t i = n - 1; i < n; i--)digits[i] = 0;
+    }
+
+    //返回末尾0的数量
+    size_t count_end_zero() {
+        if (is_zero())return 0;
+        size_t i = digits.size()-1;
+        while (!digits[i])i--;
+        return digits.size() - 1 - i;
+    }
+
+    //去除掉末尾的0
+    void del_end_zero() {
+        if (is_zero())return ;
+        while (!digits.back())digits.pop_back();
+    }
+
     // 乘法
     BigInt operator*(const BigInt& other) const {
         BigInt result;
+        BigInt numa = *this, numb = other;
+        size_t end_zeros = numa.count_end_zero() + numb.count_end_zero();
+        numa.del_end_zero(); numb.del_end_zero();//统计并去除末尾的0
+        numa.negative = false; numb.negative = false;
         result.digits.assign(digits.size() + other.digits.size(), 0);
-        result.negative = (negative != other.negative);
 
-        for (size_t i = 0; i < digits.size(); i++) {
-            for (size_t j = 0; j < other.digits.size(); j++) {
-                result.digits[i + j] += digits[i] * other.digits[j];
-                if (result.digits[i + j] >= 10) {
-                    result.digits[i + j + 1] += result.digits[i + j] / 10;
-                    result.digits[i + j] %= 10;
+        if (numa.digits.size()>>7 and numb.digits.size()>>7) {
+            //等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
+            //如果两数长度均大于50使用卡拉楚巴算法优化
+            //算法思想可以将两个四位数乘法看成
+            //(100a + b)(100c + d) = 10000ac + 100(bc + ad) + bd
+            //时间复杂度O(n^1.585)   = 10000ac + 100[(a + b)(c + d) - ac - bd] + bd
+            //虽然n基本到了100位以上才有显著提升（一倍）,不过是针对pow才做的优化
+            
+            size_t moven = numb.digits.size() >> 1;
+            if(numa.digits.size()>numb.digits.size())moven = numa.digits.size() >> 1/*除2*/;//使用位数较大的一方作为移动基准
+            BigInt a = numa >> moven;
+            BigInt b = numa << (numa.digits.size() - moven);
+            //b.remove_leading_zeros();
+            BigInt c = numb >> moven;
+            BigInt d = numb << (numb.digits.size() - moven);
+            //d.remove_leading_zeros();
+
+            BigInt bd = b * d; 
+            result = a * c;//使用result记录ac节省内存
+            BigInt ad_bc = (a + b) * (c + d) - result - bd;
+            result.mul_pow10(moven);
+            result = result + ad_bc;
+            result.mul_pow10(moven);
+            result = result + bd;
+
+        }
+        else {
+            //否则暴力计算
+            for (size_t i = 0; i < numa.digits.size(); i++) {
+                for (size_t j = 0; j < numb.digits.size(); j++) {
+                    result.digits[i + j] += numa.digits[i] * numb.digits[j];
+                    if (result.digits[i + j] >= 10) {
+                        result.digits[i + j + 1] += result.digits[i + j] / 10;
+                        result.digits[i + j] %= 10;
+                    }
                 }
             }
         }
-
+        result.negative = (negative != other.negative);
         result.remove_leading_zeros();
+        result.mul_pow10(end_zeros);
+
         return result;
     }
 
@@ -121,11 +178,14 @@ public:
             BigInt result;
             result.negative = negative;
             result.digits.clear();
+            size_t maxn = other.digits.size();
+            if(digits.size()>other.digits.size())maxn = digits.size();
+            result.digits.reserve(maxn + 1);
             int carry = 0;
-            for (size_t i = 0; i < digits.size() || i < other.digits.size() || carry; ++i) {
-                const int sum = carry + (i < digits.size() ? digits[i] : 0) + (i < other.digits.size() ? other.digits[i] : 0);
-                result.digits.push_back(sum % 10);
-                carry = sum / 10;
+            for (size_t i = 0; i < maxn || carry; ++i) {
+                carry += (i < digits.size() ? digits[i] : 0) + (i < other.digits.size() ? other.digits[i] : 0);
+                result.digits.push_back(carry % 10);
+                carry /= 10;
             }
             result.remove_leading_zeros();
             return result;
@@ -163,9 +223,9 @@ public:
         BigInt result;
         result.negative = result_negative;
         result.digits.clear();
-        int borrow = 0;
+        int borrow = 0,diff;
         for (size_t i = 0; i < p1->digits.size(); ++i) {
-            int diff = p1->digits[i] - (i < p2->digits.size() ? p2->digits[i] : 0) - borrow;
+            diff = p1->digits[i] - (i < p2->digits.size() ? p2->digits[i] : 0) - borrow;
             if (diff < 0) {
                 diff += 10;
                 borrow = 1;
@@ -183,7 +243,7 @@ public:
         if (a.digits.size() != b.digits.size()) {
             return a.digits.size() < b.digits.size() ? -1 : 1;
         }
-        for (int i = a.digits.size() - 1; i >= 0; --i) {
+        for (size_t i = a.digits.size() - 1; i < a.digits.size(); --i) {
             if (a.digits[i] != b.digits[i]) {
                 return a.digits[i] < b.digits[i] ? -1 : 1;
             }
@@ -201,7 +261,7 @@ public:
 
         long long result = 0;
 
-        for (int i = digits.size() - 1; i >= 0; i--) {
+        for (size_t i = digits.size() - 1; i < digits.size(); i--) {
             result = result * 10 + digits[i];
             if (!negative && result > INT_MAX) {
                 return INT_MAX;
@@ -250,7 +310,7 @@ public:
         quotient.digits.clear();
 
         BigInt current(0);
-        for (int i = dividend.digits.size() - 1; i >= 0; i--) {
+        for (size_t i = dividend.digits.size() - 1; i < dividend.digits.size(); i--) {
             current.digits.insert(current.digits.begin(), dividend.digits[i]);
             current.remove_leading_zeros();
 
@@ -276,6 +336,27 @@ public:
         BigInt quotient = *this / other;
         BigInt remainder = *this - (quotient * other);
         return remainder;
+    }
+
+    //十进制左移运算，注意不是补0，而是忽略左边的n位,补0请使用mul_pow10;
+    BigInt operator<<(size_t n) const {
+        if (n >= digits.size())return BigInt(0);
+        BigInt re = *this;
+        while (n) { re.digits.pop_back(); n--; }
+        while(!re.digits.back() and re.digits.size() > 1)re.digits.pop_back();
+        return re;
+    }
+
+    //十进制右移运算
+    BigInt operator>>(size_t n) const {
+        if (n >= digits.size())return BigInt(0);
+        BigInt re = *this;
+        if (n == 0)return re;
+        for (size_t i = n; i < re.digits.size(); i++) {
+            re.digits[i - n] = re.digits[i];
+        }
+        while (n) { re.digits.pop_back(); n--; }
+        return re;
     }
 
     // 幂运算
@@ -423,7 +504,12 @@ public:
     [[nodiscard]] BigInt pow(const BigInt& exponent) const {
         return power(exponent);
     }
-    
+
+    //将异或重载为幂
+    BigInt operator^(const BigInt& b) {
+        return power(b);
+    }
+
     // Greatest Common Divisor using Euclidean algorithm
     static BigInt gcd(const BigInt& a, const BigInt& b) {
         BigInt abs_a = a.abs();
