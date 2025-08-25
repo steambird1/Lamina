@@ -15,7 +15,7 @@
 #include <winnls.h>
 
 bool has_console() {
-    return (_isatty(_fileno(stdout)) && GetConsoleWindow() != NULL);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE
 }
 #endif
 
@@ -101,42 +101,35 @@ int run_file(const std::string& path) {
 int argv_parser(const int argc, const char* const argv[]) {
 #ifdef _WIN32
     // Windows 平台的颜色支持
-    if (has_console()) {
-        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (hOut == INVALID_HANDLE_VALUE) {
-            std::cerr << "Failed to get STD_OUTPUT_HANDLE" << std::endl;
-            return 1;
-        }
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE) {
         DWORD outMode = 0;
-        if (!GetConsoleMode(hOut, &outMode)) {
-            std::cerr << "Can't get console mode for STD_OUTPUT_HANDLE" << std::endl;
-            return 1;
+        if (GetConsoleMode(hOut, &outMode)) {
+            // 只有在成功获取控制台模式时才尝试设置
+            if (!SetConsoleMode(hOut, outMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+                // 设置失败只是警告，不影响程序运行
+                std::cerr << "Warning: Console does not support ANSI color (STD_OUTPUT)" << std::endl;
+            }
+        } else {
+            // 获取控制台模式失败（可能在测试环境或无控制台情况）
+            // 静默失败，不输出错误信息，以免影响测试
         }
-        if (!SetConsoleMode(hOut, outMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-            std::cerr << "Console does not support ANSI color (STD_OUTPUT)" << std::endl;
-        }
-
-        HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);// 修正宏的大小写
-        if (hErr == INVALID_HANDLE_VALUE) {
-            std::cerr << "Failed to get STD_ERROR_HANDLE" << std::endl;
-            return 1;
-        }
-        DWORD errMode = 0;
-        if (!GetConsoleMode(hErr, &errMode)) {
-            std::cerr << "Can't get console mode for STD_ERROR_HANDLE" << std::endl;
-            return 1;
-        }
-        // 同样启用虚拟终端模式，让 cerr 支持 ANSI 颜色码
-        if (!SetConsoleMode(hErr, errMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-            std::cerr << "Console does not support ANSI color (STD_ERROR)" << std::endl;
-        }
-
-        // UTF-8 编码设置
-        SetConsoleOutputCP(CP_UTF8);
-        SetConsoleCP(CP_UTF8);
-    } else {
-        std::cerr << "Info: Running without console, ANSI colors disabled" << std::endl;
     }
+
+    HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
+    if (hErr != INVALID_HANDLE_VALUE) {
+        DWORD errMode = 0;
+        if (GetConsoleMode(hErr, &errMode)) {
+            if (!SetConsoleMode(hErr, errMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+                std::cerr << "Warning: Console does not support ANSI color (STD_ERROR)" << std::endl;
+            }
+        }
+        // 获取模式失败时静默处理
+    }
+
+    // UTF-8 编码设置
+   	SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 #endif
 
     if (argc < 2) {
