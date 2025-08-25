@@ -699,16 +699,19 @@ Value Interpreter::eval(const ASTNode* node) {
 
     } else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
-        if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
-            RuntimeError error("Unary operator requires integer or big integer operand");
-            error.stack_trace = get_stack_trace();
-            throw error;
-        }
 
         if (unary->op == "-") {
+            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
+                RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
+                error.stack_trace = get_stack_trace();
+                throw error;
+            }
             if (v.type == Value::Type::Int) {
                 int vi = std::get<int>(v.data);
                 return Value(-vi);
+            } else if (v.type == Value::Type::Float) {
+                float vf = std::get<float>(v.data);
+                return Value(-vf);
             } else {
                 // For BigInt, negate directly
                 ::BigInt big_val = std::get<::BigInt>(v.data);
@@ -717,6 +720,11 @@ Value Interpreter::eval(const ASTNode* node) {
         }
 
         if (unary->op == "!") {
+            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
+                RuntimeError error("Unary operator '!' requires integer or big integer operand");
+                error.stack_trace = get_stack_trace();
+                throw error;
+            }
             int vi;
             if (v.type == Value::Type::Int) {
                 vi = std::get<int>(v.data);
