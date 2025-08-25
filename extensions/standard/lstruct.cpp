@@ -85,17 +85,15 @@ std::vector<std::pair<std::string, Value>> lStruct::to_vector() const {
 
 std::string lStruct::to_string() const {
     std::string text = "{\n";
-    bool is_first = true;
     for (const std::shared_ptr<Node>& bucket_head : buckets_) {
         auto current = bucket_head;
         while (current != nullptr) {
             text += current->key + ": " + current->value.to_string();
-            if (is_first) text += ",\n";
-            is_first = false;
+            text += ",\n";
             current = current->next;
         }
     }
-    text += "\n}";
+    text += "}";
     return text;
 }
 
