@@ -166,5 +166,5 @@ private:
     std::shared_ptr<SymbolicExpr> simplify_add() const;
     std::shared_ptr<SymbolicExpr> simplify_power() const;
 	static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right);
-	void __recursive_simplify(size_t ops, std::vector<std::shared_ptr<SymbolicExpr>> &result, size_t current, std::shared_ptr<SymbolicExpr> cresult);
+	void __recursive_simplify(size_t ops, std::vector<std::shared_ptr<SymbolicExpr>> &result, size_t current, std::shared_ptr<SymbolicExpr> cresult) const;
 };
