@@ -134,7 +134,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 
 // This function aims to make it 
 
-static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) {
+static std::shared_ptr<SymbolicExpr> SymbolicExpr::single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) {
 	if (left->type == SymbolicExpr::Type::Add || left->type == SymbolicExpr::Type::Multiply || right->type == SymbolicExpr::Type::Add || right->type == SymbolicExpr::Type::Multiply) {
 		throw std::runtime_error("Bad parameter");
 	}
