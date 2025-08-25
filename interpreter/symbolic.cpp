@@ -166,7 +166,7 @@ static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExp
 	return SymbolicExpr::number(::Rational(left->to_double() * right->to_double()));
 }
 
-void __recursive_simplify(size_t ops, std::vector<std::shared_ptr<SymbolicExpr>> &result, size_t current, std::shared_ptr<SymbolicExpr> cresult) {
+void SymbolicExpr::__recursive_simplify(size_t ops, std::vector<std::shared_ptr<SymbolicExpr>> &result, size_t current, std::shared_ptr<SymbolicExpr> cresult) {
 	if (current == ops) {
 		// TODO: Alert: efficiency check?
 		result.push_back(cresult);
@@ -198,7 +198,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	std::vector<std::shared_ptr<SymbolicExpr>> result;
     
 	try {
-		__recursive_simplify(ops, result, 0, SymbolicExpr::number(1));
+		this->__recursive_simplify(ops, result, 0, SymbolicExpr::number(1));
 	} catch (int ecode) {
 		// Fallback to values
 		// TODO: To be logged
