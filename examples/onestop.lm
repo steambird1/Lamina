@@ -23,7 +23,6 @@ print();
 
 // 2. 配置定义测试
 print("--- 2. 配置定义测试 ---");
-define MAX_RECURSION_DEPTH 30;
 
 bigint big_num = 12345;
 print("大整数:", big_num);

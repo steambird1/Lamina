@@ -13,7 +13,7 @@ public:
     // 友元类声明
     friend class Fraction;
     // 构造函数
-    BigInt() : digits({0}) , negative(false){}
+    BigInt() : negative(false), digits({0}){}
 
     explicit BigInt(int n) : negative(n < 0) {
         if (n == 0) {
@@ -39,7 +39,7 @@ public:
         }
     }
 
-    explicit BigInt(const std::string& str) : digits({}), negative(false) {
+    explicit BigInt(const std::string& str) : negative(false), digits({}) {
         if (str.empty() || str == "0") {
             digits.push_back(0);
             return;
