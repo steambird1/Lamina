@@ -439,22 +439,6 @@ std::string SymbolicExpr::to_string() const {
     }
 }
 
-int SymbolicExpr::get_int() const {
-	// TODO: Should be on the basis of get big int.
-	
-}
-
-::BigInt SymbolicExpr::get_big_int() const {
-	// TODO: Should be on the basis of get rational.
-	// Notice: for integral part by default.
-	
-}
-
-::Rational SymbolicExpr::get_rational() const {
-	// TODO: Complete calculation in order.
-	
-}
-
 double SymbolicExpr::to_double() const {
     switch (type) {
         case Type::Number:
