@@ -770,7 +770,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 int vi = std::get<int>(v.data);
                 return Value(-vi);
             } else if (v.type == Value::Type::Float) {
-                float vf = std::get<float>(v.data);
+                float vf = std::get<double>(v.data);
                 return Value(-vf);
             } else {
                 // For BigInt, negate directly
