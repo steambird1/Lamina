@@ -425,6 +425,66 @@ Value Interpreter::eval(const ASTNode* node) {
                 error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
             }
 
+            // Special handling for minus
+            if (bin->op == "-") {
+                // Vector and matrix operations
+                if (l.is_array() && r.is_array()) {
+                    // Try minus for same-size vectors
+                    const auto& la = std::get<std::vector<Value>>(l.data);
+                    const auto& ra = std::get<std::vector<Value>>(r.data);
+                    return l.vector_minus(r);                                // An exception can be raised inside
+                }
+                // Matrix multiplication
+                if (l.is_matrix() && r.is_matrix()) {
+                    error_and_exit("Arithmetic operation '-' requires numeric or vector operands");
+                }
+                // Scalar multiplication for vectors
+                if ((l.is_array() && r.is_numeric()) || (l.is_numeric() && r.is_array())) {
+                    error_and_exit("Arithmetic operation '-' requires same-type operands");
+                }
+                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+                if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                    std::shared_ptr<SymbolicExpr> leftExpr;
+                    std::shared_ptr<SymbolicExpr> rightExpr;
+                    // 强制所有 Irrational 都转为 SymbolicExpr
+                    if (l.is_symbolic()) {
+                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                    } else {
+                        leftExpr = from_number_to_symbolic(l);
+                    }
+                    if (r.is_symbolic()) {
+                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                    } else {
+                        rightExpr = from_number_to_symbolic(r);
+                    }
+                    return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
+                }
+                // Regular multiplication (both must be numeric)
+                if (l.is_numeric() && r.is_numeric()) {
+                    // BigInt 优先：如果任一为 BigInt，结果为 BigInt
+                    if (l.is_bigint() || r.is_bigint()) {
+                        ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                        ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                        return Value(lb - rb);
+                    }
+                    // If either operand is irrational, use irrational arithmetic
+                    if (l.is_irrational() || r.is_irrational()) {
+                        ::Irrational result = l.as_irrational() - r.as_irrational();
+                        return Value(result);
+                    }
+                    // If either operand is rational, use rational arithmetic
+                    if (l.is_rational() || r.is_rational()) {
+                        ::Rational result = l.as_rational() - r.as_rational();
+                        return Value(result);
+                    }
+
+                    double result = l.as_number() - r.as_number();
+                    return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+                }
+                // Error case
+                error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
+            }
+
             // Other arithmetic operations require both operands to be numeric
             if (!l.is_numeric() || !r.is_numeric()) {
                 error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
@@ -688,16 +748,19 @@ Value Interpreter::eval(const ASTNode* node) {
 
     } else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
         Value v = eval(unary->operand.get());
-        if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
-            RuntimeError error("Unary operator requires integer or big integer operand");
-            error.stack_trace = get_stack_trace();
-            throw error;
-        }
 
         if (unary->op == "-") {
+            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
+                RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
+                error.stack_trace = get_stack_trace();
+                throw error;
+            }
             if (v.type == Value::Type::Int) {
                 int vi = std::get<int>(v.data);
                 return Value(-vi);
+            } else if (v.type == Value::Type::Float) {
+                float vf = std::get<double>(v.data);
+                return Value(-vf);
             } else {
                 // For BigInt, negate directly
                 ::BigInt big_val = std::get<::BigInt>(v.data);
@@ -706,6 +769,11 @@ Value Interpreter::eval(const ASTNode* node) {
         }
 
         if (unary->op == "!") {
+            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
+                RuntimeError error("Unary operator '!' requires integer or big integer operand");
+                error.stack_trace = get_stack_trace();
+                throw error;
+            }
             int vi;
             if (v.type == Value::Type::Int) {
                 vi = std::get<int>(v.data);

@@ -389,8 +389,10 @@ int repl() {
                     true);
         }
 
+
         ++lineno;// 行号递增
     }
 
     return 0;
 }
+
