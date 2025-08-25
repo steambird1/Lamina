@@ -110,14 +110,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
         if (exp->is_number()) {
             auto exp_val = exp->get_number();
             int n = 0;
-            BigInt big_n;// 0 for default
             if (std::holds_alternative<int>(exp_val)) n = std::get<int>(exp_val);
             else if (std::holds_alternative<::Rational>(exp_val)) {
                 ::Rational r = std::get<::Rational>(exp_val);
- 
-                if (r.is_integer()) big_n = r.get_numerator();
+                if (r.is_integer()) {
+                    n = r.get_numerator().to_int();
+                }
             }
-            if (n == 2 || big_n.to_string() == "2") {
+            if (n == 2) {
                 // sqrt(x^2) = x
                 if (base->type == SymbolicExpr::Type::Variable && (base->identifier == "π" || base->identifier == "pi")) {
                     return base;
@@ -129,25 +129,95 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
     return SymbolicExpr::sqrt(simplified_operand);
 }
 
+// TODO: We are to consider when to experience an accurancy loss (fallback to
+// decimal types).
+
+// This function aims to make it 
+
+static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) const {
+	if (left->type == SymbolicExpr::Type::Add || left->type == SymbolicExpr::Type::Multiply || right->type == SymbolicExpr::Type::Add || right->type == SymbolicExpr::Type::Multiply) {
+		throw std::runtime_error("Bad parameter");
+	}
+	
+	bool l_isnumber = (left->type == SymbolicExpr::Type::Number);
+	bool r_isnumber = (right->type == SymbolicExpr::Type::Number);
+	
+	// Type::Root is to be done
+	// TODO: Type::Power is urgently to be done!
+	if (l_isnumber && r_isnumber) {
+		if (std::holds_alternative<int>(left->number_value) && std::holds_alternative<int>(right->number_value)) {
+			return SymbolicExpr::number(left->get_int() * right->get_int());
+		} else if (std::holds_alternative<::BigInt>(left->number_value) || std::holds_alternative<::BigInt>(right->number_value)) {
+			return SymbolicExpr::number(left->get_big_int() * right->get_big_int());
+		} else if (std::holds_alternative<::Rational>(left->number_value) || std::holds_alternative<::Rational>(right->number_value)) {
+			return SymbolicExpr::number(left->get_rational() * right->get_rational());
+		}
+	} else if (left->type == SymbolicExpr::Type::Sqrt || right->type == SymbolicExpr::Type::Sqrt) {
+		// Maybe we can optimize this:
+		::Rational l_rat = left->get_rational();
+		::Rational r_rat = right->get_rational();
+		if (l_isnumber) l_rat = l_rat * l_rat;
+		if (r_isnumber) r_rat = r_rat * r_rat;
+		return SymbolicExpr::number(l_rat * r_rat);
+	}
+	
+	// Precision loss, 
+	// TODO: to be logged
+	return SymbolicExpr::number(::Rational(left->to_double() * right->to_double()));
+}
+
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
-    if (operands.size() != 2) return std::make_shared<SymbolicExpr>(*this);
+    if (operands.size() < 2) return std::make_shared<SymbolicExpr>(*this);
     
-    auto left = operands[0]->simplify();
-    auto right = operands[1]->simplify();
+	// TODO: Man, was kann ich sagen?
+	// We are to consider multiple terms
+	
+	for (auto &i : this->operands) {
+		i.simplify();
+	}
+	
+	size_t ops = operands.size();
+	std::vector<std::shared_ptr<SymbolicExpr>> result;
+	
+	auto recursive_simplify = [ops, &result, this](auto&& self, const size_t& current, std::shared_ptr<SymbolicExpr> cresult) {
+		if (current == ops) {
+			// TODO: Alert: efficiency check?
+			result.push_back(std::make_shared(cresult));
+			if (result.size() > MaxExprItemSize) throw 0;
+		} else {
+			if (this->operands[current]->type == SymbolicExpr::Type::Add) {
+				for (auto &i : this->operands[current]->operands) {
+					std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, i);
+					recursive_simplify(self, current+1, scresult);
+				}
+			} else {
+				std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, this->operands[current]);
+				recursive_simplify(self, current+1, scresult);
+			}
+		}
+	}
     
-    // 如果两个操作数都是数字，直接相乘
-    if (left->is_number() && right->is_number()) {
-        auto left_num = left->get_number();
-        auto right_num = right->get_number();
-        
-        // 简化：只处理整数乘法
-        if (std::holds_alternative<int>(left_num) && std::holds_alternative<int>(right_num)) {
-            int result = std::get<int>(left_num) * std::get<int>(right_num);
-            return SymbolicExpr::number(result);
-        }
-    }
-    
-    return SymbolicExpr::multiply(left, right);
+	try {
+		recursive_simplify(recursive_simplify, 0, SymbolicExpr::number(1));
+	} catch (int ecode) {
+		// Fallback to values
+		// TODO: To be logged
+		double res = 1.0;
+		for (auto &i : this->operands) {
+			res *= i->to_double();
+		}
+		return SymbolicExpr::number(::Rational(res));
+	}
+	
+	if (result.size() == 0) throw std::runtime_error("Unexpected symbolic result");
+	if (result.size() == 1) return std::make_shared<SymbolicExpr>(result[0]);
+	
+	// TODO: Consider potential memory leakage through?
+	std::shared_ptr<SymbolicExpr> summary(new SymbolicExpr);
+
+	summary->type = SymbolicExpr::Type::Add;
+	summary->operands = result;
+	return std::make_shared(summary);
 }
 
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
@@ -369,6 +439,22 @@ std::string SymbolicExpr::to_string() const {
     }
 }
 
+int SymbolicExpr::get_int() const {
+	// TODO: Should be on the basis of get big int.
+	
+}
+
+::BigInt SymbolicExpr::get_big_int() const {
+	// TODO: Should be on the basis of get rational.
+	// Notice: for integral part by default.
+	
+}
+
+::Rational SymbolicExpr::get_rational() const {
+	// TODO: Complete calculation in order.
+	
+}
+
 double SymbolicExpr::to_double() const {
     switch (type) {
         case Type::Number:
@@ -383,12 +469,15 @@ double SymbolicExpr::to_double() const {
 
         case Type::Variable:
             if (identifier == "π" || identifier == "pi") {
-                #ifdef M_PI
+#ifdef M_PI
                 return M_PI;
-                #else
+#else
                 return 3.14159265358979323846;
-                #endif
-            }
+#endif
+            } else if (identifier == "e") {
+				// To be replaced with more accurate values
+				return 2.718281828459045235;
+			}
             // 其他变量仍抛异常
             throw std::runtime_error("Symbolic variable cannot be converted to double");
 

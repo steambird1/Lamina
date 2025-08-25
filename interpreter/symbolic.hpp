@@ -8,6 +8,8 @@
 
 // 符号表达式系统
 // 支持精确的数学表达式，不进行数值近似
+// (unless reaching this term size:)
+constexpr int MaxExprItemSize = 200;
 
 class SymbolicExpr {
 public:
@@ -88,7 +90,7 @@ public:
     // 幂次构造函数
     static std::shared_ptr<SymbolicExpr> power(std::shared_ptr<SymbolicExpr> base, std::shared_ptr<SymbolicExpr> exponent) {
 
-        // 直接符号储存
+        // 否则直接符号储存
         auto expr = std::make_shared<SymbolicExpr>(Type::Power);
         expr->operands.push_back(base);
         expr->operands.push_back(exponent);
@@ -120,7 +122,7 @@ public:
     // 检查是否为整数
     bool is_int() const { return is_number() && std::holds_alternative<int>(number_value);}
     
-    // 获取数字值（如果是数字的话）
+    // 获取字面数字值（如果是数字的话）
     std::variant<int, ::BigInt, ::Rational> get_number() const {
         if (is_number()) {
             return number_value;
@@ -128,6 +130,7 @@ public:
         throw std::runtime_error("Expression is not a number");
     }
 
+	// 进行计算
     int get_int() const {
         if (is_int()) {
             return std::get<int>(get_number());
@@ -137,13 +140,19 @@ public:
     ::BigInt get_big_int() const {
         if (is_big_int()) {
             return std::get<BigInt>(get_number());
-        }
+        } else if (is_int()) {
+			return ::BigInt(std::get<int>(get_number()));
+		}
         throw std::runtime_error("Expression is not a BigInt");
     }
     ::Rational get_rational() const {
         if (is_rational()) {
             return std::get<Rational>(get_number());
-        }
+        } else if (is_big_int()) {
+            return ::Rational(std::get<BigInt>(get_number()));
+        } else if (is_int()) {
+			return ::Rational(std::get<int>(get_number()));
+		}
         throw std::runtime_error("Expression is not a Rational");
     }
     
@@ -156,4 +165,5 @@ private:
     std::shared_ptr<SymbolicExpr> simplify_multiply() const;
     std::shared_ptr<SymbolicExpr> simplify_add() const;
     std::shared_ptr<SymbolicExpr> simplify_power() const;
+	static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) const;
 };
