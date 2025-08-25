@@ -114,10 +114,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
             else if (std::holds_alternative<::Rational>(exp_val)) {
                 ::Rational r = std::get<::Rational>(exp_val);
                 if (r.is_integer()) {
-                    long long num = r.get_numerator();
-                    if (num > INT_MAX) n = INT_MAX;
-                    else if (num < INT_MIN) n = INT_MIN;
-                    else n = static_cast<int>(num);
+                    n = r.get_numerator().to_int();
                 }
             }
             if (n == 2) {
