@@ -134,7 +134,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 
 // This function aims to make it 
 
-static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) const {
+static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) {
 	if (left->type == SymbolicExpr::Type::Add || left->type == SymbolicExpr::Type::Multiply || right->type == SymbolicExpr::Type::Add || right->type == SymbolicExpr::Type::Multiply) {
 		throw std::runtime_error("Bad parameter");
 	}
@@ -173,7 +173,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// We are to consider multiple terms
 	
 	for (auto &i : this->operands) {
-		i.simplify();
+		i->simplify();
 	}
 	
 	size_t ops = operands.size();
@@ -195,7 +195,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				recursive_simplify(self, current+1, scresult);
 			}
 		}
-	}
+	};
     
 	try {
 		recursive_simplify(recursive_simplify, 0, SymbolicExpr::number(1));

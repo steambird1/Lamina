@@ -165,5 +165,5 @@ private:
     std::shared_ptr<SymbolicExpr> simplify_multiply() const;
     std::shared_ptr<SymbolicExpr> simplify_add() const;
     std::shared_ptr<SymbolicExpr> simplify_power() const;
-	static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) const;
+	static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right);
 };
