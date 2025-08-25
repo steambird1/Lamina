@@ -104,8 +104,8 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
     DWORD outMode = 0;
     if (!GetConsoleMode(hOut, &outMode)) {
-        std::cerr << "Can't get console mode for STD_OUTPUT_HANDLE" << std::endl;
-        return 1;
+        std::cerr << "Can't get console mode for STD_OUTPUT_HANDLE. Maybe you're using a headless system?" << std::endl;
+        return 0;
     }
     if (!SetConsoleMode(hOut, outMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
         std::cerr << "Console does not support ANSI color (STD_OUTPUT)" << std::endl;
@@ -118,8 +118,8 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
     DWORD errMode = 0;
     if (!GetConsoleMode(hErr, &errMode)) {
-        std::cerr << "Can't get console mode for STD_ERROR_HANDLE" << std::endl;
-        return 1;
+        std::cerr << "Can't get console mode for STD_ERROR_HANDLE. Maybe you're using a headless system?" << std::endl;
+        return 0;
     }
     // 同样启用虚拟终端模式，让 cerr 支持 ANSI 颜色码
     if (!SetConsoleMode(hErr, errMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
