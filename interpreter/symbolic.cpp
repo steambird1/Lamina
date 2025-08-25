@@ -182,17 +182,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	auto recursive_simplify = [ops, &result, this](auto&& self, const size_t& current, std::shared_ptr<SymbolicExpr> cresult) {
 		if (current == ops) {
 			// TODO: Alert: efficiency check?
-			result.push_back(std::make_shared(cresult));
+			result.push_back(cresult);
 			if (result.size() > MaxExprItemSize) throw 0;
 		} else {
 			if (this->operands[current]->type == SymbolicExpr::Type::Add) {
 				for (auto &i : this->operands[current]->operands) {
 					std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, i);
-					recursive_simplify(self, current+1, scresult);
+					self(self, current+1, scresult);
 				}
 			} else {
 				std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, this->operands[current]);
-				recursive_simplify(self, current+1, scresult);
+				self(self, current+1, scresult);
 			}
 		}
 	};
@@ -210,14 +210,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	}
 	
 	if (result.size() == 0) throw std::runtime_error("Unexpected symbolic result");
-	if (result.size() == 1) return std::make_shared<SymbolicExpr>(result[0]);
+	if (result.size() == 1) return result[0];
 	
 	// TODO: Consider potential memory leakage through?
-	std::shared_ptr<SymbolicExpr> summary(new SymbolicExpr);
-
-	summary->type = SymbolicExpr::Type::Add;
+	std::shared_ptr<SymbolicExpr> summary(new SymbolicExpr(SymbolicExpr::Type::Add));
 	summary->operands = result;
-	return std::make_shared(summary);
+	return summary;
 }
 
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
