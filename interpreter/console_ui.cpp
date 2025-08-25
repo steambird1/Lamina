@@ -13,10 +13,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <winnls.h>
-
-bool has_console() {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE
-}
 #endif
 
 #include <string>
