@@ -244,6 +244,32 @@ public:
         return Value(result);
     }
 
+    Value vector_minus(const Value& other) const {
+        if (!is_array() || !other.is_array()) {
+            std::cerr << "Error: Vector minus requires two arrays" << std::endl;
+            return Value();
+        }
+
+        const auto& a = std::get<std::vector<Value>>(data);
+        const auto& b = std::get<std::vector<Value>>(other.data);
+
+        if (a.size() != b.size()) {
+            std::cerr << "Error: Vector minus requires same dimensions" << std::endl;
+            return Value();
+        }
+
+        std::vector<Value> result;
+        for (size_t i = 0; i < a.size(); ++i) {
+            if (a[i].is_numeric() && b[i].is_numeric()) {
+                result.push_back(Value(a[i].as_number() - b[i].as_number()));
+            } else {
+                std::cerr << "Error: Vector elements must be numeric" << std::endl;
+                return Value();
+            }
+        }
+        return Value(result);
+    }
+
     // Dot product
     Value dot_product(const Value& other) const {
         if (!is_array() || !other.is_array()) {
