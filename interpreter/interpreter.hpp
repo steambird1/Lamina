@@ -137,6 +137,8 @@ private:
     bool load_module(const std::string& module_name);
     // Register builtin functions
     void register_builtin_functions();
+    // 将Number转为Symbolic(如果可能)
+    std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
     // 移除静态成员变量声明，改用函数内静态变量
     // static std::vector<EntryFunction> entry_functions;
 };

@@ -415,8 +415,6 @@ print("根:", roots);  // 輸出 [2, 1]
 ### 大整數階乘
 
 ```lamina
-define MAX_RECURSION_DEPTH 30;
-
 // 直接計算
 bigint result = 25!;
 print("25! =", result);

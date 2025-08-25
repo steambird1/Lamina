@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <signal.h>
-
 #ifdef _WIN32
 #include <conio.h>
 #else

@@ -792,7 +792,7 @@ std::unique_ptr<Statement> Parser::parse_statement(const std::vector<Token>& tok
         return std::make_unique<ContinueStmt>();
     } else if (tokens[i].type == TokenType::Semicolon) {
         ++i;// Empty statement
-        return nullptr;
+        return std::make_unique<NullStmt>();
     } else if (tokens[i].type == TokenType::If && i + 1 < tokens.size()) {
         // if statement
         int if_line = tokens[i].line;

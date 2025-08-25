@@ -22,6 +22,7 @@
 class Irrational {
 public:
     // 转为符号表达式
+
     std::shared_ptr<SymbolicExpr> to_symbolic() const {
         switch (type) {
             case Type::SQRT: {
