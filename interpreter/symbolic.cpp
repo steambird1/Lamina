@@ -166,6 +166,24 @@ static std::shared_ptr<SymbolicExpr> single_multiply(std::shared_ptr<SymbolicExp
 	return SymbolicExpr::number(::Rational(left->to_double() * right->to_double()));
 }
 
+void __recursive_simplify(size_t ops, std::vector<std::shared_ptr<SymbolicExpr>> &result, size_t current, std::shared_ptr<SymbolicExpr> cresult) {
+	if (current == ops) {
+		// TODO: Alert: efficiency check?
+		result.push_back(cresult);
+		if (result.size() > MaxExprItemSize) throw 0;
+	} else {
+		if (this->operands[current]->type == SymbolicExpr::Type::Add) {
+			for (auto &i : this->operands[current]->operands) {
+				std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, i);
+				__recursive_simplify(ops, result, current+1, scresult);
+			}
+		} else {
+			std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, this->operands[current]);
+			__recursive_simplify(ops, result, current+1, scresult);
+		}
+	}
+}
+
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
     if (operands.size() < 2) return std::make_shared<SymbolicExpr>(*this);
     
@@ -178,27 +196,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	
 	size_t ops = operands.size();
 	std::vector<std::shared_ptr<SymbolicExpr>> result;
-	
-	auto recursive_simplify = [ops, &result, this](auto&& self, const size_t& current, std::shared_ptr<SymbolicExpr> cresult) {
-		if (current == ops) {
-			// TODO: Alert: efficiency check?
-			result.push_back(cresult);
-			if (result.size() > MaxExprItemSize) throw 0;
-		} else {
-			if (this->operands[current]->type == SymbolicExpr::Type::Add) {
-				for (auto &i : this->operands[current]->operands) {
-					std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, i);
-					self(self, current+1, scresult);
-				}
-			} else {
-				std::shared_ptr<SymbolicExpr> scresult = SymbolicExpr::single_multiply(cresult, this->operands[current]);
-				self(self, current+1, scresult);
-			}
-		}
-	};
     
 	try {
-		recursive_simplify(recursive_simplify, 0, SymbolicExpr::number(1));
+		__recursive_simplify(ops, result, 0, SymbolicExpr::number(1));
 	} catch (int ecode) {
 		// Fallback to values
 		// TODO: To be logged
