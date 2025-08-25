@@ -99,7 +99,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             error_and_exit("Null expression in define statement for '" + d->name + "'");
         }
         Value val = eval(d->value.get());
-        if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
+        // 删除递归限制
+        /*if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
             int new_depth = std::get<int>(val.data);
             if (new_depth > 0 && new_depth <= 10000) {
                 max_recursion_depth = new_depth;
@@ -110,7 +111,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
             // 已替换
-        }
+        }*/
     } else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
         if (bi->init_value) {
             Value val = eval(bi->init_value.get());
@@ -161,21 +162,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
 
         // 更健壮的while循环实现
-        int iteration_count = 0;
-        const int MAX_ITERATIONS = 100000;// 防止无限循环
 
         try {
             while (true) {
-                // 安全检查：防止无限循环
-                if (++iteration_count > MAX_ITERATIONS) {
-                    Interpreter::print_warning("Loop exceeded " + std::to_string(MAX_ITERATIONS) +
-                                                       " iterations, possible infinite loop, terminating",
-                                               true);
-                    RuntimeError error("Possible infinite loop terminated");
-                    error.stack_trace = get_stack_trace();
-                    throw error;
-                }
-
                 // 评估循环条件
                 Value cond;
                 try {

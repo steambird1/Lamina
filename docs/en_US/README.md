@@ -414,8 +414,6 @@ print("Roots:", roots);  // Output [2, 1]
 ### Big Integer Factorial
 
 ```lamina
-define MAX_RECURSION_DEPTH 30;
-
 // Direct calculation
 bigint result = 25!;
 print("25! =", result);

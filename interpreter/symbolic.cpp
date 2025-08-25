@@ -110,17 +110,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
         if (exp->is_number()) {
             auto exp_val = exp->get_number();
             int n = 0;
+            BigInt big_n;// 0 for default
             if (std::holds_alternative<int>(exp_val)) n = std::get<int>(exp_val);
             else if (std::holds_alternative<::Rational>(exp_val)) {
                 ::Rational r = std::get<::Rational>(exp_val);
-                if (r.is_integer()) {
-                    long long num = r.get_numerator();
-                    if (num > INT_MAX) n = INT_MAX;
-                    else if (num < INT_MIN) n = INT_MIN;
-                    else n = static_cast<int>(num);
-                }
+ 
+                if (r.is_integer()) big_n = r.get_numerator();
             }
-            if (n == 2) {
+            if (n == 2 || big_n.to_string() == "2") {
                 // sqrt(x^2) = x
                 if (base->type == SymbolicExpr::Type::Variable && (base->identifier == "π" || base->identifier == "pi")) {
                     return base;

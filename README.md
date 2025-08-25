@@ -416,8 +416,6 @@ print("Roots:", roots);  // 输出 [2, 1]
 ### 大整数阶乘
 
 ```lamina
-define MAX_RECURSION_DEPTH 30;
-
 // 直接计算
 bigint result = 25!;
 print("25! =", result);
