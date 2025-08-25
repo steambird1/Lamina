@@ -132,8 +132,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 // TODO: We are to consider when to experience an accurancy loss (fallback to
 // decimal types).
 
-// This function aims to make it 
-
+// This function aims to make it; and
+// Maybe we have to consider division problem
 std::shared_ptr<SymbolicExpr> SymbolicExpr::single_multiply(std::shared_ptr<SymbolicExpr> left, std::shared_ptr<SymbolicExpr> right) {
 	if (left->type == SymbolicExpr::Type::Add || left->type == SymbolicExpr::Type::Multiply || right->type == SymbolicExpr::Type::Add || right->type == SymbolicExpr::Type::Multiply) {
 		throw std::runtime_error("Bad parameter");
@@ -154,8 +154,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::single_multiply(std::shared_ptr<Symb
 		}
 	} else if (left->type == SymbolicExpr::Type::Sqrt || right->type == SymbolicExpr::Type::Sqrt) {
 		// Maybe we can optimize this:
-		::Rational l_rat = left->get_rational();
-		::Rational r_rat = right->get_rational();
+		::Rational l_rat = left->get_raw_rational();
+		::Rational r_rat = right->get_raw_rational();
 		if (l_isnumber) l_rat = l_rat * l_rat;
 		if (r_isnumber) r_rat = r_rat * r_rat;
 		return SymbolicExpr::number(l_rat * r_rat);
