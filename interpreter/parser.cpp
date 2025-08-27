@@ -206,28 +206,23 @@ std::unique_ptr<Expression> Parser::parse_primary(const std::vector<Token>& toke
 
 // Helper function: print token context for error reporting
 static void print_context(const std::vector<Token>& tokens, size_t pos, int context_size = 5) {
-    std::cerr << "Context: ";
-    size_t context_start = pos > static_cast<size_t>(context_size) ? pos - static_cast<size_t>(context_size) : 0;
-    size_t context_end = std::min(pos + static_cast<size_t>(context_size), tokens.size() - 1);
+    std::cerr << "Context:" << std::endl;
+    std::string context;
+    for (const auto& t: tokens) {
+        context += t.text + " ";
+    }
 
-    for (size_t j = context_start; j <= context_end; j++) {
-        if (j == pos) {
-            std::cerr << "[" << tokens[j].text << "] ";// Highlight current token
-        } else {
-            std::cerr << tokens[j].text << " ";
-        }
+    std::cerr << context << "" << std::endl;
+
+    for (auto i = 0 ; i < context.size(); ++i) {
+        if (i == tokens[pos].column) std::cerr << "^";
+        else std::cerr << "~";
     }
     std::cerr << std::endl;
 
     // Print line and column position indicators
     std::cerr << "Position: ";
-    for (size_t j = context_start; j <= context_end; j++) {
-        if (j == pos) {
-            std::cerr << "line" << tokens[j].line << "col" << tokens[j].column << " ";
-        } else {
-            std::cerr << std::string(tokens[j].text.length() + 1, ' ');
-        }
-    }
+    std::cerr << "\033[36m line " << tokens[pos].line << " | " << "col " << tokens[pos].column << "\033[0m ";
     std::cerr << std::endl;
 }
 
@@ -239,7 +234,7 @@ std::unique_ptr<BlockStmt> Parser::parse_block(const std::vector<Token>& tokens,
     int start_col = (i < tokens.size()) ? tokens[i].column : -1;
 
     // Use non-static variable to record nesting depth, avoid interference from multiple parsing
-    static thread_local int current_block_depth = 0;
+    thread_local int current_block_depth = 0;
     current_block_depth++;
 
     DEBUG_OUT << "Debug - Block parsing started: "

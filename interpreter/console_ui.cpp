@@ -17,6 +17,39 @@
 
 #include <string>
 
+int exec_block(const BlockStmt* block) {
+    Interpreter interpreter;
+    // 每个语句独立执行并捕获异常，但保持解释器状态
+    int currentLine = 0;
+    for (auto& stmt: block->statements) {
+        currentLine++;
+        try {
+            interpreter.execute(stmt);
+        } catch (const RuntimeError& re) {
+            // Use stack trace for runtime errors
+            interpreter.print_stack_trace(re, true);
+        } catch (const ReturnException&) {
+            // Catch and show meaningful info (return outside function causes this exception)
+            Interpreter::print_warning("Return statement used outside function (line " + std::to_string(currentLine) + ")", true);
+        } catch (const BreakException&) {
+            // Catch and show meaningful info
+            Interpreter::print_warning("Break statement used outside loop (line " + std::to_string(currentLine) + ")", true);
+        } catch (const ContinueException&) {
+            // Catch and show meaningful info
+            Interpreter::print_warning("Continue statement used outside loop (line " + std::to_string(currentLine) + ")", true);
+        } catch (const std::exception& e) {
+            // Other standard exceptions
+            Interpreter::print_error(std::string(e.what()) + " (line " + std::to_string(currentLine) + ")", true);
+            std::cerr << "Type: " << typeid(e).name() << std::endl;
+        } catch (...) {
+            // Unknown exceptions
+            Interpreter::print_error("Unknown error (line " + std::to_string(currentLine) + ")", true);
+        }
+    }
+    return 0;
+}
+
+
 int run_file(const std::string& path) {
     std::ifstream file(path);
     if (!file) {
@@ -29,7 +62,6 @@ int run_file(const std::string& path) {
     std::string source = buffer.str();
     auto tokens = Lexer::tokenize(source);
     auto ast = Parser::parse(tokens);
-    Interpreter interpreter;
 
     // 注释掉自动加载minimal模块，改为按需加载
     // std::cout << "Loading minimal module..." << std::endl;
@@ -56,48 +88,22 @@ int run_file(const std::string& path) {
 
     if (!ast) {
         print_traceback(path, 1);
-        exit(2);
+        return 2;
     }
 
     // 只支持 BlockStmt
-    auto* block = dynamic_cast<BlockStmt*>(ast.get());
-    if (block) {
-        // 每个语句独立执行并捕获异常，但保持解释器状态
-        int currentLine = 0;
-        for (auto& stmt: block->statements) {
-            currentLine++;
-            try {
-                interpreter.execute(stmt);
-            } catch (const RuntimeError& re) {
-                // Use stack trace for runtime errors
-                interpreter.print_stack_trace(re, true);
-            } catch (const ReturnException&) {
-                // Catch and show meaningful info (return outside function causes this exception)
-                Interpreter::print_warning("Return statement used outside function (line " + std::to_string(currentLine) + ")", true);
-            } catch (const BreakException&) {
-                // Catch and show meaningful info
-                Interpreter::print_warning("Break statement used outside loop (line " + std::to_string(currentLine) + ")", true);
-            } catch (const ContinueException&) {
-                // Catch and show meaningful info
-                Interpreter::print_warning("Continue statement used outside loop (line " + std::to_string(currentLine) + ")", true);
-            } catch (const std::exception& e) {
-                // Other standard exceptions
-                Interpreter::print_error(std::string(e.what()) + " (line " + std::to_string(currentLine) + ")", true);
-                std::cerr << "Type: " << typeid(e).name() << std::endl;
-            } catch (...) {
-                // Unknown exceptions
-                Interpreter::print_error("Unknown error (line " + std::to_string(currentLine) + ")", true);
-            }
-        }
-        std::cout << "\nProgram execution completed." << std::endl;
-    }
+    auto block = dynamic_cast<BlockStmt*>(ast.get());
+    if (!block) return 1;
+
+    exec_block(block);
+    std::cout << "\nProgram execution completed." << std::endl;
     return 0;
 }
 
-int argv_parser(const int argc, const char* const argv[]) {
+void enable_ansi_escape() {
 #ifdef _WIN32
     // Windows 平台的颜色支持
-	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut != INVALID_HANDLE_VALUE) {
         DWORD outMode = 0;
         if (GetConsoleMode(hOut, &outMode)) {
@@ -124,28 +130,14 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
 
     // UTF-8 编码设置
-   	SetConsoleOutputCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
+}
 
+int argv_parser(const int argc, const char* const argv[]) {
     if (argc < 2) {
-        try {
-            return repl();
-        } catch (const CtrlCException&) {
-            // 捕获Ctrl+C异常，友好提示后退出
-            // Catch Ctrl+C exception and exit gracefully
-            std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。"
-                      << "\nProgram received Ctrl+C signal, exited safely." << std::endl;
-            return 0;
-        } catch (const std::exception& e) {
-            std::cerr << "程序发生异常: " << e.what()
-                      << "\nProgram exception occurred: " << e.what() << std::endl;
-            return 1;
-        } catch (...) {
-            std::cerr << "程序发生未知异常"
-                      << "\nProgram encountered an unknown exception." << std::endl;
-            return 1;
-        }
+        return repl();
     }
 
     const std::vector<std::string> introduction = {"run", "version", "help", "repl"};
@@ -214,16 +206,13 @@ int argv_parser(const int argc, const char* const argv[]) {
 
 
 int repl() {
-    // 输出REPL欢迎信息和退出提示
-    // Print REPL welcome message and exit instructions
     std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit." << std::endl;
     std::cout << "Type :help for help." << std::endl;
 
-    Interpreter interpreter;// 创建解释器实例
+    Interpreter interpreter;
     int lineno = 1;         // 记录当前输入的行号，用于错误提示
 
-    // REPL主循环：持续读取-执行-输出
-    // REPL main loop: continuously read-execute-print
+    // REPL主循环
     while (true) {
         try {
             // 根据终端是否支持颜色，设置不同的提示符样式
@@ -307,86 +296,83 @@ int repl() {
             // Check if AST generation succeeded
             if (!ast) {
                 print_traceback("<stdin>", lineno);
-            } else {
-                // 仅支持BlockStmt类型的AST（代码块语句）
-                // Only support AST of type BlockStmt (block statement)
-                auto* block = dynamic_cast<BlockStmt*>(ast.get());
-                if (block) {
-                    // 保存AST以保持函数指针有效
-                    // Save AST to keep function pointers valid
-                    interpreter.save_repl_ast(std::move(ast));
+                return 1;
+            }
+            // 仅支持BlockStmt类型的AST（代码块语句）
+            // Only support AST of type BlockStmt (block statement)
+            auto* block = dynamic_cast<BlockStmt*>(ast.get());
+            if (!block) return 1;
+            // 保存AST以保持函数指针有效
+            interpreter.save_repl_ast(std::move(ast));
 
+            try {
+                 // 执行代码块中的每个语句
+                 // Execute each statement in the block
+                for (auto& stmt: block->statements) {
                     try {
-                        // 执行代码块中的每个语句
-                        // Execute each statement in the block
-                        for (auto& stmt: block->statements) {
-                            try {
-                                interpreter.execute(stmt);
-                            } catch (const RuntimeError& re) {
-                                interpreter.print_stack_trace(re, true);
-                                break;
-                            } catch (const ReturnException&) {
-                                Interpreter::print_warning(
-                                        "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）"
-                                                                                                    "Return statement used outside function (line " +
-                                                std::to_string(lineno) + ")",
-                                        true);
-                                break;
-                            }
-                            // 捕获break语句在循环外使用的异常
-                            // Catch break statement used outside loop
-                            catch (const BreakException&) {
-                                Interpreter::print_warning(
-                                        "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）"
-                                                                                                   "Break statement used outside loop (line " +
-                                                std::to_string(lineno) + ")",
-                                        true);
-                                break;
-                            }
-                            // 捕获continue语句在循环外使用的异常
-                            // Catch continue statement used outside loop
-                            catch (const ContinueException&) {
-                                Interpreter::print_warning(
-                                        "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）"
-                                                                                                      "Continue statement used outside loop (line " +
-                                                std::to_string(lineno) + ")",
-                                        true);
-                                break;
-                            }
-                            // 捕获其他标准异常
-                            // Catch other standard exceptions
-                            catch (const std::exception& e) {
-                                Interpreter::print_error(e.what(), true);
-                                break;
-                            }
-                        }
-                    }
-                    // 捕获代码块执行过程中的顶层运行时错误
-                    // Catch top-level runtime errors during block execution
-                    catch (const RuntimeError& re) {
+                        interpreter.execute(stmt);
+                    } catch (const RuntimeError& re) {
                         interpreter.print_stack_trace(re, true);
+                        break;
+                    } catch (const ReturnException&) {
+                         Interpreter::print_warning(
+                         "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）" +
+                         "Return statement used outside function (line " +
+                         std::to_string(lineno) + ")",
+                         true);
+                        break;
                     }
-                    // 捕获从内层循环逃逸的return异常
-                    // Catch return exceptions escaping the inner loop
-                    catch (const ReturnException&) {
+                    // 捕获break语句在循环外使用的异常
+                    // Catch break statement used outside loop
+                    catch (const BreakException&) {
                         Interpreter::print_warning(
-                                "Return语句不能在函数外使用\nReturn statement used outside function",
-                                true);
+                             "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）"+
+                             "Break statement used outside loop (line " + std::to_string(lineno) + ")",
+                              true);
+                        break;
                     }
-                    // 捕获所有其他未预料的异常
-                    // Catch all other unexpected exceptions
-                    catch (...) {
-                        Interpreter::print_error("发生未知错误\nUnknown error occurred", true);
+                    // 捕获continue语句在循环外使用的异常
+                    // Catch continue statement used outside loop
+                    catch (const ContinueException&) {
+                        Interpreter::print_warning(
+                        "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）"
+                        +"Continue statement used outside loop (line " +
+                        std::to_string(lineno) + ")",
+                        true);
+                        break;
+                    }
+                    // 捕获其他标准异常
+                    // Catch other standard exceptions
+                    catch (const std::exception& e) {
+                        Interpreter::print_error(e.what(), true);
+                        break;
                     }
                 }
+            }
+            // 捕获代码块执行过程中的顶层运行时错误
+            // Catch top-level runtime errors during block execution
+            catch (const RuntimeError& re) {
+                interpreter.print_stack_trace(re, true);
+            }
+            // 捕获从内层循环逃逸的return异常
+            // Catch return exceptions escaping the inner loop
+            catch (const ReturnException&) {
+                Interpreter::print_warning(
+                "Return语句不能在函数外使用\nReturn statement used outside function",
+                true);
+            }
+            // 捕获所有其他未预料的异常
+            // Catch all other unexpected exceptions
+            catch (...) {
+                Interpreter::print_error("发生未知错误\nUnknown error occurred", true);
             }
         }
         // 捕获并处理REPL循环中的所有异常，确保REPL不崩溃
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(
-                    "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
-                    true);
+            "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
+            true);
         }
 
 
