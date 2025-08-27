@@ -4,7 +4,7 @@
 Value rand(const std::vector<Value>& args) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    static std::uniform_real_distribution dis(0.0, 1.0);
+    static std::uniform_real_distribution<long double> dis(0.0L, 1.0L);
     return LAMINA_DOUBLE(dis(gen));
 }
 
