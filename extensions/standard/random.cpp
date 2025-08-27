@@ -1,6 +1,13 @@
 #include "random.hpp"
 #include <random>
 
+Value rand(const std::vector<Value>& args) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution dis(0.0, 1.0);
+    return LAMINA_TYPE_DOUBLE(dis(gen));
+}
+
 Value randint(const std::vector<Value>& args) {
     int min;
     int max;
