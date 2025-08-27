@@ -341,7 +341,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 } else {
                     rightExpr = SymbolicExpr::number(0);
                 }
-                return Value(SymbolicExpr::add(leftExpr, rightExpr));
+                return Value(SymbolicExpr::add(leftExpr, rightExpr)->simplify());
             }
             // Numeric addition with irrational and rational number support
             else if (l.is_numeric() && r.is_numeric()) {
