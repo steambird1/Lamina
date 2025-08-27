@@ -1,5 +1,22 @@
 #include "array.hpp"
 
+Value range(const std::vector<Value>& args) {
+    if (args.size() > 2) {
+        return LAMINA_NULL;
+    }
+
+    const int start = std::get<int>(args[0].data);
+    const int end = std::get<int>(args[1].data);
+    const int sep = args.size() > 2
+                    ? std::get<int>(args[2].data)
+                    : 1;
+    std::vector<Value> vec;
+    for (auto i = start; i < end; i+=sep) {
+        vec.push_back(i);
+    }
+    return vec;
+}
+
 Value visit_array_by_int(const std::vector<Value>& args) {
     if (!args[0].is_array()) {
         L_ERR("First Arg Must Be A Array");
