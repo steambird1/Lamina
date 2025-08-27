@@ -2,7 +2,7 @@
 
 Value range(const std::vector<Value>& args) {
     if (args.size() > 2) {
-        return Value();
+        return LAMINA_NULL;
     }
 
     const int start = std::get<int>(args[0].data);
