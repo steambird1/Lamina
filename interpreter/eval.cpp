@@ -475,11 +475,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                         return Value(quotient);
                     } else {
                         // 不能整除，返回有理数
-                        return Value(::Rational(lb.to_int(), rb.to_int()));
+                        return Value(::Rational(lb, rb));
                     }
                 } catch (...) {
                     // 如果BigInt运算失败，回退到Rational
-                    return Value(::Rational(lb.to_int(), rb.to_int()));
+                    return Value(::Rational(lb, rb));
                 }
             }
             // If either operand is irrational, use irrational arithmetic
