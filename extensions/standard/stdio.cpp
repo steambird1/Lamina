@@ -176,6 +176,20 @@ inline Value touch_file(const std::vector<Value>& args) {
     return Value(true);
 }
 
+inline Value assert(const std::vector<Value>& args) {
+    const bool cond = !args.empty()
+                    ?args[0].as_bool()
+                    :false ;
+    const auto msg = args.size()>1
+                    ?args[1].to_string()
+                        :"None";
+    if (!cond) {
+        L_ERR("Assertion: " + msg);
+    }
+
+    return LAMINA_NULL;
+}
+
 
 namespace lamina {
     LAMINA_FUNC_MULTI_ARGS("input", input, 1);
@@ -185,4 +199,5 @@ namespace lamina {
     LAMINA_FUNC("exec", exec, 1);
     LAMINA_FUNC("exist", exist, 1);
     LAMINA_FUNC("touch_file", touch_file, 1);
+    LAMINA_FUNC_WIT_ANY_ARGS("assert", assert);
 }// namespace lamina

@@ -56,7 +56,7 @@ constexpr bool always_false = false;
     }
 
 #define LAMINA_FUNC(func_name, func, arg_count)                                                       \
-    void func##_entry(Interpreter& interpreter) LAMINA_EXPORT;                                        \
+    LAMINA_EXPORT void func##_entry(Interpreter& interpreter);                                        \
     namespace {                                                                                       \
         struct func##_registrar {                                                                     \
             func##_registrar() {                                                                      \

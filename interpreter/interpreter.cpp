@@ -10,6 +10,7 @@
 #include <cstdlib>// For std::exit
 #include <cstring>// For strcmp
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -256,45 +257,222 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
 }
 
 
-Value Interpreter::eval(const ASTNode* node) {
-    if (!node) {
-        error_and_exit("Attempted to evaluate null expression");
-    }
-    if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
-        if (lit->type == Value::Type::Int) {
-            // Check if it contains scientific notation (e or E) or decimal point
-            std::string value = lit->value;
-            if (value.find('.') != std::string::npos ||
-                value.find('e') != std::string::npos ||
-                value.find('E') != std::string::npos) {
-                // Parse as double for floating point numbers and scientific notation
-                double d = std::stod(lit->value);
-                return Value(d);
+Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
+    if (node->type == Value::Type::Int) {
+        // Check if it contains scientific notation (e or E) or decimal point
+        const std::string value = node->value;
+        if (value.find('.') != std::string::npos ||
+            value.find('e') != std::string::npos ||
+            value.find('E') != std::string::npos) {
+            // Parse as double for floating point numbers and scientific notation
+            double d = std::stod(node->value);
+            return Value(d);
             } else {
                 // 先尝试用 int 解析，只有溢出时才用 BigInt
                 try {
-                    int i = std::stoi(lit->value);
+                    int i = std::stoi(node->value);
                     return Value(i);
                 } catch (const std::out_of_range&) {
                     // int 溢出，使用 BigInt
-                    ::BigInt big(lit->value);
+                    ::BigInt big(node->value);
                     return Value(big);
                 }
             }
-        } else {
-            // Check for boolean literals
-            if (lit->value == "true") return Value(true);
-            if (lit->value == "false") return Value(false);
-            if (lit->value == "null") return Value(nullptr);
-            // Otherwise it's a string
-            return Value(lit->value);
+    } else {
+        // Check for boolean literals
+        if (node->value == "true") return Value(true);
+        if (node->value == "false") return Value(false);
+        if (node->value == "null") return Value(nullptr);
+        // Otherwise it's a string
+        return Value(node->value);
+    }
+}
+
+Value Interpreter::eval_CallExpr(const CallExpr* call) {
+    std::string actual_callee = call->callee;
+        //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
+
+        // 检查调用的名称是否是一个参数，如果是，获取其实际值
+        try {
+            Value callee_value = get_variable(actual_callee);
+            if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
+                // 这是一个函数参数，提取实际的函数名
+                actual_callee = std::get<std::string>(callee_value.data).substr(11);
+                //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
+            }
+        } catch (const RuntimeError&) {
+            // 如果不是变量，保持原名称
+            // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
         }
-    } else if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
-        return get_variable(id->name);
-    } else if (auto* var = dynamic_cast<const VarExpr*>(node)) {
-        return get_variable(var->name);
-    } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
-        Value l = eval(bin->left.get());
+
+        // Check builtin functions first
+        //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
+        //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
+        // for (const auto& pair : builtin_functions) {
+        //     std::cout << "  - '" << pair.first << "'" << std::endl;
+        // }
+
+        auto builtin_it = builtin_functions.find(actual_callee);
+        if (builtin_it != builtin_functions.end()) {
+            //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
+
+            // 检查是否是模块函数
+            bool is_module_func = actual_callee.find(".") != std::string::npos;
+            if (is_module_func) {
+                //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
+            }
+
+            // Handle builtin call with stack frame and unified error handling
+            push_frame(actual_callee, "<builtin>", 0);
+
+            std::vector<Value> args;
+            for (const auto& arg: call->args) {
+                if (!arg) {
+                    pop_frame();
+                    RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
+                    err.stack_trace = get_stack_trace();
+                    throw err;
+                }
+                args.push_back(eval(arg.get()));
+            }
+
+            Value result;
+            try {
+                result = builtin_it->second(args);
+            } catch (...) {
+                pop_frame();
+                throw;
+            }
+
+            pop_frame();
+            return result;
+        }
+
+        // Check user-defined functions
+        auto it = functions.find(actual_callee);
+        if (it != functions.end()) {
+            FuncDefStmt* func = it->second;
+            if (!func) {
+                std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
+                return Value("<func error>");
+            }
+
+            // Check recursion depth
+            if (recursion_depth >= max_recursion_depth) {
+                RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
+                error.stack_trace = get_stack_trace();
+                throw error;
+            }
+
+            recursion_depth++;
+            push_frame(actual_callee, "<script>", 0);// Add to call stack
+
+            // Check parameter count
+            if (call->args.size() > func->params.size()) {
+                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
+                                                   "'. Expected " + std::to_string(func->params.size()) +
+                                                   ", got " + std::to_string(call->args.size()),
+                                           true);
+            }
+
+            // Calculate arguments
+            std::vector<Value> arg_values(func->params.size());
+            for (size_t j = 0; j < func->params.size(); ++j) {
+                if (j < call->args.size()) {
+                    if (call->args[j]) {
+                        arg_values[j] = eval(call->args[j].get());
+                    } else {
+                        Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
+                        arg_values[j] = Value("<null arg>");
+                    }
+                } else {
+                    Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
+                    arg_values[j] = Value("<undefined>");
+                }
+            }
+
+            push_scope();// Create scope here
+
+            // Pass arguments
+            for (size_t j = 0; j < func->params.size(); ++j) {
+                set_variable(func->params[j], arg_values[j]);
+            }
+
+            // Execute function body, capture return
+            try {
+                for (const auto& stmt: func->body->statements) {
+                    try {
+                        execute(stmt);
+                    } catch (const ReturnException& re) {
+                        // Normal return handling
+                        pop_frame();
+                        pop_scope();
+                        recursion_depth--;
+                        return re.value;
+                    } catch (const RuntimeError& re) {
+                        // If the error doesn't have a stack trace yet, capture current state
+                        RuntimeError enriched(re.message);
+                        if (re.stack_trace.empty()) {
+                            enriched.stack_trace = get_stack_trace();
+                        } else {
+                            enriched.stack_trace = re.stack_trace;// Preserve existing trace
+                        }
+                        pop_frame();
+                        pop_scope();
+                        recursion_depth--;
+                        throw enriched;
+                    } catch (const std::exception& e) {
+                        // Wrap standard exception as RuntimeError
+                        RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
+                        enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
+                        pop_frame();
+                        pop_scope();
+                        recursion_depth--;
+                        throw enriched;
+                    }
+                }
+            } catch (const ReturnException& re) {
+                // Ensure cleanup in any case
+                pop_frame();
+                pop_scope();
+                recursion_depth--;
+                return re.value;
+            }
+
+            pop_frame();
+            pop_scope();
+            recursion_depth--;
+            return Value();// Default value when no return
+        }
+
+        // Check if it's a module function before reporting undefined
+        bool is_module_func = actual_callee.find(".") != std::string::npos;
+        if (is_module_func) {
+            // Prepare arguments for module function call
+            std::vector<Value> args;
+            for (const auto& arg: call->args) {
+                if (!arg) {
+                    std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
+                    args.push_back(Value());
+                } else {
+                    args.push_back(eval(arg.get()));
+                }
+            }
+
+            // Try to call the module function
+            Value result = call_module_function(actual_callee, args);
+            if (result.to_string() != "null") {// 检查是否成功调用
+                return result;
+            }
+            // If module function call failed, fall through to undefined function error
+        }
+
+        std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
+        return Value("<undefined function>");
+}
+
+Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
+    Value l = eval(bin->left.get());
         Value r = eval(bin->right.get());
 
         // Handle arithmetic operations
@@ -754,248 +932,92 @@ Value Interpreter::eval(const ASTNode* node) {
         }
 
         error_and_exit("Unknown binary operator '" + bin->op + "'");
+        return Value();
+}
 
-    } else if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
-        Value v = eval(unary->operand.get());
+Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
+    Value v = eval(unary->operand.get());
 
-        if (unary->op == "-") {
-            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
-                RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-            if (v.type == Value::Type::Int) {
-                int vi = std::get<int>(v.data);
-                return Value(-vi);
-            } else if (v.type == Value::Type::Float) {
-                float vf = std::get<double>(v.data);
-                return Value(-vf);
-            } else {
-                // For BigInt, negate directly
-                ::BigInt big_val = std::get<::BigInt>(v.data);
-                return Value(big_val.negate());
-            }
+    if (unary->op == "-") {
+        if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
+            RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
+        if (v.type == Value::Type::Int) {
+            int vi = std::get<int>(v.data);
+            return Value(-vi);
+        } else if (v.type == Value::Type::Float) {
+            float vf = std::get<double>(v.data);
+            return Value(-vf);
+        } else {
+            // For BigInt, negate directly
+            ::BigInt big_val = std::get<::BigInt>(v.data);
+            return Value(big_val.negate());
+        }
+    }
+
+    if (unary->op == "!") {
+        if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
+            RuntimeError error("Unary operator '!' requires integer or big integer operand");
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
+        int vi;
+        if (v.type == Value::Type::Int) {
+            vi = std::get<int>(v.data);
+        } else {
+            vi = std::get<::BigInt>(v.data).to_int();
         }
 
-        if (unary->op == "!") {
-            if (v.type != Value::Type::Int && v.type != Value::Type::BigInt) {
-                RuntimeError error("Unary operator '!' requires integer or big integer operand");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-            int vi;
-            if (v.type == Value::Type::Int) {
-                vi = std::get<int>(v.data);
-            } else {
-                vi = std::get<::BigInt>(v.data).to_int();
-            }
-
-            if (vi < 0) {
-                RuntimeError error("Cannot calculate factorial of negative number");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-
-            // Use BigInt for factorial if the number is large or result would be large
-            if (vi > 20) {
-                ::BigInt result(1);
-                for (int j = 2; j <= vi; ++j) {
-                    result = result * ::BigInt(j);
-                }
-                return Value(result);
-            } else {
-                // Use regular int for small factorials
-                int res = 1;
-                for (int j = 1; j <= vi; ++j) res *= j;
-                return Value(res);
-            }
+        if (vi < 0) {
+            RuntimeError error("Cannot calculate factorial of negative number");
+            error.stack_trace = get_stack_trace();
+            throw error;
         }
 
-        std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;
-        return Value("<unknown op>");
+        // Use BigInt for factorial if the number is large or result would be large
+        if (vi > 20) {
+            ::BigInt result(1);
+            for (int j = 2; j <= vi; ++j) {
+                result = result * ::BigInt(j);
+            }
+            return Value(result);
+        } else {
+            // Use regular int for small factorials
+            int res = 1;
+            for (int j = 1; j <= vi; ++j) res *= j;
+            return Value(res);
+        }
+    }
+
+    std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;
+    return Value("<unknown op>");
+}
+
+Value Interpreter::eval(const ASTNode* node) {
+    if (!node) {
+        error_and_exit("Attempted to evaluate null expression");
+    }
+    if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
+        return eval_LiteralExpr(lit);
+    }
+    if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
+        return get_variable(id->name);
+    }
+    if (auto* var = dynamic_cast<const VarExpr*>(node)) {
+        return get_variable(var->name);
+    }
+    if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
+        return eval_BinaryExpr(bin);
+    }
+    if (auto* unary = dynamic_cast<const UnaryExpr*>(node)) {
+        return eval_UnaryExpr(unary);
     }// Support function calls
-    else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
-        std::string actual_callee = call->callee;
-        //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
-
-        // 检查调用的名称是否是一个参数，如果是，获取其实际值
-        try {
-            Value callee_value = get_variable(actual_callee);
-            if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
-                // 这是一个函数参数，提取实际的函数名
-                actual_callee = std::get<std::string>(callee_value.data).substr(11);
-                //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
-            }
-        } catch (const RuntimeError&) {
-            // 如果不是变量，保持原名称
-            // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
-        }
-
-        // Check builtin functions first
-        //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
-        //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
-        // for (const auto& pair : builtin_functions) {
-        //     std::cout << "  - '" << pair.first << "'" << std::endl;
-        // }
-
-        auto builtin_it = builtin_functions.find(actual_callee);
-        if (builtin_it != builtin_functions.end()) {
-            //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
-
-            // 检查是否是模块函数
-            bool is_module_func = actual_callee.find(".") != std::string::npos;
-            if (is_module_func) {
-                //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
-            }
-
-            // Handle builtin call with stack frame and unified error handling
-            push_frame(actual_callee, "<builtin>", 0);
-
-            std::vector<Value> args;
-            for (const auto& arg: call->args) {
-                if (!arg) {
-                    pop_frame();
-                    RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
-                    err.stack_trace = get_stack_trace();
-                    throw err;
-                }
-                args.push_back(eval(arg.get()));
-            }
-
-            Value result;
-            try {
-                result = builtin_it->second(args);
-            } catch (...) {
-                pop_frame();
-                throw;
-            }
-
-            pop_frame();
-            return result;
-        }
-
-        // Check user-defined functions
-        auto it = functions.find(actual_callee);
-        if (it != functions.end()) {
-            FuncDefStmt* func = it->second;
-            if (!func) {
-                std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
-                return Value("<func error>");
-            }
-
-            // Check recursion depth
-            if (recursion_depth >= max_recursion_depth) {
-                RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
-
-            recursion_depth++;
-            push_frame(actual_callee, "<script>", 0);// Add to call stack
-
-            // Check parameter count
-            if (call->args.size() > func->params.size()) {
-                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
-                                                   "'. Expected " + std::to_string(func->params.size()) +
-                                                   ", got " + std::to_string(call->args.size()),
-                                           true);
-            }
-
-            // Calculate arguments
-            std::vector<Value> arg_values(func->params.size());
-            for (size_t j = 0; j < func->params.size(); ++j) {
-                if (j < call->args.size()) {
-                    if (call->args[j]) {
-                        arg_values[j] = eval(call->args[j].get());
-                    } else {
-                        Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
-                        arg_values[j] = Value("<null arg>");
-                    }
-                } else {
-                    Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
-                    arg_values[j] = Value("<undefined>");
-                }
-            }
-
-            push_scope();// Create scope here
-
-            // Pass arguments
-            for (size_t j = 0; j < func->params.size(); ++j) {
-                set_variable(func->params[j], arg_values[j]);
-            }
-
-            // Execute function body, capture return
-            try {
-                for (const auto& stmt: func->body->statements) {
-                    try {
-                        execute(stmt);
-                    } catch (const ReturnException& re) {
-                        // Normal return handling
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        return re.value;
-                    } catch (const RuntimeError& re) {
-                        // If the error doesn't have a stack trace yet, capture current state
-                        RuntimeError enriched(re.message);
-                        if (re.stack_trace.empty()) {
-                            enriched.stack_trace = get_stack_trace();
-                        } else {
-                            enriched.stack_trace = re.stack_trace;// Preserve existing trace
-                        }
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        throw enriched;
-                    } catch (const std::exception& e) {
-                        // Wrap standard exception as RuntimeError
-                        RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
-                        enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        throw enriched;
-                    }
-                }
-            } catch (const ReturnException& re) {
-                // Ensure cleanup in any case
-                pop_frame();
-                pop_scope();
-                recursion_depth--;
-                return re.value;
-            }
-
-            pop_frame();
-            pop_scope();
-            recursion_depth--;
-            return Value();// Default value when no return
-        }
-
-        // Check if it's a module function before reporting undefined
-        bool is_module_func = actual_callee.find(".") != std::string::npos;
-        if (is_module_func) {
-            // Prepare arguments for module function call
-            std::vector<Value> args;
-            for (const auto& arg: call->args) {
-                if (!arg) {
-                    std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
-                    args.push_back(Value());
-                } else {
-                    args.push_back(eval(arg.get()));
-                }
-            }
-
-            // Try to call the module function
-            Value result = call_module_function(actual_callee, args);
-            if (result.to_string() != "null") {// 检查是否成功调用
-                return result;
-            }
-            // If module function call failed, fall through to undefined function error
-        }
-
-        std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
-        return Value("<undefined function>");
-    } else if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
+    if (auto* call = dynamic_cast<const CallExpr*>(node)) {
+        return eval_CallExpr(call);
+    }
+    if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
         std::vector<Value> elements;
         for (const auto& element: arr->elements) {
             if (element) {
@@ -1014,7 +1036,7 @@ Value Interpreter::eval(const ASTNode* node) {
 // Load and execute module
 bool Interpreter::load_module(const std::string& module_name) {
     // Check if already loaded to avoid circular imports
-    if (loaded_modules.find(module_name) != loaded_modules.end()) {
+    if (loaded_modules.contains(module_name)) {
         return true;// Already loaded
     }
     // 立即插入，防止递归 include
@@ -1037,33 +1059,12 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Handle built-in hidden library "splash"
     if (module_name == "splash") {
-        // Output ASCII art logo
-        std::cout << "   __                    _            \n";
-        std::cout << "  / /   ____ _____ ___  (_)___  ____ _\n";
-        std::cout << " / /   / __ `/ __ `__ \\/ / __ \\/ __ `/\n";
-        std::cout << "/ /___/ /_/ / / / / / / / / / / /_/ / \n";
-        std::cout << "/_____/\\__,_/_/ /_/ /_/_/_/ /_/\\__,_/  \n";
-        std::cout << "                                       \n";
-
-        // Mark as loaded to avoid multiple outputs
-        loaded_modules.insert(module_name);
+        print_logo();
         return true;
     }
-
     // Handle built-in hidden library "them" (credits)
     if (module_name == "them") {
-        // Output credits and developer information
-        std::cout << "Credits\n";
-        std::cout << "Lamina Interpreter\n";
-        std::cout << "Developed by Ziyang-bai\n";
-        std::cout << "Helper: Ange1PLSGreet\n";
-        std::cout << "Special thanks to all contributors and users!\n";
-        std::cout << "For more information, visit: https://github.com/Ziyang-bai/Lamina\n";
-        std::cout << "This interpreter is open source and welcomes contributions.\n";
-        std::cout << "Designed by Ziyang-Bai\n";
-        std::cout << "\n";
-        // Mark as loaded to avoid multiple outputs
-        loaded_modules.insert(module_name);
+        print_them();
         return true;
     }
 
@@ -1073,14 +1074,16 @@ bool Interpreter::load_module(const std::string& module_name) {
     bool has_lib = filename.find(lib_ext) != std::string::npos;
 
     // Try different paths: current directory, examples directory, etc.
-    std::vector<std::string> search_paths = {"", "./", "include/", "extensions/"};
+    const std::vector<std::string> search_paths = {"", ".", "include", "extensions"};
     std::string full_path;
 
     // 如果指定了动态库扩展名，直接尝试加载动态库
     if (has_lib) {
+        std::vector<std::string> tried_paths;
         for (const auto& path: search_paths) {
-            full_path = path + filename;
+            full_path = (std::filesystem::path(path) / filename).string();
             std::ifstream testfile(full_path, std::ios::binary);
+            tried_paths.push_back(full_path);
             if (testfile) {
                 testfile.close();
                 auto loader = std::make_unique<ModuleLoader>(full_path);
@@ -1088,29 +1091,34 @@ bool Interpreter::load_module(const std::string& module_name) {
                     if (loader->registerToInterpreter(*this)) {
                         // 保存模块加载器实例
                         module_loaders.push_back(std::move(loader));
-                        loaded_modules.insert(module_name);
                         return true;
-                    } else {
-                        std::cerr << "Failed to register module: " << full_path << std::endl;
                     }
+                    std::cerr << "Failed to register module: " << full_path << std::endl;
                 } else {
                     std::cerr << "Failed to load shared library: " << full_path << std::endl;
                 }
             }
         }
         // 如果指定了.dll/.so/.dylib但没找到，直接返回失败
-        std::cerr << "Error: Cannot load module '" << module_name << "'" << std::endl;
+        if (tried_paths.empty()) {
+            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
+        } else {
+            std::cerr << "Error: Cannot load module '" << module_name << "'\nTried paths:\n";
+            for (const auto& p : tried_paths) {
+                std::cerr << "  - " << p << "\n";
+            }
+        }
         return false;
     }
 
     // 如果没有指定扩展名，默认添加.lm
-    if (!has_lm && !has_lib) {
+    if (!has_lm) {
         filename += ".lm";
     }
 
     std::ifstream file;
     for (const auto& path: search_paths) {
-        full_path = path + filename;
+        full_path = (std::filesystem::path(path) / filename).string();
         file.open(full_path);
         if (file) break;
     }
@@ -1124,7 +1132,7 @@ bool Interpreter::load_module(const std::string& module_name) {
         bool found = false;
         for (const auto& libfile: lib_names) {
             for (const auto& path: search_paths) {
-                full_path = path + libfile;
+                full_path = (std::filesystem::path(path) / libfile).string();
                 std::ifstream testfile(full_path, std::ios::binary);
                 if (testfile) {
                     testfile.close();
@@ -1133,12 +1141,10 @@ bool Interpreter::load_module(const std::string& module_name) {
                         if (loader->registerToInterpreter(*this)) {
                             // 保存模块加载器实例
                             module_loaders.push_back(std::move(loader));
-                            loaded_modules.insert(module_name);
                             found = true;
                             break;
-                        } else {
-                            std::cerr << "Failed to register module: " << full_path << std::endl;
                         }
+                        std::cerr << "Failed to register module: " << full_path << std::endl;
                     } else {
                         std::cerr << "Failed to load shared library: " << full_path << std::endl;
                     }
@@ -1151,7 +1157,7 @@ bool Interpreter::load_module(const std::string& module_name) {
             std::cerr << "  Searched in: ";
             for (const auto& libfile: lib_names) {
                 for (const auto& path: search_paths) {
-                    std::cerr << path + libfile << " ";
+                    std::cerr << (std::filesystem::path(path) / libfile).string() << " ";
                 }
             }
             std::cerr << "\n";
