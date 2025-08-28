@@ -96,6 +96,7 @@ add_library(lamina_core SHARED
         extensions/standard/cas.cpp
         extensions/standard/lstruct.hpp
         extensions/standard/lstruct.cpp
+        interpreter/eval.cpp
 )
 
 # Set lamina_core properties
@@ -158,6 +159,7 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp
         interpreter/color_style.hpp
+        interpreter/eval.cpp
 )
 
 # Link to lamina_core

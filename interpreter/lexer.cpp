@@ -1,6 +1,7 @@
 #include "lexer.hpp"
 #include <cctype>
 #include <iostream>
+#include <algorithm>
 #include <map>
 
 static std::map<std::string, TokenType> keywords;
@@ -92,35 +93,62 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
         } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
             size_t j = i;
             bool has_dot = false;
+            bool has_underscore;
 
             // Handle decimal numbers including scientific notation
             // Parse mantissa (before 'e' or 'E')
-            while (j < src.size() && (isdigit(src[j]) || (src[j] == '.' && !has_dot))) {
-                if (src[j] == '.') has_dot = true;
-                ++j;
+            while (j < src.size()) {
+                // 允许数字、单个小数点（仅一次）和下划线（作为分隔符）
+                if (isdigit(src[j])) {
+                    has_underscore = false;  // 重置下划线标志
+                    ++j;
+                } else if (src[j] == '.' && !has_dot) {
+                    has_dot = true;
+                    has_underscore = false;  // 重置下划线标志
+                    ++j;
+                } else if (src[j] == '_' && !has_underscore && j > i && j + 1 < src.size() && isdigit(src[j + 1])) {
+                    has_underscore = true;
+                    ++j;
+                } else {
+                    break;
+                }
             }
 
-            // Check for scientific notation (e or E)
+            // 检查科学计数法（e或E）
             if (j < src.size() && (src[j] == 'e' || src[j] == 'E')) {
                 size_t e_pos = j;
-                ++j;// Skip 'e' or 'E'
-                // Check for optional + or - in exponent
+                ++j;  // 跳过'e'或'E'
+
+                // 检查指数部分的可选正负号
                 if (j < src.size() && (src[j] == '+' || src[j] == '-')) {
-                    ++j;// Skip sign
+                    ++j;  // 跳过符号
                 }
-                // Parse exponent digits
+
+                // 解析指数部分的数字（允许下划线）
+                has_underscore = false;  // 重置下划线标志
                 if (j < src.size() && isdigit(src[j])) {
-                    while (j < src.size() && isdigit(src[j])) {
-                        ++j;
+                    while (j < src.size()) {
+                        if (isdigit(src[j])) {
+                            has_underscore = false;
+                            ++j;
+                        } else if (src[j] == '_' && !has_underscore && j + 1 < src.size() && isdigit(src[j + 1])) {
+                            has_underscore = true;
+                            ++j;
+                        } else {
+                            break;
+                        }
                     }
                 } else {
-                    // Invalid scientific notation - backtrack to before 'e'
-                    // This handles cases like "7e" without digits after
+                    // 无效的科学计数法 - 回退到'e'之前的位置
                     j = e_pos;
                 }
             }
 
-            tokens.emplace_back(TokenType::Number, src.substr(i, j - i), line, start_col);
+            // 提取数字字符串并移除所有下划线
+            std::string num_str = src.substr(i, j - i);
+            num_str.erase(std::remove(num_str.begin(), num_str.end(), '_'), num_str.end());
+
+            tokens.emplace_back(TokenType::Number, num_str, line, start_col);
             col += (j - i);
             i = j;
         } else if (src[i] == '(') {
