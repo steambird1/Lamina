@@ -216,470 +216,468 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
 
 Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value l = eval(bin->left.get());
-        Value r = eval(bin->right.get());
+    Value r = eval(bin->right.get());
 
-        // Handle arithmetic operations
-        if (bin->op == "+") {
-            // String concatenation
-            if (l.is_string() || r.is_string()) {
-                return Value(l.to_string() + r.to_string());
+    // Handle arithmetic operations
+    if (bin->op == "+") {
+        // String concatenation
+        if (l.is_string() || r.is_string()) {
+            return Value(l.to_string() + r.to_string());
+        }
+        // Vector addition
+        else if (l.is_array() && r.is_array()) {
+            return l.vector_add(r);
+        }
+        // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+        else if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+            std::shared_ptr<SymbolicExpr> leftExpr;
+            std::shared_ptr<SymbolicExpr> rightExpr;
+            if (l.is_symbolic()) {
+                leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+            } else if (l.is_irrational()) {
+                leftExpr = std::get<::Irrational>(l.data).to_symbolic();
+            } else if (l.is_rational()) {
+                leftExpr = SymbolicExpr::number(std::get<::Rational>(l.data));
+            } else if (l.is_bigint()) {
+                leftExpr = SymbolicExpr::number(std::get<::BigInt>(l.data));
+            } else if (l.is_int()) {
+                leftExpr = SymbolicExpr::number(std::get<int>(l.data));
+            } else if (l.is_float()) {
+                leftExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(l.data)));
+            } else {
+                leftExpr = SymbolicExpr::number(0);
             }
-            // Vector addition
-            else if (l.is_array() && r.is_array()) {
-                return l.vector_add(r);
+            if (r.is_symbolic()) {
+                rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+            } else if (r.is_irrational()) {
+                rightExpr = std::get<::Irrational>(r.data).to_symbolic();
+            } else if (r.is_rational()) {
+                rightExpr = SymbolicExpr::number(std::get<::Rational>(r.data));
+            } else if (r.is_bigint()) {
+                rightExpr = SymbolicExpr::number(std::get<::BigInt>(r.data));
+            } else if (r.is_int()) {
+                rightExpr = SymbolicExpr::number(std::get<int>(r.data));
+            } else if (r.is_float()) {
+                rightExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(r.data)));
+            } else {
+                rightExpr = SymbolicExpr::number(0);
+            }
+            return Value(SymbolicExpr::add(leftExpr, rightExpr)->simplify());
+        }
+        // Numeric addition with irrational and rational number support
+        else if (l.is_numeric() && r.is_numeric()) {
+            // BigInt 优先：如果任一为 BigInt，结果为 BigInt
+            if (l.is_bigint() || r.is_bigint()) {
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                return Value(lb + rb);
+            }
+            // If either operand is rational, use rational arithmetic
+            if (l.is_rational() || r.is_rational()) {
+                ::Rational result = l.as_rational() + r.as_rational();
+                return Value(result);
+            }
+
+            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
+            if (l.is_int() && r.is_int()) {
+                return Value(static_cast<int>(result));
+            }
+            return Value(result);
+        } else {
+            error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
+        }
+    }// Arithmetic operations (require numeric operands or vector operations)
+    if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
+            bin->op == "%" || bin->op == "^") {
+        // Special handling for multiplication
+        if (bin->op == "*") {
+            // Vector and matrix operations
+            if (l.is_array() && r.is_array()) {
+                // Try dot product for same-size vectors
+                const auto& la = std::get<std::vector<Value>>(l.data);
+                const auto& ra = std::get<std::vector<Value>>(r.data);
+                if (la.size() == ra.size()) {
+                    return l.dot_product(r);
+                }
+            }
+            // Matrix multiplication
+            if (l.is_matrix() && r.is_matrix()) {
+                return l.matrix_multiply(r);
+            }
+            // Scalar multiplication for vectors
+            if (l.is_array() && r.is_numeric()) {
+                return l.scalar_multiply(r.as_number());
+            }
+            if (l.is_numeric() && r.is_array()) {
+                return r.scalar_multiply(l.as_number());
             }
             // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-            else if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+            if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
                 std::shared_ptr<SymbolicExpr> leftExpr;
                 std::shared_ptr<SymbolicExpr> rightExpr;
+                // 强制所有 Irrational 都转为 SymbolicExpr
                 if (l.is_symbolic()) {
                     leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                } else if (l.is_irrational()) {
-                    leftExpr = std::get<::Irrational>(l.data).to_symbolic();
-                } else if (l.is_rational()) {
-                    leftExpr = SymbolicExpr::number(std::get<::Rational>(l.data));
-                } else if (l.is_bigint()) {
-                    leftExpr = SymbolicExpr::number(std::get<::BigInt>(l.data));
-                } else if (l.is_int()) {
-                    leftExpr = SymbolicExpr::number(std::get<int>(l.data));
-                } else if (l.is_float()) {
-                    leftExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(l.data)));
                 } else {
-                    leftExpr = SymbolicExpr::number(0);
+                    leftExpr = from_number_to_symbolic(l);
                 }
                 if (r.is_symbolic()) {
                     rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                } else if (r.is_irrational()) {
-                    rightExpr = std::get<::Irrational>(r.data).to_symbolic();
-                } else if (r.is_rational()) {
-                    rightExpr = SymbolicExpr::number(std::get<::Rational>(r.data));
-                } else if (r.is_bigint()) {
-                    rightExpr = SymbolicExpr::number(std::get<::BigInt>(r.data));
-                } else if (r.is_int()) {
-                    rightExpr = SymbolicExpr::number(std::get<int>(r.data));
-                } else if (r.is_float()) {
-                    rightExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(r.data)));
                 } else {
-                    rightExpr = SymbolicExpr::number(0);
+                    rightExpr = from_number_to_symbolic(r);
                 }
-                return Value(SymbolicExpr::add(leftExpr, rightExpr));
+                return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
             }
-            // Numeric addition with irrational and rational number support
-            else if (l.is_numeric() && r.is_numeric()) {
+            // Regular multiplication (both must be numeric)
+            if (l.is_numeric() && r.is_numeric()) {
                 // BigInt 优先：如果任一为 BigInt，结果为 BigInt
                 if (l.is_bigint() || r.is_bigint()) {
                     ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                     ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                    return Value(lb + rb);
-                }
-                // If either operand is rational, use rational arithmetic
-                if (l.is_rational() || r.is_rational()) {
-                    ::Rational result = l.as_rational() + r.as_rational();
-                    return Value(result);
-                }
-
-                double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
-                if (l.is_int() && r.is_int()) {
-                    return Value(static_cast<int>(result));
-                }
-                return Value(result);
-            } else {
-                error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
-            }
-        }// Arithmetic operations (require numeric operands or vector operations)
-        if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
-            bin->op == "%" || bin->op == "^") {
-
-            // Special handling for multiplication
-            if (bin->op == "*") {
-                // Vector and matrix operations
-                if (l.is_array() && r.is_array()) {
-                    // Try dot product for same-size vectors
-                    const auto& la = std::get<std::vector<Value>>(l.data);
-                    const auto& ra = std::get<std::vector<Value>>(r.data);
-                    if (la.size() == ra.size()) {
-                        return l.dot_product(r);
-                    }
-                }
-                // Matrix multiplication
-                if (l.is_matrix() && r.is_matrix()) {
-                    return l.matrix_multiply(r);
-                }
-                // Scalar multiplication for vectors
-                if (l.is_array() && r.is_numeric()) {
-                    return l.scalar_multiply(r.as_number());
-                }
-                if (l.is_numeric() && r.is_array()) {
-                    return r.scalar_multiply(l.as_number());
-                }
-                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
-                    std::shared_ptr<SymbolicExpr> leftExpr;
-                    std::shared_ptr<SymbolicExpr> rightExpr;
-                    // 强制所有 Irrational 都转为 SymbolicExpr
-                    if (l.is_symbolic()) {
-                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else {
-                        leftExpr = from_number_to_symbolic(l);
-                    }
-                    if (r.is_symbolic()) {
-                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else {
-                        rightExpr = from_number_to_symbolic(r);
-                    }
-                    return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
-                }
-                // Regular multiplication (both must be numeric)
-                if (l.is_numeric() && r.is_numeric()) {
-                    // BigInt 优先：如果任一为 BigInt，结果为 BigInt
-                    if (l.is_bigint() || r.is_bigint()) {
-                        ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                        ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                        return Value(lb * rb);
-                    }
-                    // If either operand is irrational, use irrational arithmetic
-                    if (l.is_irrational() || r.is_irrational()) {
-                        ::Irrational result = l.as_irrational() * r.as_irrational();
-                        return Value(result);
-                    }
-                    // If either operand is rational, use rational arithmetic
-                    if (l.is_rational() || r.is_rational()) {
-                        ::Rational result = l.as_rational() * r.as_rational();
-                        return Value(result);
-                    }
-
-                    double result = l.as_number() * r.as_number();
-                    return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
-                }
-                // Error case
-                error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
-            }
-
-            // Special handling for minus
-            if (bin->op == "-") {
-                // Vector and matrix operations
-                if (l.is_array() && r.is_array()) {
-                    // Try minus for same-size vectors
-                    const auto& la = std::get<std::vector<Value>>(l.data);
-                    const auto& ra = std::get<std::vector<Value>>(r.data);
-                    return l.vector_minus(r);                                // An exception can be raised inside
-                }
-                // Matrix multiplication
-                if (l.is_matrix() && r.is_matrix()) {
-                    error_and_exit("Arithmetic operation '-' requires numeric or vector operands");
-                }
-                // Scalar multiplication for vectors
-                if ((l.is_array() && r.is_numeric()) || (l.is_numeric() && r.is_array())) {
-                    error_and_exit("Arithmetic operation '-' requires same-type operands");
-                }
-                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
-                    std::shared_ptr<SymbolicExpr> leftExpr;
-                    std::shared_ptr<SymbolicExpr> rightExpr;
-                    // 强制所有 Irrational 都转为 SymbolicExpr
-                    if (l.is_symbolic()) {
-                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else {
-                        leftExpr = from_number_to_symbolic(l);
-                    }
-                    if (r.is_symbolic()) {
-                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else {
-                        rightExpr = from_number_to_symbolic(r);
-                    }
-                    return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
-                }
-                // Regular multiplication (both must be numeric)
-                if (l.is_numeric() && r.is_numeric()) {
-                    // BigInt 优先：如果任一为 BigInt，结果为 BigInt
-                    if (l.is_bigint() || r.is_bigint()) {
-                        ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                        ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                        return Value(lb - rb);
-                    }
-                    // If either operand is irrational, use irrational arithmetic
-                    if (l.is_irrational() || r.is_irrational()) {
-                        ::Irrational result = l.as_irrational() - r.as_irrational();
-                        return Value(result);
-                    }
-                    // If either operand is rational, use rational arithmetic
-                    if (l.is_rational() || r.is_rational()) {
-                        ::Rational result = l.as_rational() - r.as_rational();
-                        return Value(result);
-                    }
-
-                    double result = l.as_number() - r.as_number();
-                    return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
-                }
-                // Error case
-                error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
-            }
-
-            // Other arithmetic operations require both operands to be numeric
-            if (!l.is_numeric() || !r.is_numeric()) {
-                error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
-            }
-
-            // For division, always use rational arithmetic for precise results
-            if (bin->op == "/") {
-                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
-                    std::shared_ptr<SymbolicExpr> leftExpr;
-                    std::shared_ptr<SymbolicExpr> rightExpr;
-                    if (l.is_symbolic()) {
-                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else {
-                        leftExpr = from_number_to_symbolic(l);
-                    }
-                    if (r.is_symbolic()) {
-                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else {
-                        rightExpr = from_number_to_symbolic(r);
-                    }
-                    auto divExpr = SymbolicExpr::multiply(leftExpr, SymbolicExpr::power(rightExpr, SymbolicExpr::number(-1)));
-                    return Value(divExpr->simplify());
-                }
-                // BigInt 优先：如果任一为 BigInt，结果为 BigInt（如果整除）或 Rational
-                if (l.is_bigint() || r.is_bigint()) {
-                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                    if (rb.is_zero()) {
-                        error_and_exit("Division by zero");
-                    }
-                    // 对于BigInt除法，如果能整除则返回BigInt，否则返回Rational
-                    try {
-                        ::BigInt quotient = lb / rb;
-                        ::BigInt remainder = lb - (quotient * rb);
-                        if (remainder.is_zero()) {
-                            return Value(quotient);
-                        } else {
-                            // 不能整除，返回有理数
-                            return Value(::Rational(lb.to_int(), rb.to_int()));
-                        }
-                    } catch (...) {
-                        // 如果BigInt运算失败，回退到Rational
-                        return Value(::Rational(lb.to_int(), rb.to_int()));
-                    }
+                    return Value(lb * rb);
                 }
                 // If either operand is irrational, use irrational arithmetic
                 if (l.is_irrational() || r.is_irrational()) {
-                    ::Irrational lr = l.as_irrational();
-                    ::Irrational rr = r.as_irrational();
-                    if (rr.is_zero()) {
-                        error_and_exit("Division by zero");
-                    }
-                    return Value(lr / rr);
+                    ::Irrational result = l.as_irrational() * r.as_irrational();
+                    return Value(result);
+                }
+                // If either operand is rational, use rational arithmetic
+                if (l.is_rational() || r.is_rational()) {
+                    ::Rational result = l.as_rational() * r.as_rational();
+                    return Value(result);
                 }
 
-                ::Rational lr = l.as_rational();
-                ::Rational rr = r.as_rational();
+                double result = l.as_number() * r.as_number();
+                return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+            }
+            // Error case
+            error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
+        }
+
+        // Special handling for minus
+        if (bin->op == "-") {
+            // Vector and matrix operations
+            if (l.is_array() && r.is_array()) {
+                // Try minus for same-size vectors
+                const auto& la = std::get<std::vector<Value>>(l.data);
+                const auto& ra = std::get<std::vector<Value>>(r.data);
+                return l.vector_minus(r);                                // An exception can be raised inside
+            }
+            // Matrix multiplication
+            if (l.is_matrix() && r.is_matrix()) {
+                error_and_exit("Arithmetic operation '-' requires numeric or vector operands");
+            }
+            // Scalar multiplication for vectors
+            if ((l.is_array() && r.is_numeric()) || (l.is_numeric() && r.is_array())) {
+                error_and_exit("Arithmetic operation '-' requires same-type operands");
+            }
+            // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+            if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                std::shared_ptr<SymbolicExpr> leftExpr;
+                std::shared_ptr<SymbolicExpr> rightExpr;
+                // 强制所有 Irrational 都转为 SymbolicExpr
+                if (l.is_symbolic()) {
+                    leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                } else {
+                    leftExpr = from_number_to_symbolic(l);
+                }
+                if (r.is_symbolic()) {
+                    rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                } else {
+                    rightExpr = from_number_to_symbolic(r);
+                }
+                return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
+            }
+            // Regular multiplication (both must be numeric)
+            if (l.is_numeric() && r.is_numeric()) {
+                // BigInt 优先：如果任一为 BigInt，结果为 BigInt
+                if (l.is_bigint() || r.is_bigint()) {
+                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                    return Value(lb - rb);
+                }
+                // If either operand is irrational, use irrational arithmetic
+                if (l.is_irrational() || r.is_irrational()) {
+                    ::Irrational result = l.as_irrational() - r.as_irrational();
+                    return Value(result);
+                }
+                // If either operand is rational, use rational arithmetic
+                if (l.is_rational() || r.is_rational()) {
+                    ::Rational result = l.as_rational() - r.as_rational();
+                    return Value(result);
+                }
+
+                double result = l.as_number() - r.as_number();
+                return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+            }
+            // Error case
+            error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
+        }
+
+        // Other arithmetic operations require both operands to be numeric
+        if (!l.is_numeric() || !r.is_numeric()) {
+            error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
+        }
+
+        // For division, always use rational arithmetic for precise results
+        if (bin->op == "/") {
+            // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+            if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+                std::shared_ptr<SymbolicExpr> leftExpr;
+                std::shared_ptr<SymbolicExpr> rightExpr;
+                if (l.is_symbolic()) {
+                    leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                } else {
+                    leftExpr = from_number_to_symbolic(l);
+                }
+                if (r.is_symbolic()) {
+                    rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                } else {
+                    rightExpr = from_number_to_symbolic(r);
+                }
+                auto divExpr = SymbolicExpr::multiply(leftExpr, SymbolicExpr::power(rightExpr, SymbolicExpr::number(-1)));
+                return Value(divExpr->simplify());
+            }
+            // BigInt 优先：如果任一为 BigInt，结果为 BigInt（如果整除）或 Rational
+            if (l.is_bigint() || r.is_bigint()) {
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                if (rb.is_zero()) {
+                    error_and_exit("Division by zero");
+                }
+                // 对于BigInt除法，如果能整除则返回BigInt，否则返回Rational
+                try {
+                    ::BigInt quotient = lb / rb;
+                    ::BigInt remainder = lb - (quotient * rb);
+                    if (remainder.is_zero()) {
+                        return Value(quotient);
+                    } else {
+                        // 不能整除，返回有理数
+                        return Value(::Rational(lb.to_int(), rb.to_int()));
+                    }
+                } catch (...) {
+                    // 如果BigInt运算失败，回退到Rational
+                    return Value(::Rational(lb.to_int(), rb.to_int()));
+                }
+            }
+            // If either operand is irrational, use irrational arithmetic
+            if (l.is_irrational() || r.is_irrational()) {
+                ::Irrational lr = l.as_irrational();
+                ::Irrational rr = r.as_irrational();
                 if (rr.is_zero()) {
                     error_and_exit("Division by zero");
                 }
                 return Value(lr / rr);
             }
 
-            // Use irrational arithmetic if either operand is irrational
-            if (l.is_irrational() || r.is_irrational()) {
-                ::Irrational lr = l.as_irrational();
-                ::Irrational rr = r.as_irrational();
-
-                if (bin->op == "-") {
-                    return Value(lr - rr);
-                }
-                // Note: Other operations (%, ^) may fall back to double arithmetic
-                // for irrational numbers as they're complex to handle exactly
+            ::Rational lr = l.as_rational();
+            ::Rational rr = r.as_rational();
+            if (rr.is_zero()) {
+                error_and_exit("Division by zero");
             }
+            return Value(lr / rr);
+        }
 
-            // Use rational arithmetic if either operand is rational
-            if (l.is_rational() || r.is_rational()) {
-                ::Rational lr = l.as_rational();
-                ::Rational rr = r.as_rational();
-
-                if (bin->op == "-") {
-                    return Value(lr - rr);
-                }
-                if (bin->op == "%") {
-                    // For rational modulo, convert to double temporarily
-                    double ld = lr.to_double();
-                    double rd = rr.to_double();
-                    if (rd == 0.0) {
-                        error_and_exit("Modulo by zero");
-                    }
-                    return Value(static_cast<int>(ld) % static_cast<int>(rd));
-                }
-                if (bin->op == "^") {
-                    // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-                    std::shared_ptr<SymbolicExpr> leftExpr;
-                    std::shared_ptr<SymbolicExpr> rightExpr;
-                    if (l.is_symbolic()) {
-                        leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-                    } else {
-                        leftExpr = from_number_to_symbolic(l);
-                    }
-                    if (r.is_symbolic()) {
-                        rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-                    } else {
-                        rightExpr = from_number_to_symbolic(r);
-                    }
-                    auto exponentExpr = SymbolicExpr::power(leftExpr, rightExpr);
-                    return Value(exponentExpr->simplify());
-                }
-                /*if (bin->op == "^") {
-                    // For rational exponentiation, use integer exponent if possible
-                    if (rr.is_integer() && rr.get_denominator() == 1) {
-                        int exp = static_cast<int>(rr.get_numerator());
-                        if (exp >= -1000 && exp <= 1000) {// Reasonable range
-                            return Value(lr.pow(exp));
-                        }
-                    }
-                    // Fall back to double arithmetic for non-integer or large exponents
-                    return Value(std::pow(lr.to_double(), rr.to_double()));
-                }*/
-            }
-
-            // BigInt 运算优先：如果任一为 BigInt，结果为 BigInt
-            if (l.is_bigint() || r.is_bigint()) {
-                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-
-                if (bin->op == "-") {
-                    return Value(lb - rb);
-                }
-                if (bin->op == "%") {
-                    if (rb.is_zero()) {
-                        error_and_exit("Modulo by zero");
-                    }
-                    // BigInt 模运算
-                    return Value(lb % rb);
-                }
-                if (bin->op == "^") {
-                    // BigInt 幂运算
-                    return Value(lb.power(rb));
-                }
-            }
-
-            // Fall back to double arithmetic
-            double ld = l.as_number();
-            double rd = r.as_number();
+        // Use irrational arithmetic if either operand is irrational
+        if (l.is_irrational() || r.is_irrational()) {
+            ::Irrational lr = l.as_irrational();
+            ::Irrational rr = r.as_irrational();
 
             if (bin->op == "-") {
-                double result = ld - rd;
-                return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+                return Value(lr - rr);
+            }
+            // Note: Other operations (%, ^) may fall back to double arithmetic
+            // for irrational numbers as they're complex to handle exactly
+        }
+
+        // Use rational arithmetic if either operand is rational
+        if (l.is_rational() || r.is_rational()) {
+            ::Rational lr = l.as_rational();
+            ::Rational rr = r.as_rational();
+
+            if (bin->op == "-") {
+                return Value(lr - rr);
             }
             if (bin->op == "%") {
+                // For rational modulo, convert to double temporarily
+                double ld = lr.to_double();
+                double rd = rr.to_double();
                 if (rd == 0.0) {
-                    // 原：std::cerr << "Error: Modulo by zero" << std::endl;
                     error_and_exit("Modulo by zero");
                 }
                 return Value(static_cast<int>(ld) % static_cast<int>(rd));
             }
             if (bin->op == "^") {
-                return Value(std::pow(ld, rd));
+                // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+                std::shared_ptr<SymbolicExpr> leftExpr;
+                std::shared_ptr<SymbolicExpr> rightExpr;
+                if (l.is_symbolic()) {
+                    leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
+                } else {
+                    leftExpr = from_number_to_symbolic(l);
+                }
+                if (r.is_symbolic()) {
+                    rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
+                } else {
+                    rightExpr = from_number_to_symbolic(r);
+                }
+                auto exponentExpr = SymbolicExpr::power(leftExpr, rightExpr);
+                return Value(exponentExpr->simplify());
+            }
+            /*if (bin->op == "^") {
+                // For rational exponentiation, use integer exponent if possible
+                if (rr.is_integer() && rr.get_denominator() == 1) {
+                    int exp = static_cast<int>(rr.get_numerator());
+                    if (exp >= -1000 && exp <= 1000) {// Reasonable range
+                        return Value(lr.pow(exp));
+                    }
+                }
+                // Fall back to double arithmetic for non-integer or large exponents
+                return Value(std::pow(lr.to_double(), rr.to_double()));
+            }*/
+        }
+
+        // BigInt 运算优先：如果任一为 BigInt，结果为 BigInt
+        if (l.is_bigint() || r.is_bigint()) {
+            ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+            ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+
+            if (bin->op == "-") {
+                return Value(lb - rb);
+            }
+            if (bin->op == "%") {
+                if (rb.is_zero()) {
+                    error_and_exit("Modulo by zero");
+                }
+                // BigInt 模运算
+                return Value(lb % rb);
+            }
+            if (bin->op == "^") {
+                // BigInt 幂运算
+                return Value(lb.power(rb));
             }
         }
 
-        // Comparison operators
-        if (bin->op == "==" || bin->op == "!=" || bin->op == "<" ||
-            bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
+        // Fall back to double arithmetic
+        double ld = l.as_number();
+        double rd = r.as_number();
 
-            // Handle different type combinations
-            if (l.is_numeric() && r.is_numeric()) {
-                // BigInt 比较优先
-                if (l.is_bigint() || r.is_bigint()) {
-                    ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                    ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+        if (bin->op == "-") {
+            double result = ld - rd;
+            return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+        }
+        if (bin->op == "%") {
+            if (rd == 0.0) {
+                // 原：std::cerr << "Error: Modulo by zero" << std::endl;
+                error_and_exit("Modulo by zero");
+            }
+            return Value(static_cast<int>(ld) % static_cast<int>(rd));
+        }
+        if (bin->op == "^") {
+            return Value(std::pow(ld, rd));
+        }
+    }
 
-                    // 使用字符串比较来判断大小（这是一个简化的实现）
-                    std::string ls = lb.to_string();
-                    std::string rs = rb.to_string();
+    // Comparison operators
+    if (bin->op == "==" || bin->op == "!=" || bin->op == "<" ||
+        bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
+        // Handle different type combinations
+        if (l.is_numeric() && r.is_numeric()) {
+            // BigInt 比较优先
+            if (l.is_bigint() || r.is_bigint()) {
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
 
-                    if (bin->op == "==") return Value(ls == rs);
-                    if (bin->op == "!=") return Value(ls != rs);
-
-                    // 对于大小比较，需要考虑符号和长度
-                    bool lb_neg = ls[0] == '-';
-                    bool rb_neg = rs[0] == '-';
-
-                    if (lb_neg && !rb_neg) {
-                        // 左负右正
-                        if (bin->op == "<") return Value(true);
-                        if (bin->op == "<=") return Value(true);
-                        if (bin->op == ">") return Value(false);
-                        if (bin->op == ">=") return Value(false);
-                    } else if (!lb_neg && rb_neg) {
-                        // 左正右负
-                        if (bin->op == "<") return Value(false);
-                        if (bin->op == "<=") return Value(false);
-                        if (bin->op == ">") return Value(true);
-                        if (bin->op == ">=") return Value(true);
-                    } else {
-                        // 同号比较：比较绝对值的长度和字典序
-                        std::string labs = lb_neg ? ls.substr(1) : ls;
-                        std::string rabs = rb_neg ? rs.substr(1) : rs;
-
-                        bool abs_less;
-                        if (labs.length() != rabs.length()) {
-                            abs_less = labs.length() < rabs.length();
-                        } else {
-                            abs_less = labs < rabs;
-                        }
-
-                        bool result_less = lb_neg ? !abs_less : abs_less;
-
-                        if (bin->op == "<") return Value(result_less);
-                        if (bin->op == "<=") return Value(result_less || ls == rs);
-                        if (bin->op == ">") return Value(!result_less && ls != rs);
-                        if (bin->op == ">=") return Value(!result_less);
-                    }
-                } else {
-                    double ld = l.as_number();
-                    double rd = r.as_number();
-
-                    if (bin->op == "==") return Value(ld == rd);
-                    if (bin->op == "!=") return Value(ld != rd);
-                    if (bin->op == "<") return Value(ld < rd);
-                    if (bin->op == "<=") return Value(ld <= rd);
-                    if (bin->op == ">") return Value(ld > rd);
-                    if (bin->op == ">=") return Value(ld >= rd);
-                }
-            } else if (l.is_string() && r.is_string()) {
-                std::string ls = std::get<std::string>(l.data);
-                std::string rs = std::get<std::string>(r.data);
+                // 使用字符串比较来判断大小（这是一个简化的实现）
+                std::string ls = lb.to_string();
+                std::string rs = rb.to_string();
 
                 if (bin->op == "==") return Value(ls == rs);
                 if (bin->op == "!=") return Value(ls != rs);
-                if (bin->op == "<") return Value(ls < rs);
-                if (bin->op == "<=") return Value(ls <= rs);
-                if (bin->op == ">") return Value(ls > rs);
-                if (bin->op == ">=") return Value(ls >= rs);
-            } else if (l.is_bool() && r.is_bool()) {
-                bool lb = std::get<bool>(l.data);
-                bool rb = std::get<bool>(r.data);
 
-                if (bin->op == "==") return Value(lb == rb);
-                if (bin->op == "!=") return Value(lb != rb);
-                // For booleans, false < true
-                if (bin->op == "<") return Value(lb < rb);
-                if (bin->op == "<=") return Value(lb <= rb);
-                if (bin->op == ">") return Value(lb > rb);
-                if (bin->op == ">=") return Value(lb >= rb);
+                // 对于大小比较，需要考虑符号和长度
+                bool lb_neg = ls[0] == '-';
+                bool rb_neg = rs[0] == '-';
+
+                if (lb_neg && !rb_neg) {
+                    // 左负右正
+                    if (bin->op == "<") return Value(true);
+                    if (bin->op == "<=") return Value(true);
+                    if (bin->op == ">") return Value(false);
+                    if (bin->op == ">=") return Value(false);
+                } else if (!lb_neg && rb_neg) {
+                    // 左正右负
+                    if (bin->op == "<") return Value(false);
+                    if (bin->op == "<=") return Value(false);
+                    if (bin->op == ">") return Value(true);
+                    if (bin->op == ">=") return Value(true);
+                } else {
+                    // 同号比较：比较绝对值的长度和字典序
+                    std::string labs = lb_neg ? ls.substr(1) : ls;
+                    std::string rabs = rb_neg ? rs.substr(1) : rs;
+
+                    bool abs_less;
+                    if (labs.length() != rabs.length()) {
+                        abs_less = labs.length() < rabs.length();
+                    } else {
+                        abs_less = labs < rabs;
+                    }
+
+                    bool result_less = lb_neg ? !abs_less : abs_less;
+
+                    if (bin->op == "<") return Value(result_less);
+                    if (bin->op == "<=") return Value(result_less || ls == rs);
+                    if (bin->op == ">") return Value(!result_less && ls != rs);
+                    if (bin->op == ">=") return Value(!result_less);
+                }
             } else {
-                // Type mismatch - only equality/inequality make sense
-                if (bin->op == "==") return Value(false);// Different types are never equal
-                if (bin->op == "!=") return Value(true); // Different types are always not equal
+                double ld = l.as_number();
+                double rd = r.as_number();
 
-                error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
-                return Value();
+                if (bin->op == "==") return Value(ld == rd);
+                if (bin->op == "!=") return Value(ld != rd);
+                if (bin->op == "<") return Value(ld < rd);
+                if (bin->op == "<=") return Value(ld <= rd);
+                if (bin->op == ">") return Value(ld > rd);
+                if (bin->op == ">=") return Value(ld >= rd);
             }
+        } else if (l.is_string() && r.is_string()) {
+            std::string ls = std::get<std::string>(l.data);
+            std::string rs = std::get<std::string>(r.data);
+
+            if (bin->op == "==") return Value(ls == rs);
+            if (bin->op == "!=") return Value(ls != rs);
+            if (bin->op == "<") return Value(ls < rs);
+            if (bin->op == "<=") return Value(ls <= rs);
+            if (bin->op == ">") return Value(ls > rs);
+            if (bin->op == ">=") return Value(ls >= rs);
+        } else if (l.is_bool() && r.is_bool()) {
+            bool lb = std::get<bool>(l.data);
+            bool rb = std::get<bool>(r.data);
+
+            if (bin->op == "==") return Value(lb == rb);
+            if (bin->op == "!=") return Value(lb != rb);
+            // For booleans, false < true
+            if (bin->op == "<") return Value(lb < rb);
+            if (bin->op == "<=") return Value(lb <= rb);
+            if (bin->op == ">") return Value(lb > rb);
+            if (bin->op == ">=") return Value(lb >= rb);
+        } else {
+            // Type mismatch - only equality/inequality make sense
+            if (bin->op == "==") return Value(false);// Different types are never equal
+            if (bin->op == "!=") return Value(true); // Different types are always not equal
+
+            error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
+            return Value();
         }
+    }
 
         error_and_exit("Unknown binary operator '" + bin->op + "'");
-        return Value();
+
 }
 
 Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
-    Value v = eval(unary->operand.get());
+     Value v = eval(unary->operand.get());
 
     if (unary->op == "-") {
         if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
