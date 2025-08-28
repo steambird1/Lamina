@@ -1,5 +1,4 @@
 #pragma once
-#include "lamina.hpp"
 #ifdef _WIN32
 #ifdef LAMINA_CORE_EXPORTS
 #define LAMINA_API __declspec(dllexport)
@@ -82,6 +81,11 @@ public:
     void execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
     // Print all variables in current scope
+    static Value eval_LiteralExpr(const LiteralExpr* node);
+    Value eval_UnaryExpr(const UnaryExpr* unary);
+    Value eval_BinaryExpr(const BinaryExpr* bin);
+    Value eval_CallExpr(const CallExpr* call);
+
     void printVariables() const;
     void add_function(const std::string& name, FuncDefStmt* func);
     // Save AST in REPL mode to keep function pointers valid
@@ -142,3 +146,27 @@ private:
     // 移除静态成员变量声明，改用函数内静态变量
     // static std::vector<EntryFunction> entry_functions;
 };
+
+inline void print_them() {
+    // Output credits and developer information
+    std::cout << "Credits\n";
+    std::cout << "Lamina Interpreter\n";
+    std::cout << "Developed by Ziyang-bai\n";
+    std::cout << "Helper: Ange1PLSGreet\n";
+    std::cout << "Special thanks to all contributors and users!\n";
+    std::cout << "For more information, visit: https://github.com/Ziyang-bai/Lamina\n";
+    std::cout << "This interpreter is open source and welcomes contributions.\n";
+    std::cout << "Designed by Ziyang-Bai\n";
+    std::cout << "\n";
+}
+
+inline void print_logo() {
+    // Output ASCII art logo
+    std::cout << "   __                    _            \n";
+    std::cout << "  / /   ____ _____ ___  (_)___  ____ _\n";
+    std::cout << " / /   / __ `/ __ `__ \\/ / __ \\/ __ `/\n";
+    std::cout << "/ /___/ /_/ / / / / / / / / / / /_/ / \n";
+    std::cout << "/_____/\\__,_/_/ /_/ /_/_/_/ /_/\\__,_/  \n";
+    std::cout << "                                       \n";
+
+}

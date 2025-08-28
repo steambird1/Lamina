@@ -292,8 +292,8 @@ struct otherInfo{
 | 函数                       | 描述   | 示例                                   |
 |--------------------------|------|--------------------------------------|
 | `getattr(src,name)`      | 获取属性 | `getattr("Student","name") -> "Tom"` |
-| `setattr(src,name,expr)` | 设置属性 | `setattr("Student","name")`          |
-| `update(src,other)`      | 添加数据 | `update("Student","otherInfo)"`      |
+| `setattr(src,name,expr)` | 设置属性 | `setattr("Student", "name", "Lucy")` |
+| `update(src,other)`      | 添加数据 | `update("Student","otherInfo")`      |
 
 ### 比较运算符
 
