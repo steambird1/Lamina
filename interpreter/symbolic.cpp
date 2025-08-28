@@ -233,7 +233,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         }
     }
     result_terms.insert(result_terms.end(), others.begin(), others.end());
-    result_terms.push_back(SymbolicExpr::number(number_term));
+    if (number_term != 0) {// 非0时才添加数字
+        result_terms.push_back(SymbolicExpr::number(number_term));
+    }
     if (result_terms.empty()) return SymbolicExpr::number(0);
     if (result_terms.size() == 1) return result_terms[0];
 
