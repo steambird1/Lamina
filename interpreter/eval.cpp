@@ -280,13 +280,19 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
 
             double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
             if (l.is_int() && r.is_int()) {
+                // check overflow and underflow
+                if (static_cast<int>(result) == INT_MAX ||
+                        static_cast<int>(result) == INT_MIN) {
+                    return Value(BigInt(l.as_number())+BigInt(r.as_number()));
+                }
                 return Value(static_cast<int>(result));
             }
             return Value(result);
         } else {
             error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
         }
-    }// Arithmetic operations (require numeric operands or vector operations)
+    }
+    // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
             bin->op == "%" || bin->op == "^") {
         // Special handling for multiplication
@@ -348,7 +354,15 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 }
 
                 double result = l.as_number() * r.as_number();
-                return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
+                if (l.is_int() && r.is_int()) {
+                    // check overflow and underflow
+                    if (static_cast<int>(result) == INT_MAX ||
+                            static_cast<int>(result) == INT_MIN) {
+                        return Value(BigInt(l.as_number())*BigInt(r.as_number()));
+                    }
+                    return Value(static_cast<int>(result));
+                }
+                return Value(result);
             }
             // Error case
             error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
@@ -408,10 +422,18 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 }
 
                 double result = l.as_number() - r.as_number();
+                if (l.is_int() && r.is_int()) {
+                    // check overflow and underflow
+                    if (static_cast<int>(result) == INT_MAX ||
+                            static_cast<int>(result) == INT_MIN) {
+                        return Value(BigInt(l.as_number())-BigInt(r.as_number()));
+                    }
+                    return Value(static_cast<int>(result));
+                }
                 return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
             }
             // Error case
-            error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
+            error_and_exit("Cannot decrease " + l.to_string() + " by " + r.to_string());
         }
 
         // Other arithmetic operations require both operands to be numeric
@@ -478,36 +500,28 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             return Value(lr / rr);
         }
 
-        // Use irrational arithmetic if either operand is irrational
-        if (l.is_irrational() || r.is_irrational()) {
-            ::Irrational lr = l.as_irrational();
-            ::Irrational rr = r.as_irrational();
-
-            if (bin->op == "-") {
-                return Value(lr - rr);
-            }
-            // Note: Other operations (%, ^) may fall back to double arithmetic
-            // for irrational numbers as they're complex to handle exactly
-        }
-
-        // Use rational arithmetic if either operand is rational
-        if (l.is_rational() || r.is_rational()) {
-            ::Rational lr = l.as_rational();
-            ::Rational rr = r.as_rational();
-
-            if (bin->op == "-") {
-                return Value(lr - rr);
-            }
-            if (bin->op == "%") {
-                // For rational modulo, convert to double temporarily
-                double ld = lr.to_double();
-                double rd = rr.to_double();
+        if (bin->op == "%") {
+            if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic() || l.is_rational() || r.is_rational()) && l.is_numeric() && r.is_numeric()) {
+                // 有小数，使用小数取模
+                double ld = l.as_number();
+                double rd = r.as_number();
                 if (rd == 0.0) {
                     error_and_exit("Modulo by zero");
                 }
-                return Value(static_cast<int>(ld) % static_cast<int>(rd));
+                return Value(ld - rd * std::floor(ld / rd));// 保持结果非负
             }
-            if (bin->op == "^") {
+            if (l.is_bigint() || r.is_bigint()) {
+                // 有BigInt，使用BigInt内置方法
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                return Value(lb % rb);
+            }
+            // 都为int
+            return Value(static_cast<int>(l.as_number()) % static_cast<int>(r.as_number()));
+        }
+
+        if (bin->op == "^") {
+            if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
                 // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
                 std::shared_ptr<SymbolicExpr> leftExpr;
                 std::shared_ptr<SymbolicExpr> rightExpr;
@@ -524,58 +538,25 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 auto exponentExpr = SymbolicExpr::power(leftExpr, rightExpr);
                 return Value(exponentExpr->simplify());
             }
-            /*if (bin->op == "^") {
-                // For rational exponentiation, use integer exponent if possible
-                if (rr.is_integer() && rr.get_denominator() == 1) {
-                    int exp = static_cast<int>(rr.get_numerator());
-                    if (exp >= -1000 && exp <= 1000) {// Reasonable range
-                        return Value(lr.pow(exp));
-                    }
-                }
-                // Fall back to double arithmetic for non-integer or large exponents
-                return Value(std::pow(lr.to_double(), rr.to_double()));
-            }*/
-        }
-
-        // BigInt 运算优先：如果任一为 BigInt，结果为 BigInt
-        if (l.is_bigint() || r.is_bigint()) {
-            ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-            ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-
-            if (bin->op == "-") {
-                return Value(lb - rb);
+            if (l.is_rational() && (r.is_bigint() || r.is_int())) {
+                // 如果底数为Rational，指数为整数，结果为Rational
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
+                return Value(l.as_rational().power(rb));
             }
-            if (bin->op == "%") {
-                if (rb.is_zero()) {
-                    error_and_exit("Modulo by zero");
-                }
-                // BigInt 模运算
-                return Value(lb % rb);
-            }
-            if (bin->op == "^") {
-                // BigInt 幂运算
+            if ((l.is_bigint() || r.is_int())&& (r.is_bigint() || r.is_int())) {
+                // 如果底数为整数，指数为整数，结果为BigInt
+                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
+                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
                 return Value(lb.power(rb));
             }
-        }
+            // 有小数，采用小数幂
+            double ld = l.as_number();
+            double rd = r.as_number();
 
-        // Fall back to double arithmetic
-        double ld = l.as_number();
-        double rd = r.as_number();
-
-        if (bin->op == "-") {
-            double result = ld - rd;
-            return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
-        }
-        if (bin->op == "%") {
-            if (rd == 0.0) {
-                // 原：std::cerr << "Error: Modulo by zero" << std::endl;
-                error_and_exit("Modulo by zero");
-            }
-            return Value(static_cast<int>(ld) % static_cast<int>(rd));
-        }
-        if (bin->op == "^") {
             return Value(std::pow(ld, rd));
         }
+
+        error_and_exit("Unknown Arithmetic Operation.");
     }
 
     // Comparison operators
