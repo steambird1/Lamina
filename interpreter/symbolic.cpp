@@ -55,7 +55,25 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
         }
         if (std::holds_alternative<::BigInt>(num_val)) {
             const auto& bi = std::get<::BigInt>(num_val);
+            if (bi.negative) throw std::runtime_error("Square root of negative number");
+            if (bi.is_zero() || bi == BigInt(1)) return SymbolicExpr::number(bi);
             if (bi.is_perfect_square()) return SymbolicExpr::number(bi.sqrt());
+            // TODO: 这个等BigInt效率高点再说，或者换个算法
+            /*BigInt factor(1), remaining(bi);
+            for (BigInt i(2); i * i <= remaining; i = i + BigInt(1)) {
+                while ((remaining % (i * i)).is_zero()) {
+                    factor = factor * i;
+                    remaining = remaining / (i * i);
+                }
+            }
+            if (factor > BigInt(1)) {
+                if (remaining == BigInt(1)) return SymbolicExpr::number(factor);
+                else return SymbolicExpr::multiply(SymbolicExpr::number(factor), SymbolicExpr::sqrt(SymbolicExpr::number(remaining)));
+            }*/
+            // 暂时只判断可以转成int的
+            if (bi <= BigInt(INT_MAX) && bi >= BigInt(INT_MIN)) {
+                return SymbolicExpr::sqrt(SymbolicExpr::number(bi.to_int()))->simplify();
+            }
         }
     }
     // sqrt(x*x) 或 sqrt(π*π) 直接返回 x 或 π
