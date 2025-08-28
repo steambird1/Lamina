@@ -214,7 +214,7 @@ static void print_context(const std::vector<Token>& tokens, size_t pos, int cont
 
     std::cerr << context << "" << std::endl;
 
-    for (auto i = 0 ; i < context.size(); ++i) {
+    for (size_t i = 0 ; i < context.size(); ++i) {
         if (i == tokens[pos].column) std::cerr << "^";
         else std::cerr << "~";
     }
