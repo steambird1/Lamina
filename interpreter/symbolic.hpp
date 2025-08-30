@@ -146,7 +146,15 @@ public:
         }
         throw std::runtime_error("Expression is not a Rational");
     }
-    
+    ::Rational convert_rational() const {
+		if (!is_number()) {
+			throw std::runtime_error("Expression cannot be converted into Rational");
+		}
+		if (is_rational()) return get_rational();
+		else if (is_big_int()) return ::Rational(get_big_int());
+		else return ::Rational(get_int());
+	}
+	
     // 尝试计算数值（如果可能的话）
     double to_double() const;
     

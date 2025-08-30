@@ -158,13 +158,104 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
         auto left_num = left->get_number();
         auto right_num = right->get_number();
         
-        // 简化：只处理整数乘法
         if (std::holds_alternative<int>(left_num) && std::holds_alternative<int>(right_num)) {
             int result = std::get<int>(left_num) * std::get<int>(right_num);
             return SymbolicExpr::number(result);
-        }
+        } else {
+			::Rational result = left_num->convert_rational() * right_num->convert_rational();
+			return SymbolicExpr::number(result);
+		}
     }
+	
+	// 下面指数处理的代码暂时不适用
+#if 0	
+	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
+		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
+			|| expr->type == SymbolicExpr::Type::Root || expr->type == SymbolicExpr::Type::Power;
+	}
+	
+	auto power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
+		if (expr->type == SymbolicExpr::Type::Number) {
+			return SymbolicExpr::power(expr, 1);
+		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
+			return SymbolicExpr::power(expr, ::Rational(1, 2));
+		} else if (expr->type == SymbolicExpr::Type::Root) {
+			// TODO:按文档规定修改此处 Root 实现
+			return SymbolicExpr::power(expr->operands[0], ::Rational(::BigInt(1), expr->operands[1]));
+		} else if (expr->type == SymbolicExpr::Type::Power) {
+			return expr;
+		} else {
+			return expr;
+		}
+	};
+	
+	// TODO:指数类型相乘的处理
+	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power)
+		&& (is_power_compatible(left) && is_power_compatible(right))) {
+			
+	}
+#endif	
+	
+	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
+		if (expr->type == SymbolicExpr::Type::Multiply) {
+			if (expr->operands.size() >= 2 && (expr->operands[0]->type == SymbolicExpr::Type::Number)
+				&& (expr->operands[1]->type == SymbolicExpr::Type::Sqrt)) return true;
+		}
+		return false;
+	};
+	
+	// 根式相乘的一般处理
+	if (left->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(left)
+		|| right->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(right)) {
+		
+		if ((!is_compounded_sqrt(left)) && (!is_compounded_sqrt(right))) {
+			
+			if (right->type == SymbolicExpr::Type::Sqrt)
+				std::swap(left, right);
+			
+			std::shared_ptr<SymbolicExpr> sresult = SymbolicExpr::multiply(
+				(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left)->simplify())
+															: left->operands[0],
+				(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right)->simplify())
+															: right->operands[0]);
+			
+			return SymbolicExpr::sqrt(sresult)->simplify();
+			
+		} else {
+			
+			// 把右侧加入到左侧
+			if (!is_compounded_sqrt(left))
+				std::swap(left, right);
+			
+			auto res = std::make_shared<SymbolicExpr>(left);
+			auto simplify_res = [&res]() {
+				if (is_compounded_sqrt(res->operands[1])) {
+					res->operands[0] = SymbolicExpr::multiply(res->operands[0], res->operands[1]->operands[0])->simplify();
+					res->operands[1] = SymbolicExpr::sqrt(res->operands[1]->operands[1]);
+				}
+			};
+			
+			if (right->type == SymbolicExpr::Type::Number) {
+				res->operands[0] = SymbolicExpr::multiply(res->operands[0], right)->simplify();
+				return res;
+			} else if (right->type == SymbolicExpr::Type::Sqrt) {
+				res->operands[1] = SymbolicExpr::multiply(res->operands[1], right)->simplify();
+				simplify_res();
+				return res;
+			} else if (is_compounded_sqrt(right)) {
+				res->operands[0] = SymbolicExpr::multiply(res->operands[0], right->operands[0])->simplify();
+				res->operands[1] = SymbolicExpr::multiply(res->operands[1], right->operands[1])->simplify();
+				simplify_res();
+				return res;
+			}
+			
+		}
+		
+	}
+	
+	// TODO:(不一定做)加法类型相乘的处理
     
+	// 回退到保留乘法
     return SymbolicExpr::multiply(left, right);
 }
 
