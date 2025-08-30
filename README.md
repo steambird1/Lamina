@@ -333,6 +333,8 @@ struct otherInfo{
 | `size(x)`        | 获取大小   | `size([1,2,3]) → 3`       |
 | `fraction(x)`    | 小数转分数 | `fraction(0.75) → 3/4`    |
 | `decimal(x)`     | 分数转小数 | `decimal(3/4) → 0.75`     |
+| `range(start=0,end,step)` | 生成数组 | `range(1,10,2)→[1,3,5,7,9]` |
+| `assert(cond,msg="")`     | 断言    | `assert(1!=1, "Error")`      |
 | `visit()`        | 访问       | `visit(a, 3, 0)`          |
 | `visit_by_str()` | 访问       | `visit_by_str(b, "name")` |
 
