@@ -400,7 +400,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 } else {
                     rightExpr = from_number_to_symbolic(r);
                 }
-                return Value(SymbolicExpr::multiply(leftExpr, rightExpr)->simplify());
+                return Value(SymbolicExpr::add(leftExpr, SymbolicExpr::multiply(SymbolicExpr::number(-1), rightExpr)->simplify())->simplify());
             }
             // Regular multiplication (both must be numeric)
             if (l.is_numeric() && r.is_numeric()) {
