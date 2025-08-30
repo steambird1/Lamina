@@ -227,7 +227,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			if (!is_compounded_sqrt(left))
 				std::swap(left, right);
 			
-			auto res = std::make_shared<SymbolicExpr>(left);
+			auto res = std::make_shared<SymbolicExpr>(*left);
 			auto simplify_res = [&]() {
 				if (is_compounded_sqrt(res->operands[1])) {
 					res->operands[0] = SymbolicExpr::multiply(res->operands[0], res->operands[1]->operands[0])->simplify();
