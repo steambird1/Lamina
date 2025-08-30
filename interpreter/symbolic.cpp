@@ -364,7 +364,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     std::vector<std::shared_ptr<SymbolicExpr>> others;// other things
     for (const auto& term : terms) {
         ::Rational coeff;
-        int radicand = 0;
+        ::Rational radicand;
         if (extract_sqrt(term, coeff, radicand)) {
             sqrt_terms[radicand] = sqrt_terms[radicand] + coeff;
         } else if (extract_number(term, number_term)) {
