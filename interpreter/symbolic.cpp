@@ -191,10 +191,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		
 	}		
 	
-	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
+	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
 			|| expr->type == SymbolicExpr::Type::Root || expr->type == SymbolicExpr::Type::Power;
-	}
+	};
 	
 	auto power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
 		if (expr->type == SymbolicExpr::Type::Number) {
@@ -222,17 +222,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		auto lcr = left->operands[1]->convert_rational();
 		auto rcr = rcom->operands[1]->convert_rational();
 		
-		if (lcr->get_denominator() == rcr->get_denominator()) {
+		if (lcr.get_denominator() == rcr.get_denominator()) {
 			if (lcr == rcr) {
 				return SymbolicExpr::power(SymbolicExpr::multiply(left->operands[0], rcom->operands[0]),
 						SymbolicExpr::number(lcr));
 			} else {
-				return SymbolicExpr::Power(
+				return SymbolicExpr::power(
 					SymbolicExpr::multiply(
-						SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr->get_numerator())),
-						SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr->get_numerator()))
+						SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr.get_numerator())),
+						SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))
 					),
-					SymbolicExpr::number(lcr->get_denominator())
+					SymbolicExpr::number(lcr.get_denominator())
 				)->simplify();
 			}	
 		}
