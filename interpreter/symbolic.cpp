@@ -35,6 +35,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
     auto simplified_operand = operands[0]->simplify();
     
     if (simplified_operand->is_number()) {
+		
+		auto scvrs = simplified_operand->convert_rational();
+		
+		if (scvrs->get_denominator() == ::BigInt(1)) {
+			::BigInt actual = scvrs->get_numerator();
+			simplified_operand->number_value = actual;
+		}
+		
         auto num_val = simplified_operand->get_number();
         if (std::holds_alternative<int>(num_val)) {
             int n = std::get<int>(num_val);
@@ -191,7 +199,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 
 		return res;
 		
-	}		
+	}
 	
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
