@@ -76,6 +76,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
                 return SymbolicExpr::sqrt(SymbolicExpr::number(bi.to_int()))->simplify();
             }
         }
+		// TODO:实现分数sqrt化简
     }
     // sqrt(x*x) 或 sqrt(π*π) 直接返回 x 或 π
     if (simplified_operand->type == SymbolicExpr::Type::Multiply && simplified_operand->operands.size() == 2) {
@@ -358,7 +359,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     };
     flatten_add(left);
     flatten_add(right);
-    std::map<int, ::Rational> sqrt_terms;// radicand -> sum of coeffs
+    std::map<::Rational, ::Rational> sqrt_terms;// radicand -> sum of coeffs
     // std::map<std::string, ::Rational> variable_terms;// TODO
     Rational number_term(0);// 数字部分
     std::vector<std::shared_ptr<SymbolicExpr>> others;// other things
