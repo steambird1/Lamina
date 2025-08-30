@@ -3,6 +3,7 @@
 #include <cmath>
 #include <map>
 #include <functional>
+#include <iostream>
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
@@ -171,6 +172,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
 		
 		auto res = SymbolicExpr::number(0);
+#if 1
+		std::cerr << "Attempt to simplify adding" << std::endl;
+#endif
 		
 		if ((left->type == SymbolicExpr::Type::Add) && (right->type == SymbolicExpr::Type::Add)) {
 			for (auto &i : left->operands) {
@@ -186,7 +190,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify())->simplify();
 			}
 		}
-		
+#if 1
+		std::cerr << "End of simplify adding" << std::endl;
+#endif
+
 		return res;
 		
 	}		
