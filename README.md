@@ -346,6 +346,14 @@ struct otherInfo{
 | `randint(start,end)`  | 获取范围内的随机整数，   | `randint(0,10)→6`         |
 | `randstr(str)`        | 获取随机字符串   | `randstr("abcdefg") → f`       |
 
+### 时间处理函数
+
+| 函数             | 描述       | 示例                      |
+| ---------------- | ---------- | ------------------------- |
+| `get_time()`     | 获取时间   | `get_time() → 当前时间`        |
+| `get_date()`     | 获取日期   | `get_date`  → 当前日期`        |
+| `format_date(date)`  | 格式化日期 | `format_date(date)`        |
+
 ### 字符串处理函数
 
 | 函数                                                 | 描述                                      | 示例                                                           |
