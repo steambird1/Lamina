@@ -193,7 +193,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
-			|| expr->type == SymbolicExpr::Type::Root || expr->type == SymbolicExpr::Type::Power;
+			|| expr->type == SymbolicExpr::Type::Power;
 	};
 	
 	auto power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
@@ -201,9 +201,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(::Rational(1, 2)));
-		} else if (expr->type == SymbolicExpr::Type::Root) {
-			// TODO:按文档规定修改此处 Root 实现
-			return SymbolicExpr::power(expr->operands[0], SymbolicExpr::number(::Rational(::BigInt(1), expr->operands[1])));
 		} else if (expr->type == SymbolicExpr::Type::Power) {
 			return expr;
 		} else {
