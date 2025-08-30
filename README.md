@@ -333,10 +333,18 @@ struct otherInfo{
 | `size(x)`        | 获取大小   | `size([1,2,3]) → 3`       |
 | `fraction(x)`    | 小数转分数 | `fraction(0.75) → 3/4`    |
 | `decimal(x)`     | 分数转小数 | `decimal(3/4) → 0.75`     |
-| `range(start=0,end,step)` | 生成数组 | `range(1,10,2)→[1,3,5,7,9]` |
+| `range(start=0,end,step=1)` | 生成数组 | `range(1,10,2)→[1,3,5,7,9]` |
 | `assert(cond,msg="")`     | 断言    | `assert(1!=1, "Error")`      |
 | `visit()`        | 访问       | `visit(a, 3, 0)`          |
 | `visit_by_str()` | 访问       | `visit_by_str(b, "name")` |
+
+### 随机函数
+
+| 函数             | 描述       | 示例                      |
+| ---------------- | ---------- | ------------------------- |
+| `rand()`     | 获取零到一之间的随机浮点数   | `rand() → 0.6373`        |
+| `randint(start,end)`  | 获取范围内的随机整数，   | `randint(0,10)→6`         |
+| `randstr(str)`        | 获取随机字符串   | `randstr("abcdefg") → f`       |
 
 ### 字符串处理函数
 
