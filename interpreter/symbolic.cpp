@@ -172,9 +172,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
 		
 		auto res = SymbolicExpr::number(0);
-#if 1
-		std::cerr << "Attempt to simplify adding" << std::endl;
-#endif
 		
 		if ((left->type == SymbolicExpr::Type::Add) && (right->type == SymbolicExpr::Type::Add)) {
 			for (auto &i : left->operands) {
@@ -190,9 +187,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify())->simplify();
 			}
 		}
-#if 1
-		std::cerr << "End of simplify adding" << std::endl;
-#endif
 
 		return res;
 		
@@ -317,16 +311,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     auto right = operands[1]->simplify();
 
     // 解析根号
-    auto extract_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, int& radicand) -> bool {
+	// 如果为根号，其中 coeff 为根式的系数，radicand 为根号下的值
+    auto extract_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, ::Rational& radicand) -> bool {
         if (expr->type == SymbolicExpr::Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
             coeff = ::Rational(1);
-            radicand = std::get<int>(expr->operands[0]->get_number());
+            radicand = expr->operands[0]->convert_rational();
             return true;
         }
         if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() == 2) {
             if (expr->operands[0]->is_number() && expr->operands[1]->type == SymbolicExpr::Type::Sqrt && expr->operands[1]->operands.size() == 1 && expr->operands[1]->operands[0]->is_number()) {
-                coeff = std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
-                radicand = std::get<int>(expr->operands[1]->operands[0]->get_number());
+                coeff = expr->operands[0]->convert_rational();
+				//std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
+				
+                radicand = expr->operands[1]->operands[0]->convert_rational();
                 return true;
             }
         }
@@ -344,20 +341,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     // 解析数字
     auto extract_number = [](const std::shared_ptr<SymbolicExpr> expr, Rational& n) -> bool {
         if (expr->type != SymbolicExpr::Type::Number) return false;
-
-        auto num = expr->get_number();
-        if (expr->is_big_int()) {
-            n = n + std::get<BigInt>(num);
-        } else if (expr->is_rational()) {
-            n = n + std::get<Rational>(num);
-        } else {// Otherwise, it's a int
-            n = n + std::get<int>(num);
-        }
+		n = n + expr->convert_rational();
         return true;
     };
 
     std::vector<std::shared_ptr<SymbolicExpr>> terms;
     std::function<void(const std::shared_ptr<SymbolicExpr>&)> flatten_add;
+	// 展开所有加法项
     flatten_add = [&](const std::shared_ptr<SymbolicExpr>& expr) {
         if (expr->type == SymbolicExpr::Type::Add && expr->operands.size() == 2) {
             flatten_add(expr->operands[0]);
