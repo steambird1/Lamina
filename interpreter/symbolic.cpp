@@ -38,8 +38,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 		
 		auto scvrs = simplified_operand->convert_rational();
 		
-		if (scvrs->get_denominator() == ::BigInt(1)) {
-			::BigInt actual = scvrs->get_numerator();
+		if (scvrs.get_denominator() == ::BigInt(1)) {
+			::BigInt actual = scvrs.get_numerator();
 			simplified_operand->number_value = actual;
 		}
 		
