@@ -167,8 +167,30 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
     }
 	
-	// 下面指数处理的代码暂时不适用
-#if 0	
+	// 加法运算特殊化简
+	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
+		
+		auto res = SymbolicExpr::number(0);
+		
+		if ((left->type == SymbolicExpr::Type::Add) && (right->type == SymbolicExpr::Type::Add)) {
+			for (auto &i : left->operands) {
+				for (auto &j : right->operands) {
+					res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, j)->simplify())->simplify();
+				}
+			}
+		} else {
+			if (left->type != SymbolicExpr::Type::Add)
+				std::swap(left, right);
+			
+			for (auto &i : left->operands) {
+				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify())->simplify();
+			}
+		}
+		
+		return res;
+		
+	}		
+	
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
 			|| expr->type == SymbolicExpr::Type::Root || expr->type == SymbolicExpr::Type::Power;
@@ -189,13 +211,37 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 	};
 	
-	// TODO:指数类型相乘的处理
+	// TODO:指数类型相乘的处理（可能考虑合并相同指数项）
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power)
 		&& (is_power_compatible(left) && is_power_compatible(right))) {
-			
+		
+		if (left->type != SymbolicExpr::Type::Power)
+			std::swap(left, right);
+		
+		auto rcom = power_compatible(right);
+		auto lcr = left->operands[1]->convert_rational();
+		auto rcr = rcom->operands[1]->convert_rational();
+		
+		if (lcr->get_denominator() == rcr->get_denominator()) {
+			if (lcr == rcr) {
+				return SymbolicExpr::power(SymbolicExpr::multiply(left->operands[0], rcom->operands[0]),
+						SymbolicExpr::number(lcr));
+			} else {
+				return SymbolicExpr::Power(
+					SymbolicExpr::multiply(
+						SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr->get_numerator())),
+						SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr->get_numerator()))
+					),
+					SymbolicExpr::number(lcr->get_denominator())
+				)->simplify();
+			}	
+		}
+		if (left->operands[0] == rcom->operands[0]) {
+			return SymbolicExpr::power(left->operands[0], SymbolicExpr::add(left->operands[1], rcom->operands[1]))->simplify();
+		}
+		// 到此处：未能化简
 	}
-#endif	
-	
+
 	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		if (expr->type == SymbolicExpr::Type::Multiply) {
 			if (expr->operands.size() >= 2 && (expr->operands[0]->type == SymbolicExpr::Type::Number)
@@ -231,8 +277,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			auto simplify_res = [&]() {
 				if (is_compounded_sqrt(res->operands[1])) {
 					res->operands[0] = SymbolicExpr::multiply(res->operands[0], res->operands[1]->operands[0])->simplify();
-					res->operands[1] = SymbolicExpr::sqrt(res->operands[1]->operands[1]);
+					res->operands[1] = res->operands[1]->operands[1];		// 不用再 sqrt
 				}
+				res->simplify();
 			};
 			
 			if (right->type == SymbolicExpr::Type::Number) {
@@ -499,6 +546,15 @@ double SymbolicExpr::to_double() const {
                 return operands[0]->to_double() * operands[1]->to_double();
             }
             return 0.0;
+			
+		case Type::Add:
+			if (operands.size() >= 2) {
+                return operands[0]->to_double() + operands[1]->to_double();
+            }
+            return 0.0;
+			
+		case Type::Power:
+			return std::pow(operands[0]->to_double(), operands[1]->to_double());
 
         default:
             return 0.0;

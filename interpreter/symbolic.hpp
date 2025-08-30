@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <cmath>
 #include "bigint.hpp"
 #include "rational.hpp"
 
