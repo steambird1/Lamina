@@ -162,7 +162,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
             int result = std::get<int>(left_num) * std::get<int>(right_num);
             return SymbolicExpr::number(result);
         } else {
-			::Rational result = left_num->convert_rational() * right_num->convert_rational();
+			::Rational result = left->convert_rational() * right->convert_rational();
 			return SymbolicExpr::number(result);
 		}
     }
