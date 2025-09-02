@@ -213,83 +213,118 @@ int repl() {
     int lineno = 1;// 记录当前输入的行号，用于错误提示
 
     // REPL主循环
+    std::string code_buffer;
+    int brace_level = 0;
+
     while (true) {
         try {
             // 根据终端是否支持颜色，设置不同的提示符样式
             // Set prompt style based on whether the terminal supports color
-            std::string prompt = Interpreter::supports_colors()
-                                         ? "\033[1;32m> \033[0m "// 带绿色高亮的提示符（ANSI转义序列）
-                                         : "> ";                 // 普通提示符
+            std::string prompt;
+            if (brace_level > 0) {
+                prompt = Interpreter::supports_colors()
+                                 ? "\033[1;32m. \033[0m "// 多行输入下等待输入的提示符
+                                 : ". ";
+            } else {
+                prompt = Interpreter::supports_colors()
+                                 ? "\033[1;32m> \033[0m "// 带绿色高亮的提示符（ANSI转义序列）
+                                 : "> ";                 // 普通提示符
+            }
 
-            std::string line;// 存储用户输入的一行内容
+            std::string line = repl_readline(prompt);
 
-            // 读取用户输入
-            // Read user input
-            try {
-                line = repl_readline(prompt);
-            } catch (const CtrlCException&) {
+            if (line == "\x03") {// Ctrl+C interrupt
+                if (brace_level > 0) {
+                    code_buffer.clear();
+                    brace_level = 0;
+                    std::cout << "\nKeyboardInterrupt" << std::endl;
+                    continue;
+                }
+                std::cout << "\n";
                 break;
+            } else if (line == "\x04") {// Ctrl+D (EOF)
+                if (brace_level > 0) {
+                    // 在多行模式下，Ctrl+D 意味着输入结束，立即执行代码
+                    // In multi-line mode, Ctrl+D means end of input, execute code immediately
+                    goto execute_code;
+                } else {
+                    // 在主提示符的空行上，Ctrl+D 退出
+                    // On an empty line at the main prompt, Ctrl+D exits
+                    break;
+                }
             }
 
-            // 处理EOF（如用户输入Ctrl+D），退出循环
-            // Handle EOF (e.g., user input Ctrl+D) and exit loop
-            if (std::cin.eof()) break;
+            code_buffer += line + "\n";
 
-            // 忽略空行输入
-            // Ignore empty input lines
-            if (line.empty()) {
+            // 简单地通过计算大括号来检查代码块是否完整
+            // Simply check if the code block is complete by counting braces
+            for (char c: line) {
+                if (c == '{') {
+                    brace_level++;
+                } else if (c == '}') {
+                    brace_level--;
+                }
+            }
+
+            if (brace_level > 0) {
                 ++lineno;
                 continue;
             }
 
-            // 处理:exit命令：退出REPL
-            // Handle :exit command: exit REPL
-            if (line == ":exit") {
-                break;
-            }
+        execute_code:       // 用于从Ctrl+D跳转 (Goto label for Ctrl+D)
+            brace_level = 0;// 重置 (Reset)
 
-            // 处理:help命令：显示帮助信息
-            // Handle :help command: show help message
-            if (line == ":help") {
-                std::cout << "Lamina解释器命令 / Lamina Interpreter Commands:\n";
-                std::cout << "  :exit - 退出解释器 / Exit interpreter\n";
-                std::cout << "  :help - 显示此帮助信息 / Show this help message\n";
-                std::cout << "  :vars - 显示所有变量 / Show all variables\n";
-                std::cout << "  :clear - 清空屏幕 / Clear screen\n";
+            if (code_buffer.empty() || code_buffer == "\n") {
                 ++lineno;
+                code_buffer.clear();
                 continue;
             }
 
-            // 处理:vars命令：打印当前所有变量
-            // Handle :vars command: print all current variables
-            if (line == ":vars") {
-                interpreter.printVariables();
-                ++lineno;
-                continue;
-            }
+            std::string line_to_process = code_buffer;
+            code_buffer.clear();
 
-            // 处理:clear命令：清空屏幕（跨平台实现）
-            // Handle :clear command: clear screen (cross-platform implementation)
-            if (line == ":clear") {
+            // 只有在单行模式下才处理REPL命令
+            // Only process REPL commands in single-line mode
+            if (brace_level == 0) {
+                std::string trimmed_line = line;
+                trimmed_line.erase(0, trimmed_line.find_first_not_of(" \t\n\r"));
+                trimmed_line.erase(trimmed_line.find_last_not_of(" \t\n\r") + 1);
+
+                if (trimmed_line == ":exit") {
+                    break;
+                }
+                if (trimmed_line == ":help") {
+                    std::cout << "Lamina解释器命令 / Lamina Interpreter Commands:\n";
+                    std::cout << "  :exit - 退出解释器 / Exit interpreter\n";
+                    std::cout << "  :help - 显示此帮助信息 / Show this help message\n";
+                    std::cout << "  :vars - 显示所有变量 / Show all variables\n";
+                    std::cout << "  :clear - 清空屏幕 / Clear screen\n";
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":vars") {
+                    interpreter.printVariables();
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":clear") {
 #ifdef _WIN32
-                auto result = system("cls");// Windows下使用cls命令
+                    auto result = system("cls");// Windows下使用cls命令
 #else
-                auto result = system("clear");// Linux/macOS下使用clear命令
+                    auto result = system("clear");// Linux/macOS下使用clear命令
 #endif
-                (void) result;// 显式忽略system函数的返回值，避免编译器警告
-                ++lineno;
-                continue;
-            }
-
-            // 预留:fns命令（暂未实现）
-            // Reserved :fns command (not implemented yet)
-            if (line == ":fns") {
-                ++lineno;
-                continue;
+                    (void) result;// 显式忽略system函数的返回值，避免编译器警告
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":fns") {
+                    ++lineno;
+                    continue;
+                }
             }
 
             // frontend
-            auto tokens = Lexer::tokenize(line);
+            auto tokens = Lexer::tokenize(line_to_process);
             auto ast = Parser::parse(tokens);
 
             // 检查AST是否生成成功

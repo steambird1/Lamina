@@ -17,11 +17,11 @@ void CtrlCExit() {
 #else
 struct termios oldt;
 volatile sig_atomic_t g_running = 1;// 按下Ctrl+C后变为0
-void CtrlCExit() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);// 恢复终端设置
-    std::cout << "^C" << std::endl;
-    throw CtrlCException();
-}
+// void CtrlCExit() {
+//     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);// 恢复终端设置
+//     std::cout << "^C" << std::endl;
+//     throw CtrlCException();
+// }
 bool input_available() {// 防止getchar阻塞
     fd_set fds;
     FD_ZERO(&fds);
@@ -229,14 +229,23 @@ std::string repl_readline(const std::string& prompt) {
     });
     while (true) {
         if (!g_running) {
-            CtrlCExit();
+            // CtrlCExit();
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);// 恢复终端设置
+            g_running = 1;                          // 重置信号标志 (Reset signal flag)
+            return "\x03";                          // 返回Ctrl+C控制字符 (Return Ctrl+C control character)
         }
 
         if (input_available()) {
             char ch = getchar();
+            if (ch == 4) {                              // Ctrl+D (EOT)
+                tcsetattr(STDIN_FILENO, TCSANOW, &oldt);// 恢复终端设置 (Restore terminal settings)
+                return "\x04";                          // 返回Ctrl+D控制字符 (Return Ctrl+D control character)
+            }
             // Ctrl+C
             if (ch == 3) {// Ctrl+C
-                CtrlCExit();
+                // CtrlCExit();
+                tcsetattr(STDIN_FILENO, TCSANOW, &oldt);// 恢复终端设置
+                return "\x03";                          // 返回Ctrl+C控制字符 (Return Ctrl+C control character)
             }
             // Ctrl+R
             if (ch == 18) {// Ctrl+R
