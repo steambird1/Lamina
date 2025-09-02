@@ -214,9 +214,10 @@ static void print_context(const std::vector<Token>& tokens, size_t pos, int cont
 
     std::cerr << context << "" << std::endl;
 
-    for (size_t i = 0 ; i < context.size(); ++i) {
+    for (size_t i = 0; i < context.size(); ++i) {
         if (i == tokens[pos].column) std::cerr << "^";
-        else std::cerr << "~";
+        else
+            std::cerr << "~";
     }
     std::cerr << std::endl;
 
@@ -383,8 +384,8 @@ std::unique_ptr<StructDeclStmt> Parser::parse_struct(const std::vector<Token>& t
     DEBUG_OUT << "Debug - Parsing struct body" << std::endl;
 
     while (i < tokens.size() &&
-               tokens[i].type != TokenType::RBrace) {
-        if (!  (i < tokens.size() && tokens[i].type == TokenType::Identifier)  ){
+           tokens[i].type != TokenType::RBrace) {
+        if (!(i < tokens.size() && tokens[i].type == TokenType::Identifier)) {
             std::cerr << "\033[31mError: struct statement missing the sub name instead of '" << tokens[i].text << "'\033[0m" << std::endl;
             print_context(tokens, i);
             return nullptr;
@@ -392,7 +393,7 @@ std::unique_ptr<StructDeclStmt> Parser::parse_struct(const std::vector<Token>& t
         std::string sub_name = tokens[i].text;
         ++i;
 
-        if (!  (i < tokens.size() && tokens[i].type == TokenType::Assign)  ){
+        if (!(i < tokens.size() && tokens[i].type == TokenType::Assign)) {
             std::cerr << "\033[31mError: struct member missing '=' after identifier '" << sub_name << "' (line " << tokens[i].line << ")\033[0m" << std::endl;
             print_context(tokens, i);
             return nullptr;
@@ -402,7 +403,7 @@ std::unique_ptr<StructDeclStmt> Parser::parse_struct(const std::vector<Token>& t
         std::unique_ptr<Expression> sub_expr = parse_expression(tokens, i);
         while (i < tokens.size() && tokens[i].type != TokenType::Semicolon) ++i;
         if (i >= tokens.size() || tokens[i].type != TokenType::Semicolon) {
-            std::cerr << "\033[31mError: struct sub item need ends with ';' (line " << tokens[i-1].line << ")\033[0m" << std::endl;
+            std::cerr << "\033[31mError: struct sub item need ends with ';' (line " << tokens[i - 1].line << ")\033[0m" << std::endl;
             print_context(tokens, i);
             return nullptr;
         }
@@ -415,11 +416,10 @@ std::unique_ptr<StructDeclStmt> Parser::parse_struct(const std::vector<Token>& t
         }
 
         init_vec.emplace_back(sub_name, std::move(sub_expr));
-
     }
 
     if (i >= tokens.size() || tokens[i].type != TokenType::RBrace) {
-        std::cerr << "\033[31mError: struct body missing closing brace '}' (line " << tokens[i-1].line << ")\033[0m" << std::endl;
+        std::cerr << "\033[31mError: struct body missing closing brace '}' (line " << tokens[i - 1].line << ")\033[0m" << std::endl;
         print_context(tokens, i);
         return nullptr;
     }

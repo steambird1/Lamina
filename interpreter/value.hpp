@@ -39,15 +39,15 @@ public:
                       Symbolic };
     Type type;
     std::variant<
-        std::nullptr_t,
-        bool, int, double, std::string,
-        std::vector<Value>,
-        std::vector<std::vector<Value>>,
-        std::vector<std::pair<std::string, Value>>,
-        ::BigInt, ::Rational,::Irrational,
-        std::shared_ptr<SymbolicExpr>,
-        std::shared_ptr<lStruct>
-    > data;
+            std::nullptr_t,
+            bool, int, double, std::string,
+            std::vector<Value>,
+            std::vector<std::vector<Value>>,
+            std::vector<std::pair<std::string, Value>>,
+            ::BigInt, ::Rational, ::Irrational,
+            std::shared_ptr<SymbolicExpr>,
+            std::shared_ptr<lStruct>>
+            data;
 
     virtual ~Value() = default;
 
@@ -64,7 +64,7 @@ public:
     Value(const ::BigInt& bi) : type(Type::BigInt), data(bi) {}
     Value(const ::Rational& r) : type(Type::Rational), data(r) {}
     Value(const ::Irrational& ir) : type(Type::Irrational), data(ir) {}
-    Value(const std::shared_ptr<lStruct>& lstruct): type(Type::lStruct), data(lstruct) {}
+    Value(const std::shared_ptr<lStruct>& lstruct) : type(Type::lStruct), data(lstruct) {}
     Value(const std::shared_ptr<SymbolicExpr>& sym) : type(Type::Symbolic), data(sym) {}
     Value(const std::vector<Value>& arr) {
         // Check if this is a matrix (array of arrays)

@@ -1,11 +1,11 @@
 #pragma once
 #define _USE_MATH_DEFINES
+#include "symbolic.hpp"
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
-#include "symbolic.hpp"
 #include <sstream>
 #include <string>
 #include <vector>

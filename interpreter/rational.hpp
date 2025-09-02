@@ -1,9 +1,9 @@
 #pragma once
 #include "bigint.hpp"
-#include <stdexcept>
-#include <string>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 class Rational {
 private:
@@ -81,17 +81,17 @@ public:
             negative = true;
             base.erase(0, 1);
         }
-        base.erase(1, 1);// 删除小数点
+        base.erase(1, 1);           // 删除小数点
         while (base.back() == '0') {// 去除末尾0，不可能全为0
             base.pop_back();
         }
         int exponent = std::stoi(str.substr(e_pos + 1));
-    
-        size_t decimal_places = std::max(0, static_cast<int>(base.length())-exponent-1);// 有几位小数
+
+        size_t decimal_places = std::max(0, static_cast<int>(base.length()) - exponent - 1);// 有几位小数
 
         BigInt num(base);
         if (negative) num = num.negate();
-        BigInt den("1"+std::string(decimal_places, '0'));
+        BigInt den("1" + std::string(decimal_places, '0'));
 
         Rational r(num, den);
         r.simplify();

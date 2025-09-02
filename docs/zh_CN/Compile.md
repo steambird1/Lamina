@@ -1,4 +1,4 @@
-## 编译方法 
+## 编译方法
 
 <div align="right">
   <a href="../zh_TW/Compile.md">繁體中文</a> | <strong>简体中文</strong> | <a href="../en_US/Compile.md">English</a>
@@ -6,6 +6,7 @@
 <br>
 
 Linux 平台:
+
 ```shell
 mkdir build
 cd build
@@ -14,13 +15,16 @@ make
 ```
 
 Windows 平台（使用MinGW）:
+
 ```shell
 mkdir build
 cd build
 cmake .. -G "MinGW Makefiles"
 mingw32-make
 ```
+
 Windows 平台（使用msbuild(i.e. Visual Studio)）
+
 ```shell
 mkdir build
 cd build
@@ -29,6 +33,7 @@ msbuild ALL_BUILD.vcxproj
 ```
 
 使用 xmake 构建:
+
 ```shell
 xmake
 ```

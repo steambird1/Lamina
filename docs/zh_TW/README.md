@@ -1,4 +1,5 @@
-# <img src="/assets/logo-icon.svg" width="10%"> Lamina 
+# <img src="/assets/logo-icon.svg" width="10%"> Lamina
+
 <img src="/assets/logo.svg" width="100%">
 
 <div align="right">
@@ -22,7 +23,7 @@
 
 ---
 
-##  目錄
+## 目錄
 
 - [概述](#概述)
 - [精確數學特性](#精確數學特性)
@@ -53,7 +54,7 @@
 
 ---
 
-##  精確數學特性
+## 精確數學特性
 
 Lamina 的核心優勢在於其精確數學計算能力，解決了傳統程式語言中浮點數精度遺失的問題。
 

@@ -1,7 +1,7 @@
 #include "repl_input.hpp"
 #include <iostream>
-#include <vector>
 #include <signal.h>
+#include <vector>
 #ifdef _WIN32
 #include <conio.h>
 #else

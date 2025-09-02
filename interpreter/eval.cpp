@@ -10,17 +10,17 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
             // Parse as double for floating point numbers and scientific notation
             double d = std::stod(node->value);
             return Value(d);
-            } else {
-                // 先尝试用 int 解析，只有溢出时才用 BigInt
-                try {
-                    int i = std::stoi(node->value);
-                    return Value(i);
-                } catch (const std::out_of_range&) {
-                    // int 溢出，使用 BigInt
-                    ::BigInt big(node->value);
-                    return Value(big);
-                }
+        } else {
+            // 先尝试用 int 解析，只有溢出时才用 BigInt
+            try {
+                int i = std::stoi(node->value);
+                return Value(i);
+            } catch (const std::out_of_range&) {
+                // int 溢出，使用 BigInt
+                ::BigInt big(node->value);
+                return Value(big);
             }
+        }
     } else {
         // Check for boolean literals
         if (node->value == "true") return Value(true);
@@ -33,185 +33,185 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
 
 Value Interpreter::eval_CallExpr(const CallExpr* call) {
     std::string actual_callee = call->callee;
-        //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
+    //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
 
-        // 检查调用的名称是否是一个参数，如果是，获取其实际值
+    // 检查调用的名称是否是一个参数，如果是，获取其实际值
+    try {
+        Value callee_value = get_variable(actual_callee);
+        if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
+            // 这是一个函数参数，提取实际的函数名
+            actual_callee = std::get<std::string>(callee_value.data).substr(11);
+            //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
+        }
+    } catch (const RuntimeError&) {
+        // 如果不是变量，保持原名称
+        // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
+    }
+
+    // Check builtin functions first
+    //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
+    //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
+    // for (const auto& pair : builtin_functions) {
+    //     std::cout << "  - '" << pair.first << "'" << std::endl;
+    // }
+
+    auto builtin_it = builtin_functions.find(actual_callee);
+    if (builtin_it != builtin_functions.end()) {
+        //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
+
+        // 检查是否是模块函数
+        bool is_module_func = actual_callee.find(".") != std::string::npos;
+        if (is_module_func) {
+            //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
+        }
+
+        // Handle builtin call with stack frame and unified error handling
+        push_frame(actual_callee, "<builtin>", 0);
+
+        std::vector<Value> args;
+        for (const auto& arg: call->args) {
+            if (!arg) {
+                pop_frame();
+                RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
+                err.stack_trace = get_stack_trace();
+                throw err;
+            }
+            args.push_back(eval(arg.get()));
+        }
+
+        Value result;
         try {
-            Value callee_value = get_variable(actual_callee);
-            if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
-                // 这是一个函数参数，提取实际的函数名
-                actual_callee = std::get<std::string>(callee_value.data).substr(11);
-                //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
-            }
-        } catch (const RuntimeError&) {
-            // 如果不是变量，保持原名称
-            // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
-        }
-
-        // Check builtin functions first
-        //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
-        //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
-        // for (const auto& pair : builtin_functions) {
-        //     std::cout << "  - '" << pair.first << "'" << std::endl;
-        // }
-
-        auto builtin_it = builtin_functions.find(actual_callee);
-        if (builtin_it != builtin_functions.end()) {
-            //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
-
-            // 检查是否是模块函数
-            bool is_module_func = actual_callee.find(".") != std::string::npos;
-            if (is_module_func) {
-                //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
-            }
-
-            // Handle builtin call with stack frame and unified error handling
-            push_frame(actual_callee, "<builtin>", 0);
-
-            std::vector<Value> args;
-            for (const auto& arg: call->args) {
-                if (!arg) {
-                    pop_frame();
-                    RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
-                    err.stack_trace = get_stack_trace();
-                    throw err;
-                }
-                args.push_back(eval(arg.get()));
-            }
-
-            Value result;
-            try {
-                result = builtin_it->second(args);
-            } catch (...) {
-                pop_frame();
-                throw;
-            }
-
+            result = builtin_it->second(args);
+        } catch (...) {
             pop_frame();
-            return result;
+            throw;
         }
 
-        // Check user-defined functions
-        auto it = functions.find(actual_callee);
-        if (it != functions.end()) {
-            FuncDefStmt* func = it->second;
-            if (!func) {
-                std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
-                return Value("<func error>");
-            }
+        pop_frame();
+        return result;
+    }
 
-            // Check recursion depth
-            if (recursion_depth >= max_recursion_depth) {
-                RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
-                error.stack_trace = get_stack_trace();
-                throw error;
-            }
+    // Check user-defined functions
+    auto it = functions.find(actual_callee);
+    if (it != functions.end()) {
+        FuncDefStmt* func = it->second;
+        if (!func) {
+            std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
+            return Value("<func error>");
+        }
 
-            recursion_depth++;
-            push_frame(actual_callee, "<script>", 0);// Add to call stack
+        // Check recursion depth
+        if (recursion_depth >= max_recursion_depth) {
+            RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
+            error.stack_trace = get_stack_trace();
+            throw error;
+        }
 
-            // Check parameter count
-            if (call->args.size() > func->params.size()) {
-                Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
-                                                   "'. Expected " + std::to_string(func->params.size()) +
-                                                   ", got " + std::to_string(call->args.size()),
-                                           true);
-            }
+        recursion_depth++;
+        push_frame(actual_callee, "<script>", 0);// Add to call stack
 
-            // Calculate arguments
-            std::vector<Value> arg_values(func->params.size());
-            for (size_t j = 0; j < func->params.size(); ++j) {
-                if (j < call->args.size()) {
-                    if (call->args[j]) {
-                        arg_values[j] = eval(call->args[j].get());
-                    } else {
-                        Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
-                        arg_values[j] = Value("<null arg>");
-                    }
+        // Check parameter count
+        if (call->args.size() > func->params.size()) {
+            Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
+                                               "'. Expected " + std::to_string(func->params.size()) +
+                                               ", got " + std::to_string(call->args.size()),
+                                       true);
+        }
+
+        // Calculate arguments
+        std::vector<Value> arg_values(func->params.size());
+        for (size_t j = 0; j < func->params.size(); ++j) {
+            if (j < call->args.size()) {
+                if (call->args[j]) {
+                    arg_values[j] = eval(call->args[j].get());
                 } else {
-                    Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
-                    arg_values[j] = Value("<undefined>");
+                    Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
+                    arg_values[j] = Value("<null arg>");
                 }
+            } else {
+                Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
+                arg_values[j] = Value("<undefined>");
             }
+        }
 
-            push_scope();// Create scope here
+        push_scope();// Create scope here
 
-            // Pass arguments
-            for (size_t j = 0; j < func->params.size(); ++j) {
-                set_variable(func->params[j], arg_values[j]);
-            }
+        // Pass arguments
+        for (size_t j = 0; j < func->params.size(); ++j) {
+            set_variable(func->params[j], arg_values[j]);
+        }
 
-            // Execute function body, capture return
-            try {
-                for (const auto& stmt: func->body->statements) {
-                    try {
-                        execute(stmt);
-                    } catch (const ReturnException& re) {
-                        // Normal return handling
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        return re.value;
-                    } catch (const RuntimeError& re) {
-                        // If the error doesn't have a stack trace yet, capture current state
-                        RuntimeError enriched(re.message);
-                        if (re.stack_trace.empty()) {
-                            enriched.stack_trace = get_stack_trace();
-                        } else {
-                            enriched.stack_trace = re.stack_trace;// Preserve existing trace
-                        }
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        throw enriched;
-                    } catch (const std::exception& e) {
-                        // Wrap standard exception as RuntimeError
-                        RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
-                        enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
-                        pop_frame();
-                        pop_scope();
-                        recursion_depth--;
-                        throw enriched;
+        // Execute function body, capture return
+        try {
+            for (const auto& stmt: func->body->statements) {
+                try {
+                    execute(stmt);
+                } catch (const ReturnException& re) {
+                    // Normal return handling
+                    pop_frame();
+                    pop_scope();
+                    recursion_depth--;
+                    return re.value;
+                } catch (const RuntimeError& re) {
+                    // If the error doesn't have a stack trace yet, capture current state
+                    RuntimeError enriched(re.message);
+                    if (re.stack_trace.empty()) {
+                        enriched.stack_trace = get_stack_trace();
+                    } else {
+                        enriched.stack_trace = re.stack_trace;// Preserve existing trace
                     }
+                    pop_frame();
+                    pop_scope();
+                    recursion_depth--;
+                    throw enriched;
+                } catch (const std::exception& e) {
+                    // Wrap standard exception as RuntimeError
+                    RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
+                    enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
+                    pop_frame();
+                    pop_scope();
+                    recursion_depth--;
+                    throw enriched;
                 }
-            } catch (const ReturnException& re) {
-                // Ensure cleanup in any case
-                pop_frame();
-                pop_scope();
-                recursion_depth--;
-                return re.value;
             }
-
+        } catch (const ReturnException& re) {
+            // Ensure cleanup in any case
             pop_frame();
             pop_scope();
             recursion_depth--;
-            return Value();// Default value when no return
+            return re.value;
         }
 
-        // Check if it's a module function before reporting undefined
-        bool is_module_func = actual_callee.find(".") != std::string::npos;
-        if (is_module_func) {
-            // Prepare arguments for module function call
-            std::vector<Value> args;
-            for (const auto& arg: call->args) {
-                if (!arg) {
-                    std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
-                    args.push_back(Value());
-                } else {
-                    args.push_back(eval(arg.get()));
-                }
-            }
+        pop_frame();
+        pop_scope();
+        recursion_depth--;
+        return Value();// Default value when no return
+    }
 
-            // Try to call the module function
-            Value result = call_module_function(actual_callee, args);
-            if (result.to_string() != "null") {// 检查是否成功调用
-                return result;
+    // Check if it's a module function before reporting undefined
+    bool is_module_func = actual_callee.find(".") != std::string::npos;
+    if (is_module_func) {
+        // Prepare arguments for module function call
+        std::vector<Value> args;
+        for (const auto& arg: call->args) {
+            if (!arg) {
+                std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
+                args.push_back(Value());
+            } else {
+                args.push_back(eval(arg.get()));
             }
-            // If module function call failed, fall through to undefined function error
         }
 
-        std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
-        return Value("<undefined function>");
+        // Try to call the module function
+        Value result = call_module_function(actual_callee, args);
+        if (result.to_string() != "null") {// 检查是否成功调用
+            return result;
+        }
+        // If module function call failed, fall through to undefined function error
+    }
+
+    std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
+    return Value("<undefined function>");
 }
 
 Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
@@ -282,8 +282,8 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             if (l.is_int() && r.is_int()) {
                 // check overflow and underflow
                 if (static_cast<int>(result) == INT_MAX ||
-                        static_cast<int>(result) == INT_MIN) {
-                    return Value(BigInt(l.as_number())+BigInt(r.as_number()));
+                    static_cast<int>(result) == INT_MIN) {
+                    return Value(BigInt(l.as_number()) + BigInt(r.as_number()));
                 }
                 return Value(static_cast<int>(result));
             }
@@ -294,7 +294,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     }
     // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
-            bin->op == "%" || bin->op == "^") {
+        bin->op == "%" || bin->op == "^") {
         // Special handling for multiplication
         if (bin->op == "*") {
             // Vector and matrix operations
@@ -357,8 +357,8 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 if (l.is_int() && r.is_int()) {
                     // check overflow and underflow
                     if (static_cast<int>(result) == INT_MAX ||
-                            static_cast<int>(result) == INT_MIN) {
-                        return Value(BigInt(l.as_number())*BigInt(r.as_number()));
+                        static_cast<int>(result) == INT_MIN) {
+                        return Value(BigInt(l.as_number()) * BigInt(r.as_number()));
                     }
                     return Value(static_cast<int>(result));
                 }
@@ -375,7 +375,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 // Try minus for same-size vectors
                 const auto& la = std::get<std::vector<Value>>(l.data);
                 const auto& ra = std::get<std::vector<Value>>(r.data);
-                return l.vector_minus(r);                                // An exception can be raised inside
+                return l.vector_minus(r);// An exception can be raised inside
             }
             // Matrix multiplication
             if (l.is_matrix() && r.is_matrix()) {
@@ -425,8 +425,8 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 if (l.is_int() && r.is_int()) {
                     // check overflow and underflow
                     if (static_cast<int>(result) == INT_MAX ||
-                            static_cast<int>(result) == INT_MIN) {
-                        return Value(BigInt(l.as_number())-BigInt(r.as_number()));
+                        static_cast<int>(result) == INT_MIN) {
+                        return Value(BigInt(l.as_number()) - BigInt(r.as_number()));
                     }
                     return Value(static_cast<int>(result));
                 }
@@ -543,7 +543,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
                 return Value(l.as_rational().power(rb));
             }
-            if ((l.is_bigint() || r.is_int())&& (r.is_bigint() || r.is_int())) {
+            if ((l.is_bigint() || r.is_int()) && (r.is_bigint() || r.is_int())) {
                 // 如果底数为整数，指数为整数，结果为BigInt
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
@@ -653,12 +653,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
         }
     }
 
-        error_and_exit("Unknown binary operator '" + bin->op + "'");
-
+    error_and_exit("Unknown binary operator '" + bin->op + "'");
 }
 
 Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
-     Value v = eval(unary->operand.get());
+    Value v = eval(unary->operand.get());
 
     if (unary->op == "-") {
         if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {

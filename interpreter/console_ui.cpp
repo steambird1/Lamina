@@ -210,7 +210,7 @@ int repl() {
     std::cout << "Type :help for help." << std::endl;
 
     Interpreter interpreter;
-    int lineno = 1;         // 记录当前输入的行号，用于错误提示
+    int lineno = 1;// 记录当前输入的行号，用于错误提示
 
     // REPL主循环
     while (true) {
@@ -306,8 +306,8 @@ int repl() {
             interpreter.save_repl_ast(std::move(ast));
 
             try {
-                 // 执行代码块中的每个语句
-                 // Execute each statement in the block
+                // 执行代码块中的每个语句
+                // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
                         interpreter.execute(stmt);
@@ -315,30 +315,29 @@ int repl() {
                         interpreter.print_stack_trace(re, true);
                         break;
                     } catch (const ReturnException&) {
-                         Interpreter::print_warning(
-                         "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）" +
-                         "Return statement used outside function (line " +
-                         std::to_string(lineno) + ")",
-                         true);
+                        Interpreter::print_warning(
+                                "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）" +
+                                        "Return statement used outside function (line " +
+                                        std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
                     // 捕获break语句在循环外使用的异常
                     // Catch break statement used outside loop
                     catch (const BreakException&) {
                         Interpreter::print_warning(
-                             "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）"+
-                             "Break statement used outside loop (line " + std::to_string(lineno) + ")",
-                              true);
+                                "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）" +
+                                        "Break statement used outside loop (line " + std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
                     // 捕获continue语句在循环外使用的异常
                     // Catch continue statement used outside loop
                     catch (const ContinueException&) {
                         Interpreter::print_warning(
-                        "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）"
-                        +"Continue statement used outside loop (line " +
-                        std::to_string(lineno) + ")",
-                        true);
+                                "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）" + "Continue statement used outside loop (line " +
+                                        std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
                     // 捕获其他标准异常
@@ -358,8 +357,8 @@ int repl() {
             // Catch return exceptions escaping the inner loop
             catch (const ReturnException&) {
                 Interpreter::print_warning(
-                "Return语句不能在函数外使用\nReturn statement used outside function",
-                true);
+                        "Return语句不能在函数外使用\nReturn statement used outside function",
+                        true);
             }
             // 捕获所有其他未预料的异常
             // Catch all other unexpected exceptions
@@ -371,8 +370,8 @@ int repl() {
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(
-            "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
-            true);
+                    "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
+                    true);
         }
 
 
@@ -381,4 +380,3 @@ int repl() {
 
     return 0;
 }
-

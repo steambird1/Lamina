@@ -1,8 +1,8 @@
 #include "interpreter.hpp"
 #include "lamina.hpp"
 // #include "latex.hpp"
-#include "value.hpp"
 #include "symbolic.hpp"
+#include "value.hpp"
 
 /**
  * @brief 计算数值的平方根
@@ -31,15 +31,15 @@ inline Value sqrt(const std::vector<Value>& args) {
     if (args[0].is_int()) {
         int val = std::get<int>(args[0].data);
         if (val == 0 || val == 1) {
-            return Value(val);  // sqrt(0) = 0, sqrt(1) = 1
+            return Value(val);// sqrt(0) = 0, sqrt(1) = 1
         }
-        
+
         // Check if it's a perfect square
         int sqrt_val = static_cast<int>(std::sqrt(val));
         if (sqrt_val * sqrt_val == val) {
             return Value(sqrt_val);
         }
-        
+
         // Return symbolic expression for non-perfect squares
         auto symbolic_arg = SymbolicExpr::number(val);
         auto symbolic_sqrt = SymbolicExpr::sqrt(symbolic_arg);
@@ -52,12 +52,12 @@ inline Value sqrt(const std::vector<Value>& args) {
         if (bi.is_zero()) {
             return Value(0);
         }
-        
+
         // Check if it's a perfect square
         if (bi.is_perfect_square()) {
             return Value(bi.sqrt());
         }
-        
+
         // Return symbolic expression for non-perfect squares
         auto symbolic_arg = SymbolicExpr::number(bi);
         auto symbolic_sqrt = SymbolicExpr::sqrt(symbolic_arg);
@@ -74,7 +74,7 @@ inline Value sqrt(const std::vector<Value>& args) {
             // Both are perfect squares
             return Value(::Rational(num, den));
         }
-        
+
         // Return symbolic expression for non-perfect squares
         auto symbolic_arg = SymbolicExpr::number(rat);
         auto symbolic_sqrt = SymbolicExpr::sqrt(symbolic_arg);
@@ -119,13 +119,13 @@ inline Value abs(const std::vector<Value>& args) {
         std::cerr << "Error: abs() requires numeric argument" << std::endl;
         return Value();
     }
-    
+
     // Handle BigInt specifically
     if (args[0].is_bigint()) {
         const auto& bigint_val = std::get<::BigInt>(args[0].data);
         return Value(bigint_val.abs());
     }
-    
+
     // Handle other numeric types
     double val = args[0].as_number();
     return Value(std::abs(val));
@@ -373,23 +373,23 @@ inline Value pow(const std::vector<Value>& args) {
         std::cerr << "Error: pow() requires two arguments (base, exponent)" << std::endl;
         return Value();
     }
-    
+
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
         std::cerr << "Error: pow() requires numeric arguments" << std::endl;
         return Value();
     }
-    
+
     // Handle BigInt base with integer exponent
     if (args[0].is_bigint() && (args[1].is_int() || args[1].is_bigint())) {
         const auto& base = std::get<::BigInt>(args[0].data);
-        
+
         ::BigInt exponent;
         if (args[1].is_int()) {
             exponent = ::BigInt(std::get<int>(args[1].data));
         } else {
             exponent = std::get<::BigInt>(args[1].data);
         }
-        
+
         try {
             return Value(base.power(exponent));
         } catch (const std::exception& e) {
@@ -397,16 +397,16 @@ inline Value pow(const std::vector<Value>& args) {
             return Value();
         }
     }
-    
+
     // For non-BigInt cases or when precision loss is acceptable
     double base_val = args[0].as_number();
     double exp_val = args[1].as_number();
-    
+
     // Warn if we're converting BigInt to double
     if (args[0].is_bigint() || args[1].is_bigint()) {
         Interpreter::print_warning("pow() with BigInt converted to floating point, precision may be lost");
     }
-    
+
     return Value(std::pow(base_val, exp_val));
 }
 
@@ -421,27 +421,25 @@ inline Value gcd(const std::vector<Value>& args) {
         std::cerr << "Error: gcd() requires two arguments" << std::endl;
         return Value();
     }
-    
+
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
         std::cerr << "Error: gcd() requires numeric arguments" << std::endl;
         return Value();
     }
-    
+
     // Handle BigInt case
     if (args[0].is_bigint() || args[1].is_bigint()) {
-        ::BigInt a = args[0].is_bigint() ? 
-            std::get<::BigInt>(args[0].data) : ::BigInt(std::get<int>(args[0].data));
-        ::BigInt b = args[1].is_bigint() ? 
-            std::get<::BigInt>(args[1].data) : ::BigInt(std::get<int>(args[1].data));
-        
+        ::BigInt a = args[0].is_bigint() ? std::get<::BigInt>(args[0].data) : ::BigInt(std::get<int>(args[0].data));
+        ::BigInt b = args[1].is_bigint() ? std::get<::BigInt>(args[1].data) : ::BigInt(std::get<int>(args[1].data));
+
         return Value(::BigInt::gcd(a, b));
     }
-    
+
     // Handle regular integer case
     if (args[0].is_int() && args[1].is_int()) {
         int a = std::get<int>(args[0].data);
         int b = std::get<int>(args[1].data);
-        
+
         // Simple GCD algorithm for integers
         a = std::abs(a);
         b = std::abs(b);
@@ -452,12 +450,12 @@ inline Value gcd(const std::vector<Value>& args) {
         }
         return Value(a);
     }
-    
+
     // For floating point, warn about precision loss
     Interpreter::print_warning("gcd() with floating point numbers may have precision issues");
     long long a = static_cast<long long>(std::abs(args[0].as_number()));
     long long b = static_cast<long long>(std::abs(args[1].as_number()));
-    
+
     while (b != 0) {
         long long temp = b;
         b = a % b;
@@ -477,31 +475,29 @@ inline Value lcm(const std::vector<Value>& args) {
         std::cerr << "Error: lcm() requires two arguments" << std::endl;
         return Value();
     }
-    
+
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
         std::cerr << "Error: lcm() requires numeric arguments" << std::endl;
         return Value();
     }
-    
+
     // Handle BigInt case
     if (args[0].is_bigint() || args[1].is_bigint()) {
-        ::BigInt a = args[0].is_bigint() ? 
-            std::get<::BigInt>(args[0].data) : ::BigInt(std::get<int>(args[0].data));
-        ::BigInt b = args[1].is_bigint() ? 
-            std::get<::BigInt>(args[1].data) : ::BigInt(std::get<int>(args[1].data));
-        
+        ::BigInt a = args[0].is_bigint() ? std::get<::BigInt>(args[0].data) : ::BigInt(std::get<int>(args[0].data));
+        ::BigInt b = args[1].is_bigint() ? std::get<::BigInt>(args[1].data) : ::BigInt(std::get<int>(args[1].data));
+
         return Value(::BigInt::lcm(a, b));
     }
-    
+
     // Handle regular integer case
     if (args[0].is_int() && args[1].is_int()) {
         int a = std::abs(std::get<int>(args[0].data));
         int b = std::abs(std::get<int>(args[1].data));
-        
+
         if (a == 0 || b == 0) {
             return Value(0);
         }
-        
+
         // LCM = |a * b| / GCD(a, b)
         int gcd_val = a;
         int temp_b = b;
@@ -510,19 +506,19 @@ inline Value lcm(const std::vector<Value>& args) {
             temp_b = gcd_val % temp_b;
             gcd_val = temp;
         }
-        
+
         return Value((a / gcd_val) * b);
     }
-    
+
     // For floating point, warn about precision loss
     Interpreter::print_warning("lcm() with floating point numbers may have precision issues");
     long long a = static_cast<long long>(std::abs(args[0].as_number()));
     long long b = static_cast<long long>(std::abs(args[1].as_number()));
-    
+
     if (a == 0 || b == 0) {
         return Value(0);
     }
-    
+
     long long gcd_val = a;
     long long temp_b = b;
     while (temp_b != 0) {
@@ -530,7 +526,7 @@ inline Value lcm(const std::vector<Value>& args) {
         temp_b = gcd_val % temp_b;
         gcd_val = temp;
     }
-    
+
     return Value(static_cast<int>((a / gcd_val) * b));
 }
 

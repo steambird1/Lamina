@@ -12,7 +12,7 @@ lStruct::lStruct(const std::vector<std::pair<std::string, Value>>& vec) {
     buckets_.resize(init_size, nullptr);
 
     // 插入所有初始键值对
-    for (auto [name, val] : vec) {
+    for (auto [name, val]: vec) {
         insert(name, val);
     }
 }
@@ -21,7 +21,7 @@ lStruct::~lStruct() = default;
 
 // 查找键对应的节点（返回nullptr表示未找到）
 std::shared_ptr<Node> lStruct::find(const std::string& key) const {
-    if (buckets_.empty()) return nullptr; // 桶数组未初始化时直接返回
+    if (buckets_.empty()) return nullptr;// 桶数组未初始化时直接返回
 
     const size_t hash = hash_string(key);
     const size_t bucket_idx = getBucketIndex(hash);
@@ -30,18 +30,18 @@ std::shared_ptr<Node> lStruct::find(const std::string& key) const {
     std::shared_ptr<Node> current = buckets_[bucket_idx];
     while (current != nullptr) {
         if (current->hash == hash && current->key == key) {
-            return current; // 找到匹配节点
+            return current;// 找到匹配节点
         }
         current = current->next;
     }
 
-    return nullptr; // 未找到
+    return nullptr;// 未找到
 }
 
 // 插入或更新键值对
-Value lStruct::insert(const std::string& key, Value& val){
+Value lStruct::insert(const std::string& key, Value& val) {
     if (buckets_.empty()) {
-        buckets_.resize(16, nullptr); // 初始化为16个桶
+        buckets_.resize(16, nullptr);// 初始化为16个桶
     }
 
     // 检查负载因子
@@ -64,7 +64,7 @@ Value lStruct::insert(const std::string& key, Value& val){
 
     // 不存在则创建新节点
     const auto new_node = std::make_shared<Node>(key, std::move(val));
-    new_node->next = buckets_[bucket_idx]; // 新节点的next指向原头节点
+    new_node->next = buckets_[bucket_idx];// 新节点的next指向原头节点
     buckets_[bucket_idx] = new_node;
     elem_count_++;
     return LAMINA_NULL;
@@ -72,7 +72,7 @@ Value lStruct::insert(const std::string& key, Value& val){
 
 std::vector<std::pair<std::string, Value>> lStruct::to_vector() const {
     std::vector<std::pair<std::string, Value>> vec;
-    for (const std::shared_ptr<Node>& bucket_head : buckets_) {
+    for (const std::shared_ptr<Node>& bucket_head: buckets_) {
         auto current = bucket_head;
         while (current != nullptr) {
             vec.emplace_back(current->key, current->value);
@@ -85,7 +85,7 @@ std::vector<std::pair<std::string, Value>> lStruct::to_vector() const {
 
 std::string lStruct::to_string() const {
     std::string text = "{\n";
-    for (const std::shared_ptr<Node>& bucket_head : buckets_) {
+    for (const std::shared_ptr<Node>& bucket_head: buckets_) {
         auto current = bucket_head;
         while (current != nullptr) {
             text += current->key + ": " + current->value.to_string();
@@ -108,7 +108,7 @@ Value getattr(const std::vector<Value>& args) {
     const auto& attr_name = std::get<std::string>(args[1].data);
     auto res = lstruct_->find(attr_name);
     if (res == nullptr) {
-        L_ERR("AttrError: struct hasn't attribute named "+attr_name);
+        L_ERR("AttrError: struct hasn't attribute named " + attr_name);
         return LAMINA_NULL;
     }
     return res->value;
@@ -138,4 +138,3 @@ std::string lStruct_to_string(const std::shared_ptr<lStruct>& lstruct) {
     }
     return lstruct->to_string();
 }
-
