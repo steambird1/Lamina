@@ -266,13 +266,24 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			if (right->type == SymbolicExpr::Type::Sqrt)
 				std::swap(left, right);
 			
+			bool negative = false;
+			if (left->type == SymbolicExpr::Type::Number && left->convert_rational() < ::Rational(0, 1))
+				negative = !negative;
+			if (right->type == SymbolicExpr::Type::Number && right->convert_rational() < ::Rational(0, 1))
+				negative = !negative;
+			
 			std::shared_ptr<SymbolicExpr> sresult = SymbolicExpr::multiply(
 				(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left)->simplify())
 															: left->operands[0],
 				(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right)->simplify())
 															: right->operands[0]);
 			
-			return SymbolicExpr::sqrt(sresult)->simplify();
+			auto res = SymbolicExpr::sqrt(sresult)->simplify();
+			
+			if (negative)
+				return SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
+			else
+				return res;
 			
 		} else {
 			
