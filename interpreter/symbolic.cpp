@@ -280,6 +280,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			if (!is_compounded_sqrt(left))
 				std::swap(left, right);
 			
+			bool negative = false;
+			
 			auto res = std::make_shared<SymbolicExpr>(*left);
 			auto simplify_res = [&]() {
 				if (is_compounded_sqrt(res->operands[1])) {
@@ -290,18 +292,30 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			};
 			
 			if (right->type == SymbolicExpr::Type::Number) {
+				if (right->convert_rational() < ::Rational(0, 1)) {
+					negative = true;
+				}
 				res->operands[0] = SymbolicExpr::multiply(res->operands[0], right)->simplify();
-				return res;
 			} else if (right->type == SymbolicExpr::Type::Sqrt) {
 				res->operands[1] = SymbolicExpr::multiply(res->operands[1], right)->simplify();
 				simplify_res();
-				return res;
 			} else if (is_compounded_sqrt(right)) {
 				res->operands[0] = SymbolicExpr::multiply(res->operands[0], right->operands[0])->simplify();
 				res->operands[1] = SymbolicExpr::multiply(res->operands[1], right->operands[1])->simplify();
 				simplify_res();
-				return res;
 			}
+			
+			if (negative) {
+				if (res->type == SymbolicExpr::Type::Multiply) {
+					// 这个需要化简
+					res->operands[0] = SymbolicExpr::multiply(SymbolicExpr::number(-1), res->operands[0])->simplify();
+				} else {
+					// 不要再化简
+					res = SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
+				}
+			}
+			
+			return res;
 			
 		}
 		
