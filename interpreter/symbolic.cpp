@@ -441,16 +441,20 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			std::cerr << "[Debug output] [2] Begin flat operation" << std::endl;
 			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this));
 			// TODO: Debug output:
-			std::cerr << "[Debug output] [2] End flat operation" << std::endl;
+			std::cerr << "[Debug output] [2] End flat operation with " << able << std::endl;
 			if (able) {
 				// 尝试合并指数
 				bool exponent_merger = true, base_merger = true;
 				for (auto &expr : result) {
 					auto cvt = power_compatible(expr);
 					if (!cvt->operands[0]->is_number()) {
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [2] Flat: exponent fails at " << cvt->operands[0]->to_string() << std::endl;
 						exponent_merger = false;
 					}
 					if (!cvt->operands[1]->is_number()) {
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [2] Flat: fails at " << cvt->operands[0]->to_string() << std::endl;
 						base_merger = false;
 						exponent_merger = false;
 					}
