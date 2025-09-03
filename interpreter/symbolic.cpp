@@ -647,7 +647,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				// 化简成功
 				// TODO: Debug output:
 			std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
-				return SymbolicExpr::power(SymbolicExpr::number((::Rational(bs_n, bs_d)).power(es_n)), SymbolicExpr::number(es_n));
+				return SymbolicExpr::power(SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n))), SymbolicExpr::number(es_n));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
 		}
