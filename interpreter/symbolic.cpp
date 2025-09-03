@@ -658,7 +658,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 
 std::string SymbolicExpr::to_string() const {
 	
-	auto get_output = [](std::shared_ptr<SymbolicExpr> expr) -> std::string {
+	auto get_output = [](std::shared_ptr<const SymbolicExpr> expr) -> std::string {
 		const std::string lbrace = std::string("("), rbrace = std::string(")");
 		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable
 			|| expr->type == SymbolicExpr::Type::Sqrt) return expr->to_string();
@@ -694,9 +694,9 @@ std::string SymbolicExpr::to_string() const {
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
 
-            std::vector<SymbolicExpr*> terms;
-            std::function<void(SymbolicExpr*)> flatten_add;
-            flatten_add = [&](SymbolicExpr* expr) {
+            std::vector<const SymbolicExpr*> terms;
+            std::function<void(const SymbolicExpr*)> flatten_add;
+            flatten_add = [&](const SymbolicExpr* expr) {
                 if (expr->type == Type::Add && expr->operands.size() == 2) {
                     flatten_add(expr->operands[0].get());
                     flatten_add(expr->operands[1].get());
@@ -708,7 +708,7 @@ std::string SymbolicExpr::to_string() const {
 
             std::vector<std::string> result_terms;
             for (const auto term : terms) {
-                result_terms.push_back(get_output(std::shared_ptr<SymbolicExpr>(term)));
+                result_terms.push_back(get_output(std::shared_ptr<const SymbolicExpr>(term)));
             }
 
             if (result_terms.empty()) return "0";
