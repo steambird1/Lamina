@@ -694,9 +694,9 @@ std::string SymbolicExpr::to_string() const {
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
 
-            std::vector<const SymbolicExpr*> terms;
-            std::function<void(const SymbolicExpr*)> flatten_add;
-            flatten_add = [&](const SymbolicExpr* expr) {
+            std::vector<SymbolicExpr*> terms;
+            std::function<void(SymbolicExpr*)> flatten_add;
+            flatten_add = [&](SymbolicExpr* expr) {
                 if (expr->type == Type::Add && expr->operands.size() == 2) {
                     flatten_add(expr->operands[0].get());
                     flatten_add(expr->operands[1].get());
