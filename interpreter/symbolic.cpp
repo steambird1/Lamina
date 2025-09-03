@@ -615,6 +615,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		};
 		
 		if (in_range(bsr) && in_range(expr)) {
+			// TODO: Debug output:
+			std::cerr << "[Debug output] Power simplifying (rational ^ rational) expressions" << std::endl;
 			int bs_n = bsr.get_numerator().to_int(), bs_d = bsr.get_denominator().to_int();
 			int es_n = expr.get_numerator().to_int(), es_d = expr.get_denominator().to_int();
 			
@@ -641,6 +643,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			
 			if (simplify_inner(bs_n, es_d) && simplify_inner(bs_d, es_d)) {
 				// 化简成功
+				// TODO: Debug output:
+			std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
 				return SymbolicExpr::power(SymbolicExpr::number(::Rational(bs_n, bs_d)), SymbolicExpr::number(es_n));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
@@ -649,6 +653,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		if (base->type == SymbolicExpr::Type::Sqrt) {
 			base = SymbolicExpr::power(base->operands[0], SymbolicExpr::number(::Rational(1, 2)));
 		}
+		// TODO: Debug output:
+		std::cerr << "[Debug output] Power simplifying embedded power / sqrt" << std::endl;
 		return SymbolicExpr::power(base->operands[0], SymbolicExpr::multiply(base->operands[1], exponent))->simplify();
 	}
 
