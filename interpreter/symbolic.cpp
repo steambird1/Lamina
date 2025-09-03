@@ -219,7 +219,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
 			return SymbolicExpr::power(power_compatible(expr->operands[0]), SymbolicExpr::number(::Rational(1, 2)))->simplify();
 		} else if (expr->type == SymbolicExpr::Type::Power) {
-			return expr;
+			return SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]));
 		} else {
 			return expr;
 		}
@@ -446,8 +446,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			if (able) {
 				// 尝试合并指数
 				bool exponent_merger = true, base_merger = true;
-				for (auto &expr : result) {
-					auto cvt = power_compatible(expr);
+				for (auto &cvt : result) {
 					if (!cvt->operands[0]->is_number()) {
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [2] Flat: exponent fails at " << cvt->operands[0]->to_string() << std::endl;
@@ -462,8 +461,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				}
 				
 				if (exponent_merger) {
-					for (auto &expr : result) {
-						auto cvt = power_compatible(expr);
+					for (auto &cvt : result) {
 						// 已经检查过了
 						::Rational base = cvt->operands[0]->convert_rational();
 						::Rational exponent = cvt->operands[1]->convert_rational();
@@ -485,8 +483,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					return res;
 				} else if (base_merger) {
-					for (auto &expr : result) {
-						auto cvt = power_compatible(expr);
+					for (auto &cvt : result) {
 						auto cvt_rational = cvt->operands[1]->convert_rational();
 						auto finder = exponent_ref.find(cvt_rational);
 						if (finder != exponent_ref.end()) {
