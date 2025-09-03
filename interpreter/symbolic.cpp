@@ -620,7 +620,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			int bs_n = bsr.get_numerator().to_int(), bs_d = bsr.get_denominator().to_int();
 			int es_n = expr.get_numerator().to_int(), es_d = expr.get_denominator().to_int();
 			// TODO: Debug output:
-			std::cerr << "bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
+			std::cerr << "[Debug output] bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 			
 			// 如果成功，返回 true，origin 为修改后的值，保证 origin 不增大
 			// 如果失败，返回 false，origin 不做修改
@@ -634,19 +634,25 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 						exphere++;
 						target /= i;
 					}
-					if (exphere % denom == 0) {
+					if (exphere && (exphere % denom == 0)) {
 						int contb = exphere / denom;
 						for (int j = 0; j < contb; j++) answer *= i;
 					} else return false;
 				}
+				if (target != 1 && denom != 1)
+					return false;
+				// TODO: Debug output:
+				std::cerr << "[Debug output] Denom = " << denom << ", Simplifying " << target << " to " << answer << std::endl;
 				origin = answer;
 				return true;
 			};
 			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 			if (simplify_inner(bs_n, es_d) && simplify_inner(bs_d, es_d)) {
 				// 化简成功
 				// TODO: Debug output:
-			std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
+				std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
 				return SymbolicExpr::power(SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n))), SymbolicExpr::number(es_n));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
