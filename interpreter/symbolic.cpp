@@ -228,7 +228,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		
 		auto rcom = power_compatible(right);
 		
+		auto is_power_equiv = [](std::shared_ptr<SymbolicExpr> a, std::shared_ptr<SymbolicExpr> b) -> bool {
+			if (a->type != b->type) 
+				return false;
+			if (a->type == SymbolicExpr::Type::Number)
+				return a->convert_rational() == b->convert_rational();
+			else if (a->type == SymbolicExpr::Type::Sqrt)
+				return a->operands[0] == b->operands[0];
+			else if (a->type == SymbolicExpr::Type::Variable)
+				return a->identifier == b->identifier;
+		}
+		
 		if (left->operands[1]->is_number() && right->operands[1]->is_number()) {
+			
 			auto lcr = left->operands[1]->convert_rational();
 			auto rcr = rcom->operands[1]->convert_rational();
 			
@@ -246,7 +258,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					)->simplify();
 				}	
 			}
-			if (left->operands[0] == rcom->operands[0]) {
+			if (is_power_equiv(left->operands[0],rcom->operands[0])) {
 				return SymbolicExpr::power(left->operands[0], SymbolicExpr::add(left->operands[1], rcom->operands[1]))->simplify();
 			}
 		}
