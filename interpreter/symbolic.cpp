@@ -432,7 +432,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
-					result.push_back(expr);
+					result.push_back(power_compatible(expr));
 					return true;
 				}
 				return false;
@@ -478,6 +478,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
 					auto res = SymbolicExpr::number(1);
 					for (auto &i : base_ref) {
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [2] exponent referring (" << i->first.to_string() << ")^(" << i->second.to_string() << ")\n";
 						// 不要化简
 						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
 					}
@@ -495,6 +497,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					// 先这么复制下来，万一以后逻辑不同
 					auto res = SymbolicExpr::number(1);
+					
+					// TODO: Debug output:
+					std::cerr << "[Debug output] [2] base merging\n";
+					
 					for (auto &i : exponent_ref) {
 						// 不要化简
 						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), i.second), res);
