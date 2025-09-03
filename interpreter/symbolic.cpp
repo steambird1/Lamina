@@ -433,6 +433,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					return true;
 				} else if (is_power_compatible(expr)) {
 					result.push_back(expr);
+					return true;
 				}
 				return false;
 			};
