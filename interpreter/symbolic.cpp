@@ -261,7 +261,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
 								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
 							),
-							SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator()));
+							SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator()))
 						)->simplify();
 					}	
 				}
@@ -274,8 +274,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			std::function<bool(const std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
 			// 暂时只支持有理指数化简
 			// 键为底数的值，值为指数的值
-			// TODO:这样可能需要额外判断双层根号问题）
-			std::map<::Rational, ::Rational> result;
+			// TODO: 这样可能需要额外判断双层根号问题，以及分母有理化问题
+			std::map<::Rational, ::Rational> base_ref;
+			std::map<::Rational, std::shared_ptr<SymbolicExpr>> exponent_ref;
+			std::vector<std::shared_ptr<SymbolicExpr>> result;
 			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 				if (expr->type == SymbolicExpr::Type::Multiply) {
 					for (auto &i : expr->operands) {
@@ -283,32 +285,68 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
-					auto cvt = power_compatible(expr);
-					if (cvt->operands[0]->is_number() && cvt->operands[1]->is_number()) {
-						::Rational base = cvt->operands[0]->convert_rational();
-						::Rational exponent = cvt->operands[1]->convert_rational();
-						auto finder = result.find(base);
-						if (finder != result.end()) {
-							result[base] = result[base] + exponent;
-						} else {
-							result[base] = exponent;
-						}
-					} else
-						return false;
+					result.push_back(i);
 				} else {
 					return false;
 				}
 			};
 			// 这样传递可能有性能问题
-			if (flatten_multiply(std::make_shared<SymbolicExpr>(*this))) {
-				// 由于只允许两项乘法，此处需要递归构造
-				// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
-				auto res = SymbolicExpr::number(1);
-				for (auto &i : result) {
-					// 不要化简
-					res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
+			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this));
+			if (able) {
+				// 尝试合并指数
+				bool exponent_merger = true, base_merger = true;
+				for (auto &expr : result) {
+					auto cvt = power_compatible(expr);
+					if (!cvt->operands[0]->is_number()) {
+						exponent_merger = false;
+					}
+					if (!cvt->operands[1]->is_number()) {
+						base_merger = false;
+						exponent_merger = false;
+					}
 				}
-				return res;
+				
+				if (exponent_merger) {
+					for (auto &expr : result) {
+						auto cvt = power_compatible(expr);
+						// 已经检查过了
+						::Rational base = cvt->operands[0]->convert_rational();
+						::Rational exponent = cvt->operands[1]->convert_rational();
+						auto finder = base_ref.find(base);
+						if (finder != base_ref.end()) {
+							finder->second = finder->second + exponent;
+						} else {
+							base_ref[base] = exponent;
+						}
+					}
+					// 由于只允许两项乘法，此处需要递归构造
+					// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
+					auto res = SymbolicExpr::number(1);
+					for (auto &i : base_ref) {
+						// 不要化简
+						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
+					}
+					return res;
+				} else if (base_merger) {
+					for (auto &expr : result) {
+						auto cvt = power_compatible(expr);
+						auto finder = exponent_ref.find(cvt->operands[1]);
+						if (finder != exponent_ref.end()) {
+							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
+						} else {
+							exponent_ref[cvt->operands[1]] = cvt->operands[0];
+						}
+					}
+					// 先这么复制下来，万一以后逻辑不同
+					auto res = SymbolicExpr::number(1);
+					for (auto &i : exponent_ref_ref) {
+						// 不要化简
+						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
+					}
+					return res;
+				}
+				
+				
 			}
 			// 否则无法化简，保留原表达式
 		}
