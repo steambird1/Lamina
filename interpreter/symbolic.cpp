@@ -479,7 +479,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					auto res = SymbolicExpr::number(1);
 					for (auto &i : base_ref) {
 						// TODO: Debug output:
-						std::cerr << "[Debug output] [2] exponent referring (" << i->first.to_string() << ")^(" << i->second.to_string() << ")\n";
+						std::cerr << "[Debug output] [2] exponent referring (" << i.first.to_string() << ")^(" << i.second.to_string() << ")\n";
 						// 不要化简
 						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
 					}
