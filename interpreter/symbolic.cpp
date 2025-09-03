@@ -707,10 +707,8 @@ std::string SymbolicExpr::to_string() const {
             flatten_add(this);
 
             std::vector<std::string> result_terms;
-            for (const auto* term : terms) {
-                ::Rational coeff;
-                int radicand = 0;
-                result_terms.push_back(get_output(term));
+            for (const auto term : terms) {
+                result_terms.push_back(get_output(std::shared_ptr<SymbolicExpr>(term)));
             }
 
             if (result_terms.empty()) return "0";
