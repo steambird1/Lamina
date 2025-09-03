@@ -286,9 +286,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					return true;
 				} else if (is_power_compatible(expr)) {
 					result.push_back(i);
-				} else {
-					return false;
 				}
+				return false;
 			};
 			// 这样传递可能有性能问题
 			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this));
@@ -330,16 +329,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				} else if (base_merger) {
 					for (auto &expr : result) {
 						auto cvt = power_compatible(expr);
-						auto finder = exponent_ref.find(cvt->operands[1]);
+						auto cvt_rational = cvt->operands[1]->convert_rational();
+						auto finder = exponent_ref.find(cvt_rational);
 						if (finder != exponent_ref.end()) {
 							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
 						} else {
-							exponent_ref[cvt->operands[1]] = cvt->operands[0];
+							exponent_ref[cvt_rational] = cvt->operands[0];
 						}
 					}
 					// 先这么复制下来，万一以后逻辑不同
 					auto res = SymbolicExpr::number(1);
-					for (auto &i : exponent_ref_ref) {
+					for (auto &i : exponent_ref) {
 						// 不要化简
 						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
 					}
