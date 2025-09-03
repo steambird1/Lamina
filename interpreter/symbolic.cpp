@@ -162,6 +162,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
     
     auto left = operands[0]->simplify();
     auto right = operands[1]->simplify();
+	
+	// TODO: Debug output:
+	std::cerr << "Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
     
     // 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
@@ -228,6 +231,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		// 此处可以考虑优化
 		auto left = no_simplify ? obj->operands[0] : obj->operands[0]->simplify();
 		auto right = no_simplify ? obj->operands[1] : obj->operands[1]->simplify();
+		
+		std::cerr << "Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 		
 		auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 			if (expr->type == SymbolicExpr::Type::Multiply) {
