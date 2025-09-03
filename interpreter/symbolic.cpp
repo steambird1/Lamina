@@ -285,7 +285,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
-					result.push_back(i);
+					result.push_back(expr);
 				}
 				return false;
 			};
@@ -341,7 +341,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					auto res = SymbolicExpr::number(1);
 					for (auto &i : exponent_ref) {
 						// 不要化简
-						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
+						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), i.second), res);
 					}
 					return res;
 				}
