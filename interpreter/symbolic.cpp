@@ -267,9 +267,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 							SymbolicExpr::multiply(
 								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
 								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
-							),
+							)->simplify(),
 							SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator()))
-						)->simplify();
+						);	// 只能这样化简，否则死循环
 					}
 				}
 				if (is_power_equiv(lcom->operands[0], rcom->operands[0])) {
@@ -365,6 +365,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 		
 		// 到此处：未能化简，（以后这里可能引入欧拉公式等等）
+		// TODO: 分母有理化
 		
 	}
 
