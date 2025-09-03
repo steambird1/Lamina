@@ -203,11 +203,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
-			|| expr->type == SymbolicExpr::Type::Power;
+			|| expr->type == SymbolicExpr::Type::Power || expr->type == SymbolicExpr::Type::Variable;
 	};
 	
 	auto power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
-		if (expr->type == SymbolicExpr::Type::Number) {
+		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(::Rational(1, 2)));
@@ -219,34 +219,39 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	};
 	
 	// TODO:指数类型相乘的处理（可能考虑合并相同指数项）
-	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power)
+	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
+		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
 		&& (is_power_compatible(left) && is_power_compatible(right))) {
 		
 		if (left->type != SymbolicExpr::Type::Power)
 			std::swap(left, right);
 		
 		auto rcom = power_compatible(right);
-		auto lcr = left->operands[1]->convert_rational();
-		auto rcr = rcom->operands[1]->convert_rational();
 		
-		if (lcr.get_denominator() == rcr.get_denominator()) {
-			if (lcr == rcr) {
-				return SymbolicExpr::power(SymbolicExpr::multiply(left->operands[0], rcom->operands[0]),
-						SymbolicExpr::number(lcr));
-			} else {
-				return SymbolicExpr::power(
-					SymbolicExpr::multiply(
-						SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr.get_numerator())),
-						SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))
-					),
-					SymbolicExpr::number(lcr.get_denominator())
-				)->simplify();
-			}	
+		if (left->operands[1]->is_number() && right->operands[1]->is_number()) {
+			auto lcr = left->operands[1]->convert_rational();
+			auto rcr = rcom->operands[1]->convert_rational();
+			
+			if (lcr.get_denominator() == rcr.get_denominator()) {
+				if (lcr == rcr) {
+					return SymbolicExpr::power(SymbolicExpr::multiply(left->operands[0], rcom->operands[0]),
+							SymbolicExpr::number(lcr));
+				} else {
+					return SymbolicExpr::power(
+						SymbolicExpr::multiply(
+							SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr.get_numerator())),
+							SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))
+						),
+						SymbolicExpr::number(lcr.get_denominator())
+					)->simplify();
+				}	
+			}
+			if (left->operands[0] == rcom->operands[0]) {
+				return SymbolicExpr::power(left->operands[0], SymbolicExpr::add(left->operands[1], rcom->operands[1]))->simplify();
+			}
 		}
-		if (left->operands[0] == rcom->operands[0]) {
-			return SymbolicExpr::power(left->operands[0], SymbolicExpr::add(left->operands[1], rcom->operands[1]))->simplify();
-		}
-		// 到此处：未能化简
+		
+		// 到此处：未能化简（以后这里可能引入欧拉公式等等）
 	}
 
 	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {

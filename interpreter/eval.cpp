@@ -278,7 +278,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 return Value(result);
             }
 
-            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
+            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is the whole
             if (l.is_int() && r.is_int()) {
                 // check overflow and underflow
                 if (static_cast<int>(result) == INT_MAX ||
@@ -549,6 +549,10 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
                 return Value(lb.power(rb));
             }
+			if (l.is_rational() && r.is_rational()) {
+				// 底数和指数均为Rational，考虑符号表达式
+				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l)), SymbolicExpr::number(::Rational(r)))->simplify());
+			}
             // 有小数，采用小数幂
             double ld = l.as_number();
             double rd = r.as_number();
