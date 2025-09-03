@@ -232,7 +232,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		return false;
 	};
 	
-	auto is_for_auxiliary = [](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
+	auto is_for_auxiliary = [is_compounded_sqrt](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
 		// 判断是否可用于 sqrt_and_auxiliary，如果不可用，直接尝试 flatten multiply
 		return (obj->type == SymbolicExpr::Type::Number) || (obj->type == SymbolicExpr::Type::Sqrt)
 			|| is_compounded_sqrt(obj);
