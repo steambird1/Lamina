@@ -164,8 +164,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
     auto right = operands[1]->simplify();
 	
 	// TODO: Debug output:
-	std::cerr << "Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
-    
+	std::cerr << "[Debug output] Init: Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
+	
+	// TODO: 1 乘以某个内容，直接返回另一边
+	
     // 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
         auto left_num = left->get_number();
@@ -222,7 +224,22 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 	};
 	
-	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible]
+	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
+		if (expr->type == SymbolicExpr::Type::Multiply) {
+			if (expr->operands.size() >= 2 && (expr->operands[0]->type == SymbolicExpr::Type::Number)
+				&& (expr->operands[1]->type == SymbolicExpr::Type::Sqrt)) return true;
+		}
+		return false;
+	};
+	
+	auto is_for_auxiliary = [](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
+		// 判断是否可用于 sqrt_and_auxiliary，如果不可用，直接尝试 flatten multiply
+		return (obj->type == SymbolicExpr::Type::Number) || (obj->type == SymbolicExpr::Type::Sqrt)
+			|| is_compounded_sqrt(obj);
+	};
+	
+	// TODO: 和指数类型乘法合并/简化
+	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible, is_compounded_sqrt]
 		(const std::shared_ptr<SymbolicExpr> &obj, bool no_simplify = false) -> std::shared_ptr<SymbolicExpr> {
 		
 		// TODO: Debug output:
@@ -232,15 +249,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		auto left = no_simplify ? obj->operands[0] : obj->operands[0]->simplify();
 		auto right = no_simplify ? obj->operands[1] : obj->operands[1]->simplify();
 		
-		std::cerr << "Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
-		
-		auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
-			if (expr->type == SymbolicExpr::Type::Multiply) {
-				if (expr->operands.size() >= 2 && (expr->operands[0]->type == SymbolicExpr::Type::Number)
-					&& (expr->operands[1]->type == SymbolicExpr::Type::Sqrt)) return true;
-			}
-			return false;
-		};
+		// TODO: Debug output:
+		std::cerr << "[Debug output] Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 		
 		// 根式相乘的一般处理
 		if (left->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(left)
@@ -326,10 +336,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		// 回退到保留乘法
 		return SymbolicExpr::multiply(left, right);
 	};
+
 	
 	// 指数类型相乘的处理（可能考虑合并相同指数项）
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
-		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))) {
+		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
+		|| (!is_for_auxiliary(left)) || (!is_for_auxiliary(right))) {
 		
 		if (is_power_compatible(left) && is_power_compatible(right)) {
 			if (left->type != SymbolicExpr::Type::Power)
@@ -403,6 +415,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			std::cerr << "[Debug output] End of power-compatible process" << std::endl;
 			
 		} else {
+			
 			// 开始尝试 flatten
 			std::function<bool(const std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
 			// 暂时只支持有理指数化简
