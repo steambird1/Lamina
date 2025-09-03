@@ -261,7 +261,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
 								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
 							),
-							SymbolicExpr::number(lcr.get_denominator())
+							SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator()));
 						)->simplify();
 					}	
 				}
