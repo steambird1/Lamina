@@ -15,12 +15,12 @@ public:
     enum class Type {
         Number,      // 数字 (BigInt, Rational, int)
         Sqrt,        // 平方根 √
-        Root,        // n次方根 √[n] TODO
+        Root,        // n次方根 √[n]，未使用
         Power,       // 幂次 ^
         Multiply,    // 乘法 *
         Add,         // 加法 +
-        Subtract,    // 减法 -
-        Divide,      // 除法 /
+        Subtract,    // 减法 -，未使用
+        Divide,      // 除法 /，未使用
         Variable     // 变量 (如 π, e)
     };
 

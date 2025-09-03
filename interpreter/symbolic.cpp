@@ -206,6 +206,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			|| expr->type == SymbolicExpr::Type::Power || expr->type == SymbolicExpr::Type::Variable;
 	};
 	
+	// 注意，除法使用指数
 	auto power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
 		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
@@ -218,13 +219,18 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 	};
 	
-	// TODO:指数类型相乘的处理（可能考虑合并相同指数项）
+	// 指数类型相乘的处理（可能考虑合并相同指数项）
+	// TODO: 这里以后可能要像 flatten 一样处理?
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
 		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
 		&& (is_power_compatible(left) && is_power_compatible(right))) {
 		
 		if (left->type != SymbolicExpr::Type::Power)
 			std::swap(left, right);
+		
+		auto lcom = left;
+		if (left->type != SymbolicExpr::Type::Power)
+			lcom = power_compatible(left);
 		
 		auto rcom = power_compatible(right);
 		
@@ -239,27 +245,28 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				return a->identifier == b->identifier;
 		};
 		
-		if (left->operands[1]->is_number() && right->operands[1]->is_number()) {
+		if (lcom->operands[1]->is_number() && right->operands[1]->is_number()) {
 			
-			auto lcr = left->operands[1]->convert_rational();
+			auto lcr = lcom->operands[1]->convert_rational();
 			auto rcr = rcom->operands[1]->convert_rational();
 			
 			if (lcr.get_denominator() == rcr.get_denominator()) {
 				if (lcr == rcr) {
-					return SymbolicExpr::power(SymbolicExpr::multiply(left->operands[0], rcom->operands[0]),
+					return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
 							SymbolicExpr::number(lcr));
 				} else {
+					// 注意这里的 multiply 不化简
 					return SymbolicExpr::power(
 						SymbolicExpr::multiply(
-							SymbolicExpr::power(left->operands[0], SymbolicExpr::number(lcr.get_numerator())),
-							SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))
+							SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
+							SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
 						),
 						SymbolicExpr::number(lcr.get_denominator())
 					)->simplify();
 				}	
 			}
-			if (is_power_equiv(left->operands[0],rcom->operands[0])) {
-				return SymbolicExpr::power(left->operands[0], SymbolicExpr::add(left->operands[1], rcom->operands[1]))->simplify();
+			if (is_power_equiv(lcom->operands[0],rcom->operands[0])) {
+				return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
 			}
 		}
 		
