@@ -552,7 +552,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             }
 			if (l.is_rational() && r.is_rational()) {
 				// 底数和指数均为Rational，考虑符号表达式
-				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l)), SymbolicExpr::number(std::get<::Rational>(r)))->simplify());
+				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l.data)), SymbolicExpr::number(std::get<::Rational>(r.data)))->simplify());
 			}
             // 有小数，采用小数幂
             double ld = l.as_number();

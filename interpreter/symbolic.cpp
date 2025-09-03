@@ -237,7 +237,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				return a->operands[0] == b->operands[0];
 			else if (a->type == SymbolicExpr::Type::Variable)
 				return a->identifier == b->identifier;
-		}
+		};
 		
 		if (left->operands[1]->is_number() && right->operands[1]->is_number()) {
 			
