@@ -220,7 +220,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	};
 	
 	// 指数类型相乘的处理（可能考虑合并相同指数项）
-	// TODO: 这里以后可能要像 flatten 一样处理?
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
 		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))) {
 		
@@ -234,18 +233,24 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			
 			auto rcom = power_compatible(right);
 			
-			auto is_power_equiv = [](std::shared_ptr<SymbolicExpr> a, std::shared_ptr<SymbolicExpr> b) -> bool {
+			// TODO: 提升为成员函数，判断相等
+			std::function<bool(std::shared_ptr<SymbolicExpr>,std::shared_ptr<SymbolicExpr>)> is_power_equiv;
+			is_power_equiv = [&](std::shared_ptr<SymbolicExpr> a, std::shared_ptr<SymbolicExpr> b) -> bool {
 				if (a->type != b->type) 
 					return false;
 				if (a->type == SymbolicExpr::Type::Number)
 					return a->convert_rational() == b->convert_rational();
 				else if (a->type == SymbolicExpr::Type::Sqrt)
-					return a->operands[0] == b->operands[0];
+					return is_power_equiv(a->operands[0], b->operands[0]);
 				else if (a->type == SymbolicExpr::Type::Variable)
 					return a->identifier == b->identifier;
+				else
+					return false;
 			};
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [1] preparing to merge exponents" << std::endl;
 			
-			if (lcom->operands[1]->is_number() && right->operands[1]->is_number()) {
+			if (lcom->operands[1]->is_number() && rcom->operands[1]->is_number()) {
 				
 				auto lcr = lcom->operands[1]->convert_rational();
 				auto rcr = rcom->operands[1]->convert_rational();
@@ -253,9 +258,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				if (lcr.get_denominator() == rcr.get_denominator()) {
 					if (lcr == rcr) {
 						return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
-								SymbolicExpr::number(lcr));
+								SymbolicExpr::number(lcr))->simplify();
 					} else {
-						// 注意这里的 multiply 不化简
+						// 注意这里的 multiply 不化简（power 的处理要跟上）
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [1] Merging exponents" << std::endl;
 						return SymbolicExpr::power(
 							SymbolicExpr::multiply(
 								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
@@ -263,9 +270,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 							),
 							SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator()))
 						)->simplify();
-					}	
+					}
 				}
-				if (is_power_equiv(lcom->operands[0],rcom->operands[0])) {
+				if (is_power_equiv(lcom->operands[0], rcom->operands[0])) {
+					// TODO: Debug output:
+					std::cerr << "[Debug output] [1] Merging bases" << std::endl;
 					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
 				}
 			}
@@ -290,7 +299,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				return false;
 			};
 			// 这样传递可能有性能问题
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [2] Begin flat operation" << std::endl;
 			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this));
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [2] End flat operation" << std::endl;
 			if (able) {
 				// 尝试合并指数
 				bool exponent_merger = true, base_merger = true;
@@ -543,9 +556,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
         // 底数是分数，结果为分数
         if (base->is_rational() || exponent->is_rational()) {
             if (exponent->is_int()) {
-            expr->number_value = (base->get_rational()).power(BigInt(exponent->get_int()));
+				expr->number_value = (base->get_rational()).power(BigInt(exponent->get_int()));
             } else if (exponent->is_big_int()) {
-            expr->number_value = (base->get_rational()).power(exponent->get_big_int());
+				expr->number_value = (base->get_rational()).power(exponent->get_big_int());
             }
         } else {// 否则结果为大整数
             BigInt b;
@@ -571,8 +584,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
         return expr;
     } else if (base->is_number() && exponent->is_rational()) {
         // 底数是数字，指数是分数
-        // TODO:暂时用符号储存
+        // 用符号储存
+		// TODO:某些必要的化简如 8^(1/3)
     }
+	// TODO: 底数是 Power 类型，指数是 Rational，能合并的合并处理
 
     return SymbolicExpr::power(base, exponent);
 }
