@@ -621,7 +621,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			// 如果成功，返回 true，origin 为修改后的值，保证 origin 不增大
 			// 如果失败，返回 false，origin 不做修改
 			// 注意，要保证既约分数（gcd(num, denom) = 1）
-			auto simplify_inner = [](int& origin const int& denom) -> bool {
+			auto simplify_inner = [](int& origin, const int& denom) -> bool {
 				// 可以优化
 				int answer = 1, target = origin;
 				for (int i = 2; 1ll * i * i <= target; i++) {
@@ -647,7 +647,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		}
     } else if (base->type == SymbolicExpr::Type::Power || base->type == SymbolicExpr::Type::Sqrt) {
 		if (base->type == SymbolicExpr::Type::Sqrt) {
-			base = SymbolicExpr::power(base->operands[0], ::Rational(1, 2));
+			base = SymbolicExpr::power(base->operands[0], SymbolicExpr::number(::Rational(1, 2)));
 		}
 		return SymbolicExpr::power(base->operands[0], SymbolicExpr::multiply(base->operands[1], exponent))->simplify();
 	}
@@ -710,13 +710,13 @@ std::string SymbolicExpr::to_string() const {
             for (const auto* term : terms) {
                 ::Rational coeff;
                 int radicand = 0;
-                result_terms.push_back(term->to_string());
+                result_terms.push_back(get_output(term));
             }
 
             if (result_terms.empty()) return "0";
-            std::string res = get_output(result_terms[0]);
+            std::string res = result_terms[0];
             for (size_t i = 1; i < result_terms.size(); ++i) {
-                res += "+" + get_output(result_terms[i]);
+                res += "+" + result_terms[i];
             }
             return res;
         }
