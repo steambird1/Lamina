@@ -556,7 +556,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
 				if (l.is_int()) lb = ::Rational(l.as_number());
 				else if (l.is_bigint()) lb = ::Rational(std::get<::BigInt>(l.data));
 				else lb = std::get<::Rational>(l.data);
-				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l.data)), SymbolicExpr::number(std::get<::Rational>(r.data)))->simplify());
+				return Value(SymbolicExpr::power(SymbolicExpr::number(lb), SymbolicExpr::number(std::get<::Rational>(r.data)))->simplify());
 			}
             // 有小数，采用小数幂
             double ld = l.as_number();

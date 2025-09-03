@@ -222,55 +222,99 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// 指数类型相乘的处理（可能考虑合并相同指数项）
 	// TODO: 这里以后可能要像 flatten 一样处理?
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
-		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
-		&& (is_power_compatible(left) && is_power_compatible(right))) {
+		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))) {
 		
-		if (left->type != SymbolicExpr::Type::Power)
-			std::swap(left, right);
-		
-		auto lcom = left;
-		if (left->type != SymbolicExpr::Type::Power)
-			lcom = power_compatible(left);
-		
-		auto rcom = power_compatible(right);
-		
-		auto is_power_equiv = [](std::shared_ptr<SymbolicExpr> a, std::shared_ptr<SymbolicExpr> b) -> bool {
-			if (a->type != b->type) 
-				return false;
-			if (a->type == SymbolicExpr::Type::Number)
-				return a->convert_rational() == b->convert_rational();
-			else if (a->type == SymbolicExpr::Type::Sqrt)
-				return a->operands[0] == b->operands[0];
-			else if (a->type == SymbolicExpr::Type::Variable)
-				return a->identifier == b->identifier;
-		};
-		
-		if (lcom->operands[1]->is_number() && right->operands[1]->is_number()) {
+		if (is_power_compatible(left) && is_power_compatible(right)) {
+			if (left->type != SymbolicExpr::Type::Power)
+				std::swap(left, right);
 			
-			auto lcr = lcom->operands[1]->convert_rational();
-			auto rcr = rcom->operands[1]->convert_rational();
+			auto lcom = left;
+			if (left->type != SymbolicExpr::Type::Power)
+				lcom = power_compatible(left);
 			
-			if (lcr.get_denominator() == rcr.get_denominator()) {
-				if (lcr == rcr) {
-					return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
-							SymbolicExpr::number(lcr));
+			auto rcom = power_compatible(right);
+			
+			auto is_power_equiv = [](std::shared_ptr<SymbolicExpr> a, std::shared_ptr<SymbolicExpr> b) -> bool {
+				if (a->type != b->type) 
+					return false;
+				if (a->type == SymbolicExpr::Type::Number)
+					return a->convert_rational() == b->convert_rational();
+				else if (a->type == SymbolicExpr::Type::Sqrt)
+					return a->operands[0] == b->operands[0];
+				else if (a->type == SymbolicExpr::Type::Variable)
+					return a->identifier == b->identifier;
+			};
+			
+			if (lcom->operands[1]->is_number() && right->operands[1]->is_number()) {
+				
+				auto lcr = lcom->operands[1]->convert_rational();
+				auto rcr = rcom->operands[1]->convert_rational();
+				
+				if (lcr.get_denominator() == rcr.get_denominator()) {
+					if (lcr == rcr) {
+						return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
+								SymbolicExpr::number(lcr));
+					} else {
+						// 注意这里的 multiply 不化简
+						return SymbolicExpr::power(
+							SymbolicExpr::multiply(
+								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
+								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
+							),
+							SymbolicExpr::number(lcr.get_denominator())
+						)->simplify();
+					}	
+				}
+				if (is_power_equiv(lcom->operands[0],rcom->operands[0])) {
+					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
+				}
+			}
+		} else {
+			// 开始尝试 flatten
+			std::function<bool(std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
+			// 暂时只支持有理指数化简
+			// 键为底数的值，值为指数的值
+			// TODO:这样可能需要额外判断双层根号问题）
+			std::map<::Rational, ::Rational> result;
+			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
+				if (expr->type == SymbolicExpr::Type::Multiply) {
+					for (auto &i : expr->operands) {
+						if (!flatten_multiply(i)) return false;
+					}
+					return true;
+				} else if (is_power_compatible(expr)) {
+					auto cvt = power_compatible(expr);
+					if (cvt->operands[0]->is_number() && cvt->operands[1]->is_number) {
+						::Rational base = cvt->operands[0]->convert_rational();
+						::Rational exponent = cvt->operands[1]->convert_rational();
+						auto finder = result.find(base);
+						if (finder != result.end()) {
+							result[base] = result[base] + exponent;
+						} else {
+							result[base] = exponent;
+						}
+					} else
+						return false;
 				} else {
-					// 注意这里的 multiply 不化简
-					return SymbolicExpr::power(
-						SymbolicExpr::multiply(
-							SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
-							SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify()
-						),
-						SymbolicExpr::number(lcr.get_denominator())
-					)->simplify();
-				}	
+					return false;
+				}
+			};
+			// 这样传递可能有性能问题
+			if (flatten_multiply(std::make_shared<SymbolicExpr>(*this))) {
+				// 由于只允许两项乘法，此处需要递归构造
+				// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
+				auto res = SymbolicExpr::number(1);
+				for (auto &i : result) {
+					// 不要化简
+					res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i->first), SymbolicExpr::number(i->second)), res);
+				}
+				return res;
 			}
-			if (is_power_equiv(lcom->operands[0],rcom->operands[0])) {
-				return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
-			}
+			// 否则无法化简，保留原表达式
 		}
 		
-		// 到此处：未能化简（以后这里可能引入欧拉公式等等）
+		// 到此处：未能化简，（以后这里可能引入欧拉公式等等）
+		
 	}
 
 	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
@@ -355,8 +399,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 		
 	}
-	
-	// TODO:(不一定做)加法类型相乘的处理
     
 	// 回退到保留乘法
     return SymbolicExpr::multiply(left, right);
