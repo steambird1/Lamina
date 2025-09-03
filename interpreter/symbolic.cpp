@@ -271,7 +271,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			}
 		} else {
 			// 开始尝试 flatten
-			std::function<bool(std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
+			std::function<bool(const std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
 			// 暂时只支持有理指数化简
 			// 键为底数的值，值为指数的值
 			// TODO:这样可能需要额外判断双层根号问题）
@@ -306,7 +306,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				auto res = SymbolicExpr::number(1);
 				for (auto &i : result) {
 					// 不要化简
-					res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i->first), SymbolicExpr::number(i->second)), res);
+					res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
 				}
 				return res;
 			}
