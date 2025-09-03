@@ -284,7 +284,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					return true;
 				} else if (is_power_compatible(expr)) {
 					auto cvt = power_compatible(expr);
-					if (cvt->operands[0]->is_number() && cvt->operands[1]->is_number) {
+					if (cvt->operands[0]->is_number() && cvt->operands[1]->is_number()) {
 						::Rational base = cvt->operands[0]->convert_rational();
 						::Rational exponent = cvt->operands[1]->convert_rational();
 						auto finder = result.find(base);
