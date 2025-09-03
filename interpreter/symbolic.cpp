@@ -639,19 +639,20 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 						for (int j = 0; j < contb; j++) answer *= i;
 					} else return false;
 				}
-				if (target != 1 && denom != 1)
-					return false;
+				if (target != 1) {
+					if (denom != 1) return false;
+					answer *= target;
+				}
 				// TODO: Debug output:
 				std::cerr << "[Debug output] Denom = " << denom << ", Simplifying " << target << " to " << answer << std::endl;
 				origin = answer;
 				return true;
 			};
 			
-			// TODO: Debug output:
-			std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 			if (simplify_inner(bs_n, es_d) && simplify_inner(bs_d, es_d)) {
 				// 化简成功
 				// TODO: Debug output:
+				std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 				std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
 				return SymbolicExpr::power(SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n))), SymbolicExpr::number(es_n));
 			}
