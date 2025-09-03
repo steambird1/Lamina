@@ -349,26 +349,35 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				auto lcr = lcom->operands[1]->convert_rational();
 				auto rcr = rcom->operands[1]->convert_rational();
 				
-				if (lcr.get_denominator() == rcr.get_denominator()) {
+				auto ldr = lcr.get_denominator();
+				auto rdr = rcr.get_denominator();
+				
+				if (is_power_equiv(lcom->operands[0], rcom->operands[0])) {
+					// TODO: Debug output:
+					std::cerr << "[Debug output] [1] Merging bases" << std::endl;
+					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
+				}
+				
+				if (ldr == rdr) {
 					if (lcr == rcr) {
 						return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
 								SymbolicExpr::number(lcr))->simplify();
+					} else if (ldr == ::BigInt(1)) {
+						// 没有分母（特殊处理，避免死循环）；此处，底数、指数均不能合并。
+						// 此处不应再对整体进行 multiply 的化简调用。
+						// 留给以后实现。
 					} else {
 						// 注意这里的 multiply 不化简（power 的处理要跟上）
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [1] Merging exponents" << std::endl;
 						auto new_base = SymbolicExpr::multiply(
-								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator()))->simplify(),
-								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator()))->simplify());
+								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator())),
+								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator())));
 						// 进行简化处理，同时避免死循环
-						new_base = sqrt_and_auxiliary(new_base, true);
-						return SymbolicExpr::power(new_base, SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator())));	// 只能这样化简，否则死循环
+						// 执行外部的 simplify 时内部的是不必要的
+						new_base = new_base->simplify(); // new_base = sqrt_and_auxiliary(new_base, true);
+						return SymbolicExpr::power(new_base, SymbolicExpr::number(::Rational(::BigInt(1), lcr.get_denominator())))->simplify();
 					}
-				}
-				if (is_power_equiv(lcom->operands[0], rcom->operands[0])) {
-					// TODO: Debug output:
-					std::cerr << "[Debug output] [1] Merging bases" << std::endl;
-					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
 				}
 			}
 		} else {
@@ -596,14 +605,66 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
         // 底数是数字，指数是分数
         // 用符号储存
 		// TODO:某些必要的化简如 8^(1/3)
-    }
-	// TODO: 底数是 Power 类型，指数是 Rational，能合并的合并处理
+		auto bsr = base->convert_rational();
+		auto expr = exponent->convert_rational();
+		
+		auto in_range = [](const ::Rational& val) -> bool {
+			auto vn = val.get_numerator(), vd = val.get_denominator();
+			const ::BigInt lower = ::BigInt(INT_MIN), upper = ::BigInt(INT_MAX);
+			return (vn >= lower && vn <= upper) && (vd >= lower && vd <= upper);
+		};
+		
+		if (in_range(bsr) && in_range(expr)) {
+			int bs_n = bsr.get_numerator().to_int(), bs_d = bsr.get_denominator().to_int();
+			int es_n = expr.get_numerator().to_int(), es_d = expr.get_denominator().to_int();
+			
+			// 如果成功，返回 true，origin 为修改后的值，保证 origin 不增大
+			// 如果失败，返回 false，origin 不做修改
+			// 注意，要保证既约分数（gcd(num, denom) = 1）
+			auto simplify_inner = [](int& origin const int& denom) -> bool {
+				// 可以优化
+				int answer = 1, target = origin;
+				for (int i = 2; 1ll * i * i <= target; i++) {
+					int exphere = 0;
+					while (target % i == 0) {
+						exphere++;
+						target /= i;
+					}
+					if (exphere % denom == 0) {
+						int contb = exphere / denom;
+						for (int j = 0; j < contb; j++) answer *= i;
+					} else return false;
+				}
+				origin = answer;
+				return true;
+			};
+			
+			if (simplify_inner(bs_n, es_d) && simplify_inner(bs_d, es_d)) {
+				// 化简成功
+				return SymbolicExpr::power(SymbolicExpr::number(::Rational(bs_n, bs_d)), SymbolicExpr::number(es_n));
+			}
+			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
+		}
+    } else if (base->type == SymbolicExpr::Type::Power || base->type == SymbolicExpr::Type::Sqrt) {
+		if (base->type == SymbolicExpr::Type::Sqrt) {
+			base = SymbolicExpr::power(base->operands[0], ::Rational(1, 2));
+		}
+		return SymbolicExpr::power(base->operands[0], SymbolicExpr::multiply(base->operands[1], exponent))->simplify();
+	}
 
     return SymbolicExpr::power(base, exponent);
 }
 
 
 std::string SymbolicExpr::to_string() const {
+	
+	auto get_output = [](std::shared_ptr<SymbolicExpr> expr) -> std::string {
+		const std::string lbrace = std::string("("), rbrace = std::string(")");
+		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable
+			|| expr->type == SymbolicExpr::Type::Sqrt) return expr->to_string();
+		else return lbrace + expr->to_string() + rbrace;
+	};
+	
     switch (type) {
         case Type::Number:
             if (std::holds_alternative<int>(number_value)) {
@@ -620,7 +681,7 @@ std::string SymbolicExpr::to_string() const {
             
         case Type::Sqrt:
             if (operands.empty()) return "√()";
-            return "√" + operands[0]->to_string();
+            return "√" + get_output(operands[0]);
             
         case Type::Multiply:
             if (operands.size() < 2) return "*(?)";
@@ -628,7 +689,7 @@ std::string SymbolicExpr::to_string() const {
             if (operands[0]->is_number() && operands[1]->type == Type::Sqrt) {
                 return operands[0]->to_string() + operands[1]->to_string();
             }
-            return operands[0]->to_string() + "*" + operands[1]->to_string();
+            return get_output(operands[0]) + "*" + get_output(operands[1]);
             
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
@@ -653,16 +714,16 @@ std::string SymbolicExpr::to_string() const {
             }
 
             if (result_terms.empty()) return "0";
-            std::string res = result_terms[0];
+            std::string res = get_output(result_terms[0]);
             for (size_t i = 1; i < result_terms.size(); ++i) {
-                res += "+" + result_terms[i];
+                res += "+" + get_output(result_terms[i]);
             }
             return res;
         }
             
         case Type::Power:
             if (operands.size() < 2) return "^(?)";
-            return operands[0]->to_string() + "^" + operands[1]->to_string();
+            return get_output(operands[0]) + "^" + get_output(operands[1]);
             
         default:
             return "Unknown";
