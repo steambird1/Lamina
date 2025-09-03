@@ -215,9 +215,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	std::function<std::shared_ptr<SymbolicExpr>(const std::shared_ptr<SymbolicExpr>&)> power_compatible;
 	power_compatible = [&](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
 		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
-			return SymbolicExpr::power(power_compatible(expr), SymbolicExpr::number(1));
+			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
-			return SymbolicExpr::power(power_compatible(expr), SymbolicExpr::number(::Rational(1, 2)))->simplify();
+			return SymbolicExpr::power(power_compatible(expr->operands[0]), SymbolicExpr::number(::Rational(1, 2)))->simplify();
 		} else if (expr->type == SymbolicExpr::Type::Power) {
 			return expr;
 		} else {
