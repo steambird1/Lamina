@@ -483,6 +483,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 }
             }
             // If either operand is irrational, use irrational arithmetic
+			// TODO:这部分代码存在问题
             if (l.is_irrational() || r.is_irrational()) {
                 ::Irrational lr = l.as_irrational();
                 ::Irrational rr = r.as_irrational();
@@ -551,7 +552,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             }
 			if (l.is_rational() && r.is_rational()) {
 				// 底数和指数均为Rational，考虑符号表达式
-				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l)), SymbolicExpr::number(::Rational(r)))->simplify());
+				return Value(SymbolicExpr::power(SymbolicExpr::number(std::get<::Rational>(l)), SymbolicExpr::number(std::get<::Rational>(r)))->simplify());
 			}
             // 有小数，采用小数幂
             double ld = l.as_number();
