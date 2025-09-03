@@ -355,21 +355,25 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				if (is_power_equiv(lcom->operands[0], rcom->operands[0])) {
 					// TODO: Debug output:
 					std::cerr << "[Debug output] [1] Merging bases" << std::endl;
-					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1])->simplify())->simplify();
+					return SymbolicExpr::power(lcom->operands[0], SymbolicExpr::add(lcom->operands[1], rcom->operands[1]))->simplify();
 				}
 				
 				if (ldr == rdr) {
 					if (lcr == rcr) {
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [1a] Merging exponents in a simplified way" << std::endl;
 						return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
 								SymbolicExpr::number(lcr))->simplify();
 					} else if (ldr == ::BigInt(1)) {
 						// 没有分母（特殊处理，避免死循环）；此处，底数、指数均不能合并。
 						// 此处不应再对整体进行 multiply 的化简调用。
 						// 留给以后实现。
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [1b] Give up merging" << std::endl;
 					} else {
 						// 注意这里的 multiply 不化简（power 的处理要跟上）
 						// TODO: Debug output:
-						std::cerr << "[Debug output] [1] Merging exponents" << std::endl;
+						std::cerr << "[Debug output] [1c] Merging exponents" << std::endl;
 						auto new_base = SymbolicExpr::multiply(
 								SymbolicExpr::power(lcom->operands[0], SymbolicExpr::number(lcr.get_numerator())),
 								SymbolicExpr::power(rcom->operands[0], SymbolicExpr::number(rcr.get_numerator())));
@@ -654,7 +658,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				// TODO: Debug output:
 				std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 				std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
-				return SymbolicExpr::power(SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n))), SymbolicExpr::number(es_n));
+				auto current_new_base = SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n)));
+				if (es_n == 1) return current_new_base;
+				return SymbolicExpr::power(current_new_base, SymbolicExpr::number(es_n));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
 		}
