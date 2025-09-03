@@ -222,6 +222,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible]
 		(const std::shared_ptr<SymbolicExpr> &obj, bool no_simplify = false) -> std::shared_ptr<SymbolicExpr> {
 		
+		// TODO: Debug output:
+		std::cerr << "[Debug output] Starting sqrt-and-aux process" << std::endl;
+		
 		// 此处可以考虑优化
 		auto left = no_simplify ? obj->operands[0] : obj->operands[0]->simplify();
 		auto right = no_simplify ? obj->operands[1] : obj->operands[1]->simplify();
@@ -242,6 +245,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				
 				if (right->type == SymbolicExpr::Type::Sqrt)
 					std::swap(left, right);
+				
+				// TODO: Debug output:
+				std::cerr << "[Debug output] [4] Starting sqrt-and-aux process" << std::endl;
 				
 				bool negative = false;
 				if (left->type == SymbolicExpr::Type::Number && left->convert_rational() < ::Rational(0, 1))
@@ -267,6 +273,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				// 把右侧加入到左侧
 				if (!is_compounded_sqrt(left))
 					std::swap(left, right);
+				
+				// TODO: Debug output:
+				std::cerr << "[Debug output] [5] Starting sqrt-and-aux process" << std::endl;
 				
 				bool negative = false;
 				
@@ -384,6 +393,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 				}
 			}
+			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] End of power-compatible process" << std::endl;
+			
 		} else {
 			// 开始尝试 flatten
 			std::function<bool(const std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
