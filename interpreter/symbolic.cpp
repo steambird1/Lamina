@@ -686,6 +686,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		if (in_range(bsr) && in_range(expr)) {
 			// TODO: Debug output:
 			std::cerr << "[Debug output] Power simplifying (rational ^ rational) expressions" << std::endl;
+			
+			if (expr == ::Rational(1)) return SymbolicExpr::number(bsr);
+			
 			int bs_n = bsr.get_numerator().to_int(), bs_d = bsr.get_denominator().to_int();
 			int es_n = expr.get_numerator().to_int(), es_d = expr.get_denominator().to_int();
 			// TODO: Debug output:
@@ -779,23 +782,33 @@ std::string SymbolicExpr::to_string() const {
             
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
+			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [to_string] Begin adder generation\n";
 
-            std::vector<const SymbolicExpr*> terms;
-            std::function<void(const SymbolicExpr*)> flatten_add;
-            flatten_add = [&](const SymbolicExpr* expr) {
+            std::vector<std::shared_ptr<SymbolicExpr>> terms;
+            std::function<void(const std::shared_ptr<SymbolicExpr>&)> flatten_add;
+            flatten_add = [&](const std::shared_ptr<SymbolicExpr>& expr) {
                 if (expr->type == Type::Add && expr->operands.size() == 2) {
-                    flatten_add(expr->operands[0].get());
-                    flatten_add(expr->operands[1].get());
+                    flatten_add(expr->operands[0]);
+                    flatten_add(expr->operands[1]);
                 } else {
                     terms.push_back(expr);
                 }
             };
-            flatten_add(this);
+            flatten_add(std::make_shared<SymbolicExpr>(*this));
+			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [to_string] End flatten add\n";
 
             std::vector<std::string> result_terms;
-            for (const auto term : terms) {
-                result_terms.push_back(get_output(std::shared_ptr<const SymbolicExpr>(term)));
+			result_terms.reserve(terms.size());
+            for (auto &term : terms) {
+                result_terms.push_back(get_output(term));
             }
+			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] [to_string] End output generation\n";
 
             if (result_terms.empty()) return "0";
             std::string res = result_terms[0];
