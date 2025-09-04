@@ -494,7 +494,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						std::cerr << "[Debug output] [2] exponent referring (" << i.first.to_string() << ")^(" << i.second.to_string() << ")\n";
 						// 不要化简
 						auto cres = SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second));
-						if (inits) res = cres;
+						if (inits) {
+							res = cres;
+							inits = false;
+						}
 						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
@@ -525,7 +528,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						std::shared_ptr<SymbolicExpr> cres;
 						if (i.first == ::Rational(1)) cres = i.second;
 						else cres = SymbolicExpr::power(i.second, SymbolicExpr::number(i.first));
-						if (inits) cres = res;
+						if (inits) {
+							cres = res;
+							inits = false;
+						}
 						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
