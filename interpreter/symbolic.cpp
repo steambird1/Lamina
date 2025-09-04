@@ -652,6 +652,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		<< std::endl;
 	
     if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
+		auto banum = base->convert_rational();
+		auto exnum = exponent->convert_rational();
+		
+		if (exnum < ::Rational(0)) {
+			return SymbolicExpr::power(banum.reciprocal(), ::Rational(0) - exnum)->simplify();
+		}
+		
         auto expr = std::make_shared<SymbolicExpr>(Type::Number);
         // 底数是分数，结果为分数
         if (base->is_rational() || exponent->is_rational()) {
@@ -755,6 +762,32 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	
 	if (exponent->is_int() || exponent->is_big_int()) {
 		auto rconv = exponent->convert_rational();
+		if (rconv == ::Rational(-1)) {
+			// 这里一定不是整数，尝试分母有理化
+			
+			auto processable = [](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
+				return obj->type == SymbolicExpr::Type::Number || obj->type == SymbolicExpr::Type::Sqrt;
+			}
+			
+			if (base->type == SymbolicExpr::Type::Add && base->operands.size() == 2 &&
+				processable(base->operands[0]) && processable(base->operands[1])) {
+				auto new_term = SymbolicExpr::multiply(SymbolicExpr::number(-1), base->operands[1]);
+				auto new_denom = SymbolicExpr::multiply(base, SymbolicExpr::add(base->operands[0], new_term))->simplify();
+				if (new_denom->type == SymbolicExpr::Type::number) {
+					return SymbolicExpr::multiply(SymbolicExpr::number(new_denom->convert_rational().reciprocal()), 
+							new_term)->simplify();
+				} else {
+					// 有理化失败
+					// TODO: Debug output
+					std::cerr << "[Debug output] Pow: rationalize failed!\n";
+				}
+				
+			}
+		}
+		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() >= ::BigInt(-3) && rconv.get_numerator() < ::BigInt(0)) {
+			// 转为倒数的情况
+			return SymbolicExpr::power(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())), SymbolicExpr::number(-1))->simplify();
+		}
 		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
 		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
 		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() > ::BigInt(1) && rconv.get_numerator() <= ::BigInt(4)) {
