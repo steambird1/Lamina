@@ -517,6 +517,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					
 					for (auto &i : exponent_ref) {
 						// 不要化简
+						
+						// TODO: Debug output:
+						std::cerr << "[Debug output] [2] base merging: {" << i.second->to_string() << "}^(" << i.first.to_string() << ")\n";
+						
 						if (i.first == ::Rational(0)) continue;
 						std::shared_ptr<SymbolicExpr> cres;
 						if (i.first == ::Rational(1)) cres = i.second;
