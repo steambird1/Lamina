@@ -243,7 +243,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	};
 	
 	// TODO: 和指数类型乘法合并/简化
-	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible, is_compounded_sqrt]
+	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible, is_compounded_sqrt, is_for_auxiliary]
 		(const std::shared_ptr<SymbolicExpr> &obj, bool no_simplify = false) -> std::shared_ptr<SymbolicExpr> {
 		
 		// TODO: Debug output:
@@ -256,85 +256,87 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		// TODO: Debug output:
 		std::cerr << "[Debug output] Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 		
-		// 根式相乘的一般处理
-		if (left->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(left)
-			|| right->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(right)) {
-			
-			if ((!is_compounded_sqrt(left)) && (!is_compounded_sqrt(right))) {
+		if (is_for_auxiliary(left) && is_for_auxiliary(right)) {
+			// 根式相乘的一般处理
+			if (left->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(left)
+				|| right->type == SymbolicExpr::Type::Sqrt || is_compounded_sqrt(right)) {
 				
-				if (right->type == SymbolicExpr::Type::Sqrt)
-					std::swap(left, right);
-				
-				// TODO: Debug output:
-				std::cerr << "[Debug output] [4] Starting sqrt-and-aux process" << std::endl;
-				
-				bool negative = false;
-				if (left->type == SymbolicExpr::Type::Number && left->convert_rational() < ::Rational(0, 1))
-					negative = !negative;
-				if (right->type == SymbolicExpr::Type::Number && right->convert_rational() < ::Rational(0, 1))
-					negative = !negative;
-				
-				std::shared_ptr<SymbolicExpr> sresult = SymbolicExpr::multiply(
-					(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left))
-																: left->operands[0],
-					(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right))
-																: right->operands[0]);
-				
-				auto res = SymbolicExpr::sqrt(sresult)->simplify();
-				
-				if (negative)
-					return SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
-				else
+				if ((!is_compounded_sqrt(left)) && (!is_compounded_sqrt(right))) {
+					
+					if (right->type == SymbolicExpr::Type::Sqrt)
+						std::swap(left, right);
+					
+					// TODO: Debug output:
+					std::cerr << "[Debug output] [4] Starting sqrt-and-aux process" << std::endl;
+					
+					bool negative = false;
+					if (left->type == SymbolicExpr::Type::Number && left->convert_rational() < ::Rational(0, 1))
+						negative = !negative;
+					if (right->type == SymbolicExpr::Type::Number && right->convert_rational() < ::Rational(0, 1))
+						negative = !negative;
+					
+					std::shared_ptr<SymbolicExpr> sresult = SymbolicExpr::multiply(
+						(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left))
+																	: left->operands[0],
+						(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right))
+																	: right->operands[0]);
+					
+					auto res = SymbolicExpr::sqrt(sresult)->simplify();
+					
+					if (negative)
+						return SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
+					else
+						return res;
+					
+				} else {
+					
+					// 把右侧加入到左侧
+					if (!is_compounded_sqrt(left))
+						std::swap(left, right);
+					
+					// TODO: Debug output:
+					std::cerr << "[Debug output] [5] Starting sqrt-and-aux process" << std::endl;
+					
+					bool negative = false;
+					
+					auto res = std::make_shared<SymbolicExpr>(*left);
+					auto simplify_res = [&]() {
+						if (is_compounded_sqrt(res->operands[1])) {
+							res->operands[0] = SymbolicExpr::multiply(res->operands[0], res->operands[1]->operands[0])->simplify();
+							res->operands[1] = res->operands[1]->operands[1];		// 不用再 sqrt
+						}
+						res->simplify();
+					};
+					
+					if (right->type == SymbolicExpr::Type::Number) {
+						if (right->convert_rational() < ::Rational(0, 1)) {
+							negative = true;
+						}
+						res->operands[0] = SymbolicExpr::multiply(res->operands[0], right)->simplify();
+					} else if (right->type == SymbolicExpr::Type::Sqrt) {
+						res->operands[1] = SymbolicExpr::multiply(res->operands[1], right)->simplify();
+						simplify_res();
+					} else if (is_compounded_sqrt(right)) {
+						res->operands[0] = SymbolicExpr::multiply(res->operands[0], right->operands[0])->simplify();
+						res->operands[1] = SymbolicExpr::multiply(res->operands[1], right->operands[1])->simplify();
+						simplify_res();
+					}
+					
+					if (negative) {
+						if (res->type == SymbolicExpr::Type::Multiply) {
+							// 这个需要化简
+							res->operands[0] = SymbolicExpr::multiply(SymbolicExpr::number(-1), res->operands[0])->simplify();
+						} else {
+							// 不要再化简
+							res = SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
+						}
+					}
+					
 					return res;
-				
-			} else {
-				
-				// 把右侧加入到左侧
-				if (!is_compounded_sqrt(left))
-					std::swap(left, right);
-				
-				// TODO: Debug output:
-				std::cerr << "[Debug output] [5] Starting sqrt-and-aux process" << std::endl;
-				
-				bool negative = false;
-				
-				auto res = std::make_shared<SymbolicExpr>(*left);
-				auto simplify_res = [&]() {
-					if (is_compounded_sqrt(res->operands[1])) {
-						res->operands[0] = SymbolicExpr::multiply(res->operands[0], res->operands[1]->operands[0])->simplify();
-						res->operands[1] = res->operands[1]->operands[1];		// 不用再 sqrt
-					}
-					res->simplify();
-				};
-				
-				if (right->type == SymbolicExpr::Type::Number) {
-					if (right->convert_rational() < ::Rational(0, 1)) {
-						negative = true;
-					}
-					res->operands[0] = SymbolicExpr::multiply(res->operands[0], right)->simplify();
-				} else if (right->type == SymbolicExpr::Type::Sqrt) {
-					res->operands[1] = SymbolicExpr::multiply(res->operands[1], right)->simplify();
-					simplify_res();
-				} else if (is_compounded_sqrt(right)) {
-					res->operands[0] = SymbolicExpr::multiply(res->operands[0], right->operands[0])->simplify();
-					res->operands[1] = SymbolicExpr::multiply(res->operands[1], right->operands[1])->simplify();
-					simplify_res();
+					
 				}
-				
-				if (negative) {
-					if (res->type == SymbolicExpr::Type::Multiply) {
-						// 这个需要化简
-						res->operands[0] = SymbolicExpr::multiply(SymbolicExpr::number(-1), res->operands[0])->simplify();
-					} else {
-						// 不要再化简
-						res = SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
-					}
-				}
-				
-				return res;
 				
 			}
-			
 		}
 		
 		// 回退到保留乘法
@@ -762,7 +764,7 @@ std::string SymbolicExpr::to_string() const {
 	
 	auto get_output = [](std::shared_ptr<const SymbolicExpr> expr) -> std::string {
 		const std::string lbrace = std::string("("), rbrace = std::string(")");
-		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable
+		if ((expr->type == SymbolicExpr::Type::Number && (expr->convert_rational().get_denominator() == ::BigInt(1))) || expr->type == SymbolicExpr::Type::Variable
 			|| expr->type == SymbolicExpr::Type::Sqrt) return expr->to_string();
 		else return lbrace + expr->to_string() + rbrace;
 	};
