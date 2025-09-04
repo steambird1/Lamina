@@ -745,7 +745,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		auto rconv = exponent->convert_rational();
 		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
 		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
-		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() <= ::BigInt(4)) {
+		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() > ::BigInt(1) && rconv.get_numerator() <= ::BigInt(4)) {
 			int exps = rconv.get_numerator().to_int();
 			std::shared_ptr<SymbolicExpr> result = std::make_shared<SymbolicExpr>(*base);
 			for (int i = 2; i <= exps; i++)
