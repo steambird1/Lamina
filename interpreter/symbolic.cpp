@@ -222,7 +222,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
 			return ret;
 		} else if (expr->type == SymbolicExpr::Type::Power) {
-			return SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]));
+			return SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]))->simplify();
 		} else {
 			return expr;
 		}
@@ -275,9 +275,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					negative = !negative;
 				
 				std::shared_ptr<SymbolicExpr> sresult = SymbolicExpr::multiply(
-					(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left)->simplify())
+					(left->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(left, left))
 																: left->operands[0],
-					(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right)->simplify())
+					(right->type == SymbolicExpr::Type::Number) ? (SymbolicExpr::multiply(right, right))
 																: right->operands[0]);
 				
 				auto res = SymbolicExpr::sqrt(sresult)->simplify();
