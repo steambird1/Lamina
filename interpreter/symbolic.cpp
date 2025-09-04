@@ -217,7 +217,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
-			return SymbolicExpr::power(power_compatible(expr->operands[0]), SymbolicExpr::number(::Rational(1, 2)))->simplify();
+			auto ret = SymbolicExpr::power(power_compatible(expr->operands[0]), SymbolicExpr::number(::Rational(1, 2)))->simplify();
+			if (ret->type == SymbolicExpr::Type::Number || ret->type == SymbolicExpr::Type::Variable)
+				ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
+			return ret;
 		} else if (expr->type == SymbolicExpr::Type::Power) {
 			return SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]));
 		} else {
@@ -432,7 +435,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
-					result.push_back(power_compatible(expr));
+					auto current = power_compatible(expr);
+					// TODO: Debug output:
+					std::cerr << "Converting " << expr.to_string() << " to " << current->to_string() << std::endl;
+					result.push_back(current);
 					return true;
 				}
 				return false;
@@ -450,11 +456,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					if (!cvt->operands[0]->is_number()) {
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [2] Flat: exponent fails at " << cvt->operands[0]->to_string() << std::endl;
+						std::cerr << "[Debug output] [2] Flat: (of " << cvt->to_string() << ")\n";
 						exponent_merger = false;
 					}
 					if (!cvt->operands[1]->is_number()) {
 						// TODO: Debug output:
-						std::cerr << "[Debug output] [2] Flat: fails at " << cvt->operands[0]->to_string() << std::endl;
+						std::cerr << "[Debug output] [2] Flat: fails at " << cvt->operands[1]->to_string() << std::endl;
+						std::cerr << "[Debug output] [2] Flat: (of " << cvt->to_string() << ")\n";
 						base_merger = false;
 						exponent_merger = false;
 					}
