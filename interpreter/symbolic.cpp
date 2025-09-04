@@ -656,7 +656,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		auto exnum = exponent->convert_rational();
 		
 		if (exnum < ::Rational(0)) {
-			return SymbolicExpr::power(SymbolicExpr::number(banum.reciprocal()), ::Rational(0) - exnum)->simplify();
+			return SymbolicExpr::power(SymbolicExpr::number(banum.reciprocal()), SymbolicExpr::number(::Rational(0) - exnum))->simplify();
 		}
 		
         auto expr = std::make_shared<SymbolicExpr>(Type::Number);
