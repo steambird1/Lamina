@@ -437,7 +437,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				} else if (is_power_compatible(expr)) {
 					auto current = power_compatible(expr);
 					// TODO: Debug output:
-					std::cerr << "Converting " << expr.to_string() << " to " << current->to_string() << std::endl;
+					std::cerr << "Converting " << expr->to_string() << " to " << current->to_string() << std::endl;
 					result.push_back(current);
 					return true;
 				}
@@ -622,6 +622,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
     // 如果底数是数字，且指数是整数，用数字储存
     auto base = operands[0]->simplify();
     auto exponent = operands[1]->simplify();
+	
+	// TODO: Debug output:
+	std::cerr << "[Debug output] Simplifying power: base = " << base->to_string() << "; exponent = " << exponent->to_string()
+		<< std::endl;
+	
     if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
         auto expr = std::make_shared<SymbolicExpr>(Type::Number);
         // 底数是分数，结果为分数
