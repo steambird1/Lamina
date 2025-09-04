@@ -767,7 +767,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			
 			auto processable = [](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
 				return obj->type == SymbolicExpr::Type::Number || obj->type == SymbolicExpr::Type::Sqrt;
-			}
+			};
 			
 			if (base->type == SymbolicExpr::Type::Add && base->operands.size() == 2 &&
 				processable(base->operands[0]) && processable(base->operands[1])) {
