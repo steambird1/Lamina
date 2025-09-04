@@ -740,6 +740,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		std::cerr << "[Debug output] Power simplifying embedded power / sqrt" << std::endl;
 		return SymbolicExpr::power(base->operands[0], SymbolicExpr::multiply(base->operands[1], exponent))->simplify();
 	}
+	
+	if (exponent->is_int() || exponent->is_big_int()) {
+		auto rconv = exponent->convert_rational();
+		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
+		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
+		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() <= ::BigInt(4)) {
+			int exps = rconv.get_numerator().to_int();
+			std::shared_ptr<SymbolicExpr> result = std::make_shared<SymbolicExpr>(*base);
+			for (int i = 2; i <= exps; i++)
+				result = SymbolicExpr::multiply(result, base)->simplify();
+			return result;
+		}
+	}
 
     return SymbolicExpr::power(base, exponent);
 }
@@ -783,9 +796,6 @@ std::string SymbolicExpr::to_string() const {
         case Type::Add: {
             if (operands.size() < 2) return "+(?)";
 			
-			// TODO: Debug output:
-			std::cerr << "[Debug output] [to_string] Begin adder generation\n";
-
             std::vector<std::shared_ptr<SymbolicExpr>> terms;
             std::function<void(const std::shared_ptr<SymbolicExpr>&)> flatten_add;
             flatten_add = [&](const std::shared_ptr<SymbolicExpr>& expr) {
@@ -797,18 +807,12 @@ std::string SymbolicExpr::to_string() const {
                 }
             };
             flatten_add(std::make_shared<SymbolicExpr>(*this));
-			
-			// TODO: Debug output:
-			std::cerr << "[Debug output] [to_string] End flatten add\n";
 
             std::vector<std::string> result_terms;
 			result_terms.reserve(terms.size());
             for (auto &term : terms) {
                 result_terms.push_back(get_output(term));
             }
-			
-			// TODO: Debug output:
-			std::cerr << "[Debug output] [to_string] End output generation\n";
 
             if (result_terms.empty()) return "0";
             std::string res = result_terms[0];
