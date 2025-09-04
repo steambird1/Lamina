@@ -773,7 +773,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				processable(base->operands[0]) && processable(base->operands[1])) {
 				auto new_term = SymbolicExpr::multiply(SymbolicExpr::number(-1), base->operands[1]);
 				auto new_denom = SymbolicExpr::multiply(base, SymbolicExpr::add(base->operands[0], new_term))->simplify();
-				if (new_denom->type == SymbolicExpr::Type::number) {
+				if (new_denom->type == SymbolicExpr::Type::Number) {
 					return SymbolicExpr::multiply(SymbolicExpr::number(new_denom->convert_rational().reciprocal()), 
 							new_term)->simplify();
 				} else {
