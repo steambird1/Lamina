@@ -548,7 +548,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 // 如果底数为整数，指数为整数，结果为BigInt
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                return Value(lb.power(rb));
+				if (rb < ::BigInt(0)) {
+					return Value(l.as_rational().reciprocal().power(::BigInt(0) - rb));
+				} else {
+					return Value(lb.power(rb));
+				}
             }
 			if ((l.is_int() || l.is_bigint() || l.is_rational()) && r.is_rational()) {
 				// 底数和指数均为Rational，考虑符号表达式
