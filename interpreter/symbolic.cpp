@@ -771,12 +771,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			
 			if (base->type == SymbolicExpr::Type::Add && base->operands.size() == 2 &&
 				processable(base->operands[0]) && processable(base->operands[1])) {
-				auto new_term = SymbolicExpr::multiply(SymbolicExpr::number(-1), base->operands[1]);
-				auto new_denom = SymbolicExpr::multiply(base, SymbolicExpr::add(base->operands[0], new_term))->simplify();
+				auto new_term = SymbolicExpr::multiply(SymbolicExpr::number(-1), base->operands[1])->simplify();
+				auto new_nume = SymbolicExpr::add(base->operands[0], new_term);
+				auto new_denom = SymbolicExpr::multiply(base, new_nume)->simplify();
 				if (new_denom->type == SymbolicExpr::Type::Number) {
 					std::cerr << "[Debug output] term = " << new_term->to_string() << "; denom = " << new_denom->to_string() << std::endl;
 					return SymbolicExpr::multiply(SymbolicExpr::number(new_denom->convert_rational().reciprocal()), 
-							new_denom)->simplify();
+							new_nume)->simplify();
 				} else {
 					// 有理化失败
 					// TODO: Debug output
