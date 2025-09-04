@@ -483,11 +483,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					// 由于只允许两项乘法，此处需要递归构造
 					// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
 					auto res = SymbolicExpr::number(1);
+					bool inits = true;
 					for (auto &i : base_ref) {
+						if (i.first == ::Rational(0)) return SymbolicExpr::number(0);
+						if (i.second == ::Rational(0)) continue;
+						if (i.first == ::Rational(1)) continue;
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [2] exponent referring (" << i.first.to_string() << ")^(" << i.second.to_string() << ")\n";
 						// 不要化简
-						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second)), res);
+						auto cres = SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second));
+						if (inits) res = cres;
+						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
 				} else if (base_merger) {
@@ -502,13 +508,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 					// 先这么复制下来，万一以后逻辑不同
 					auto res = SymbolicExpr::number(1);
+					bool inits = true;
 					
 					// TODO: Debug output:
 					std::cerr << "[Debug output] [2] base merging\n";
 					
 					for (auto &i : exponent_ref) {
 						// 不要化简
-						res = SymbolicExpr::multiply(SymbolicExpr::power(SymbolicExpr::number(i.first), i.second), res);
+						if (i.first == ::Rational(0)) continue;
+						std::shared_ptr<SymbolicExpr> cres;
+						if (i.first == ::Rational(1)) cres = i.second;
+						else cres = SymbolicExpr::power(i.second, SymbolicExpr::number(i.first));
+						if (inits) cres = res;
+						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
 				}
