@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
+#include <stdexcept>
 
 // Lamina 版本号
 #define LAMINA_VERSION "0.1.0"
@@ -99,7 +99,7 @@ constexpr bool always_false = false;
 #define L_ERR(msg)                                  \
     do {                                            \
         std::cerr << "Error: " << msg << std::endl; \
-        std::exit(EXIT_FAILURE);                    \
+        throw std::runtime_error(EXIT_FAILURE);                    \
     } while (0)
 
 #define LAMINA_GLOBAL_VAR(name, value)                                   \
