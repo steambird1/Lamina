@@ -212,11 +212,11 @@ Value cas_solve_linear(const std::vector<Value>& args) {
         std::map<std::string, double> vars_0 = {{variable, 0.0}};
         std::map<std::string, double> vars_1 = {{variable, 1.0}};
 
-        double f_0 = expr->evaluate(vars_0);// b
-        double f_1 = expr->evaluate(vars_1);// a + b
+        double f_0 = expr->evaluate(vars_0);    // b
+        double f_1 = expr->evaluate(vars_1);    // a + b
 
-        double a = f_1 - f_0;// 斜率
-        double b = f_0;      // 截距
+        double a = f_1 - f_0;   // 斜率
+        double b = f_0;         // 截距
 
         if (std::abs(a) < 1e-10) {
             if (std::abs(b) < 1e-10) {

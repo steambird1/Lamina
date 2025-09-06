@@ -366,7 +366,7 @@ bool Interpreter::load_module(const std::string& module_name) {
             std::cerr << "Error: Cannot load module '" << module_name << "'\n";
         } else {
             std::cerr << "Error: Cannot load module '" << module_name << "'\nTried paths:\n";
-            for (const auto& p: tried_paths) {
+            for (const auto& p : tried_paths) {
                 std::cerr << "  - " << p << "\n";
             }
         }

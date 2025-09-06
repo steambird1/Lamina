@@ -3,8 +3,8 @@
 
 int main(const int argc, const char* const argv[]) {
     try {
-        enable_ansi_escape();          // 设置编码
-        return argv_parser(argc, argv);// 主要执行这里
+        enable_ansi_escape();           // 设置编码
+        return argv_parser(argc, argv); // 主要执行这里
 
     } catch (const CtrlCException&) {
         std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。"

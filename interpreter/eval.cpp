@@ -108,7 +108,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         }
 
         recursion_depth++;
-        push_frame(actual_callee, "<script>", 0);// Add to call stack
+        push_frame(actual_callee, "<script>", 0);   // Add to call stack
 
         // Check parameter count
         if (call->args.size() > func->params.size()) {
@@ -158,7 +158,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
                     if (re.stack_trace.empty()) {
                         enriched.stack_trace = get_stack_trace();
                     } else {
-                        enriched.stack_trace = re.stack_trace;// Preserve existing trace
+                        enriched.stack_trace = re.stack_trace;  // Preserve existing trace
                     }
                     pop_frame();
                     pop_scope();
@@ -167,7 +167,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
                 } catch (const std::exception& e) {
                     // Wrap standard exception as RuntimeError
                     RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
-                    enriched.stack_trace = get_stack_trace();// Get stack trace before cleanup
+                    enriched.stack_trace = get_stack_trace();   // Get stack trace before cleanup
                     pop_frame();
                     pop_scope();
                     recursion_depth--;
@@ -185,7 +185,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         pop_frame();
         pop_scope();
         recursion_depth--;
-        return Value();// Default value when no return
+        return Value(); // Default value when no return
     }
 
     // Check if it's a module function before reporting undefined
@@ -204,7 +204,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
 
         // Try to call the module function
         Value result = call_module_function(actual_callee, args);
-        if (result.to_string() != "null") {// 检查是否成功调用
+        if (result.to_string() != "null") { // 检查是否成功调用
             return result;
         }
         // If module function call failed, fall through to undefined function error
@@ -278,7 +278,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 return Value(result);
             }
 
-            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
+            double result = l.as_number() + r.as_number();  // Return int if both operands are int and result is whole
             if (l.is_int() && r.is_int()) {
                 // check overflow and underflow
                 if (static_cast<int>(result) == INT_MAX ||
@@ -508,7 +508,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 if (rd == 0.0) {
                     error_and_exit("Modulo by zero");
                 }
-                return Value(ld - rd * std::floor(ld / rd));// 保持结果非负
+                return Value(ld - rd * std::floor(ld / rd));    // 保持结果非负
             }
             if (l.is_bigint() || r.is_bigint()) {
                 // 有BigInt，使用BigInt内置方法
@@ -645,8 +645,8 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             if (bin->op == ">=") return Value(lb >= rb);
         } else {
             // Type mismatch - only equality/inequality make sense
-            if (bin->op == "==") return Value(false);// Different types are never equal
-            if (bin->op == "!=") return Value(true); // Different types are always not equal
+            if (bin->op == "==") return Value(false);   // Different types are never equal
+            if (bin->op == "!=") return Value(true);    // Different types are always not equal
 
             error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
             return Value();

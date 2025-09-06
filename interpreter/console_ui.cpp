@@ -210,7 +210,7 @@ int repl() {
     std::cout << "Type :help for help." << std::endl;
 
     Interpreter interpreter;
-    int lineno = 1;// 记录当前输入的行号，用于错误提示
+    int lineno = 1; // 记录当前输入的行号，用于错误提示
 
     // REPL主循环
     std::string code_buffer;
@@ -223,17 +223,17 @@ int repl() {
             std::string prompt;
             if (brace_level > 0) {
                 prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m. \033[0m "// 多行输入下等待输入的提示符
+                                 ? "\033[1;32m. \033[0m "   // 多行输入下等待输入的提示符
                                  : ". ";
             } else {
                 prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m> \033[0m "// 带绿色高亮的提示符（ANSI转义序列）
-                                 : "> ";                 // 普通提示符
+                                 ? "\033[1;32m> \033[0m "   // 带绿色高亮的提示符（ANSI转义序列）
+                                 : "> ";                    // 普通提示符
             }
 
             std::string line = repl_readline(prompt);
 
-            if (line == "\x03") {// Ctrl+C interrupt
+            if (line == "\x03") {   // Ctrl+C interrupt
                 if (brace_level > 0) {
                     code_buffer.clear();
                     brace_level = 0;
@@ -242,7 +242,7 @@ int repl() {
                 }
                 std::cout << "\n";
                 break;
-            } else if (line == "\x04") {// Ctrl+D (EOF)
+            } else if (line == "\x04") {    // Ctrl+D (EOF)
                 if (brace_level > 0) {
                     // 在多行模式下，Ctrl+D 意味着输入结束，立即执行代码
                     // In multi-line mode, Ctrl+D means end of input, execute code immediately
@@ -271,8 +271,8 @@ int repl() {
                 continue;
             }
 
-        execute_code:       // 用于从Ctrl+D跳转 (Goto label for Ctrl+D)
-            brace_level = 0;// 重置 (Reset)
+        execute_code:           // 用于从Ctrl+D跳转 (Goto label for Ctrl+D)
+            brace_level = 0;    // 重置 (Reset)
 
             if (code_buffer.empty() || code_buffer == "\n") {
                 ++lineno;
@@ -309,11 +309,11 @@ int repl() {
                 }
                 if (trimmed_line == ":clear") {
 #ifdef _WIN32
-                    auto result = system("cls");// Windows下使用cls命令
+                    auto result = system("cls");    // Windows下使用cls命令
 #else
-                    auto result = system("clear");// Linux/macOS下使用clear命令
+                    auto result = system("clear");  // Linux/macOS下使用clear命令
 #endif
-                    (void) result;// 显式忽略system函数的返回值，避免编译器警告
+                    (void) result;  // 显式忽略system函数的返回值，避免编译器警告
                     ++lineno;
                     continue;
                 }
@@ -410,7 +410,7 @@ int repl() {
         }
 
 
-        ++lineno;// 行号递增
+        ++lineno;   // 行号递增
     }
 
     return 0;

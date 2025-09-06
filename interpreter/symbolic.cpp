@@ -227,11 +227,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     };
     flatten_add(left);
     flatten_add(right);
-    std::map<int, ::Rational> sqrt_terms;// radicand -> sum of coeffs
-    // std::map<std::string, ::Rational> variable_terms;// TODO
-    Rational number_term(0);                          // 数字部分
-    std::vector<std::shared_ptr<SymbolicExpr>> others;// other things
-    for (const auto& term: terms) {
+    std::map<int, ::Rational> sqrt_terms;   // radicand -> sum of coeffs
+    // std::map<std::string, ::Rational> variable_terms;    // TODO
+    Rational number_term(0);                                // 数字部分
+    std::vector<std::shared_ptr<SymbolicExpr>> others;      // other things
+    for (const auto& term : terms) {
         ::Rational coeff;
         int radicand = 0;
         if (extract_sqrt(term, coeff, radicand)) {
@@ -243,7 +243,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         }
     }
     std::vector<std::shared_ptr<SymbolicExpr>> result_terms;
-    for (const auto& [radicand, coeff]: sqrt_terms) {
+    for (const auto& [radicand, coeff] : sqrt_terms) {
         if (coeff.is_integer() && coeff.get_numerator().to_int() == 0) continue;
         if (coeff == ::Rational(1)) {
             result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));

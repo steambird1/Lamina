@@ -164,12 +164,12 @@ namespace LaminaCAS {
             // 0 * x = 0
             if (auto ln = dynamic_cast<Number*>(l.get())) {
                 if (ln->isZero()) return std::make_unique<Number>(0);
-                if (ln->isOne()) return r;// 1 * x = x
+                if (ln->isOne()) return r;  // 1 * x = x
             }
             // x * 0 = 0
             if (auto rn = dynamic_cast<Number*>(r.get())) {
                 if (rn->isZero()) return std::make_unique<Number>(0);
-                if (rn->isOne()) return l;// x * 1 = x
+                if (rn->isOne()) return l;  // x * 1 = x
             }
             // num * num = num
             if (auto ln = dynamic_cast<Number*>(l.get())) {
@@ -217,7 +217,7 @@ namespace LaminaCAS {
             // x^0 = 1
             if (auto en = dynamic_cast<Number*>(e.get())) {
                 if (en->isZero()) return std::make_unique<Number>(1);
-                if (en->isOne()) return b;// x^1 = x
+                if (en->isOne()) return b;  // x^1 = x
             }
             // 0^x = 0 (x != 0)
             if (auto bn = dynamic_cast<Number*>(b.get())) {
@@ -226,7 +226,7 @@ namespace LaminaCAS {
                         if (!en->isZero()) return std::make_unique<Number>(0);
                     }
                 }
-                if (bn->isOne()) return std::make_unique<Number>(1);// 1^x = 1
+                if (bn->isOne()) return std::make_unique<Number>(1);    // 1^x = 1
             }
 
             return std::make_unique<Power>(std::move(b), std::move(e));
@@ -290,10 +290,10 @@ namespace LaminaCAS {
             skip_whitespace();
 
             if (current() == '(') {
-                pos++;// skip '('
+                pos++;  // skip '('
                 auto result = parse_expression();
                 skip_whitespace();
-                if (current() == ')') pos++;// skip ')'
+                if (current() == ')') pos++;    // skip ')'
                 return result;
             }
 
@@ -313,8 +313,8 @@ namespace LaminaCAS {
 
             skip_whitespace();
             if (current() == '^') {
-                pos++;                     // skip '^'
-                auto right = parse_power();// 右结合
+                pos++;                      // skip '^'
+                auto right = parse_power(); // 右结合
                 return std::make_unique<Power>(std::move(left), std::move(right));
             }
 
@@ -327,7 +327,7 @@ namespace LaminaCAS {
             while (true) {
                 skip_whitespace();
                 if (current() == '*') {
-                    pos++;// skip '*'
+                    pos++;  // skip '*'
                     auto right = parse_power();
                     left = std::make_unique<Multiply>(std::move(left), std::move(right));
                 } else {
@@ -344,7 +344,7 @@ namespace LaminaCAS {
             while (true) {
                 skip_whitespace();
                 if (current() == '+') {
-                    pos++;// skip '+'
+                    pos++;  // skip '+'
                     auto right = parse_term();
                     left = std::make_unique<Add>(std::move(left), std::move(right));
                 } else {
@@ -364,4 +364,4 @@ namespace LaminaCAS {
         }
     };
 
-}// namespace LaminaCAS
+}   // namespace LaminaCAS

@@ -12,15 +12,15 @@
 class SymbolicExpr {
 public:
     enum class Type {
-        Number,  // 数字 (BigInt, Rational, int)
-        Sqrt,    // 平方根 √
-        Root,    // n次方根 √[n] TODO
-        Power,   // 幂次 ^
-        Multiply,// 乘法 *
-        Add,     // 加法 +
-        Subtract,// 减法 -
-        Divide,  // 除法 /
-        Variable // 变量 (如 π, e)
+        Number,     // 数字 (BigInt, Rational, int)
+        Sqrt,       // 平方根 √
+        Root,       // n次方根 √[n] TODO
+        Power,      // 幂次 ^
+        Multiply,   // 乘法 *
+        Add,        // 加法 +
+        Subtract,   // 减法 -
+        Divide,     // 除法 /
+        Variable    // 变量 (如 π, e)
     };
 
     Type type;

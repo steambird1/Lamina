@@ -31,7 +31,7 @@ inline Value sqrt(const std::vector<Value>& args) {
     if (args[0].is_int()) {
         int val = std::get<int>(args[0].data);
         if (val == 0 || val == 1) {
-            return Value(val);// sqrt(0) = 0, sqrt(1) = 1
+            return Value(val);  // sqrt(0) = 0, sqrt(1) = 1
         }
 
         // Check if it's a perfect square

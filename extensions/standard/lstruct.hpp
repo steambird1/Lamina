@@ -9,9 +9,9 @@ inline size_t hash_string(const std::string& key) {
     constexpr size_t FNV_OFFSET = 14695981039346656037ULL;
     constexpr size_t FNV_PRIME = 1099511628211ULL;
     size_t hash = FNV_OFFSET;
-    for (const char c: key) {
-        hash ^= static_cast<size_t>(c);// 异或当前字符
-        hash *= FNV_PRIME;             // 乘以质数
+    for (const char c : key) {
+        hash ^= static_cast<size_t>(c); // 异或当前字符
+        hash *= FNV_PRIME;              // 乘以质数
     }
     return hash;
 }
@@ -24,8 +24,8 @@ using Node = StringBucket;
 struct StringBucket {
     std::string key;
     Value value;
-    size_t hash;                       // 缓存的哈希值
-    std::shared_ptr<StringBucket> next;// 链表指针
+    size_t hash;                        // 缓存的哈希值
+    std::shared_ptr<StringBucket> next; // 链表指针
 
     StringBucket(std::string k, const Value& v)
         : key(std::move(k)),
@@ -36,7 +36,7 @@ struct StringBucket {
 
 class lStruct {
 private:
-    std::vector<std::shared_ptr<Node>> buckets_;// 桶数组（每个桶是链表头指针）
+    std::vector<std::shared_ptr<Node>> buckets_;    // 桶数组（每个桶是链表头指针）
     size_t elem_count_ = 0;
     const float load_factor_ = 0.7f;
 
@@ -65,7 +65,7 @@ private:
             }
         }
 
-        buckets_.swap(new_buckets);// 替换为新桶数组
+        buckets_.swap(new_buckets); // 替换为新桶数组
     }
 
 public:
@@ -102,4 +102,4 @@ namespace Lamina {
     LAMINA_FUNC_MULTI_ARGS("getattr", getattr, 2);
     LAMINA_FUNC_MULTI_ARGS("setattr", setattr, 3);
     LAMINA_FUNC_MULTI_ARGS("update", update, 2);
-}// namespace Lamina
+} // namespace Lamina

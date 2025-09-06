@@ -22,4 +22,4 @@ namespace Fore {
     const std::string LIGHT_MAGENTA = "\033[95m";
     const std::string LIGHT_CYAN = "\033[96m";
     const std::string LIGHT_WHITE = "\033[97m";
-}// namespace Fore
+} // namespace Fore

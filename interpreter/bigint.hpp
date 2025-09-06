@@ -123,30 +123,30 @@ public:
         BigInt numa = *this, numb = other;
         size_t end_zeros = numa.count_end_zero() + numb.count_end_zero();
         numa.del_end_zero();
-        numb.del_end_zero();//统计并去除末尾的0
+        numb.del_end_zero();    //统计并去除末尾的0
         numa.negative = false;
         numb.negative = false;
         result.digits.assign(digits.size() + other.digits.size(), 0);
 
         if (numa.digits.size() >> 7 and numb.digits.size() >> 7) {
-            //等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
-            //如果两数长度均大于50使用卡拉楚巴算法优化
-            //算法思想可以将两个四位数乘法看成
-            //(100a + b)(100c + d) = 10000ac + 100(bc + ad) + bd
-            //时间复杂度O(n^1.585)   = 10000ac + 100[(a + b)(c + d) - ac - bd] + bd
-            //虽然n基本到了100位以上才有显著提升（一倍）,不过是针对pow才做的优化
+            // 等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
+            // 如果两数长度均大于50使用卡拉楚巴算法优化
+            // 算法思想可以将两个四位数乘法看成
+            // (100a + b)(100c + d) = 10000ac + 100(bc + ad) + bd
+            // 时间复杂度O(n^1.585)   = 10000ac + 100[(a + b)(c + d) - ac - bd] + bd
+            // 虽然n基本到了100位以上才有显著提升（一倍）,不过是针对pow才做的优化
 
             size_t moven = numb.digits.size() >> 1;
-            if (numa.digits.size() > numb.digits.size()) moven = numa.digits.size() >> 1 /*除2*/;//使用位数较大的一方作为移动基准
+            if (numa.digits.size() > numb.digits.size()) moven = numa.digits.size() >> 1 /*除2*/;   //使用位数较大的一方作为移动基准
             BigInt a = numa >> moven;
             BigInt b = numa << (numa.digits.size() - moven);
-            //b.remove_leading_zeros();
+            // b.remove_leading_zeros();
             BigInt c = numb >> moven;
             BigInt d = numb << (numb.digits.size() - moven);
-            //d.remove_leading_zeros();
+            // d.remove_leading_zeros();
 
             BigInt bd = b * d;
-            result = a * c;//使用result记录ac节省内存
+            result = a * c; // 使用result记录ac节省内存
             BigInt ad_bc = (a + b) * (c + d) - result - bd;
             result.mul_pow10(moven);
             result = result + ad_bc;
@@ -154,7 +154,7 @@ public:
             result = result + bd;
 
         } else {
-            //否则暴力计算
+            // 否则暴力计算
             for (size_t i = 0; i < numa.digits.size(); i++) {
                 for (size_t j = 0; j < numb.digits.size(); j++) {
                     result.digits[i + j] += numa.digits[i] * numb.digits[j];
@@ -385,7 +385,7 @@ public:
         BigInt exp = exponent;
 
         while (!exp.is_zero()) {
-            if (exp.digits[0] % 2 == 1) {// 如果指数是奇数
+            if (exp.digits[0] % 2 == 1) {   // 如果指数是奇数
                 result = result * base;
             }
             base = base * base;
@@ -419,7 +419,7 @@ public:
     // 比较运算符
     bool operator<(const BigInt& other) const {
         if (negative != other.negative) {
-            return negative > other.negative;// 负数小于正数
+            return negative > other.negative;   // 负数小于正数
         }
 
         if (negative) {
@@ -512,7 +512,7 @@ public:
         return power(exponent);
     }
 
-    //将异或重载为幂
+    // 将异或重载为幂
     BigInt operator^(const BigInt& b) {
         return power(b);
     }
