@@ -99,7 +99,7 @@ constexpr bool always_false = false;
 #define L_ERR(msg)                                  \
     do {                                            \
         std::cerr << "Error: " << msg << std::endl; \
-        throw std::runtime_error(EXIT_FAILURE);                    \
+        throw std::runtime_error("");                    \
     } while (0)
 
 #define LAMINA_GLOBAL_VAR(name, value)                                   \
