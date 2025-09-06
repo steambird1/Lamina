@@ -155,7 +155,6 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
 
     if (!is_valid && arguments.size() == 2) {
-        // 如果不匹配任何指令, 默认执行argv[1]
         // if argv[1] not in introduction then run the argv[1](as a path)
         const std::string path = argv[1];
         arguments[1] = "run";
@@ -183,7 +182,6 @@ int argv_parser(const int argc, const char* const argv[]) {
         try {
             return repl();
         } catch (const CtrlCException&) {
-            // 捕获Ctrl+C异常，友好提示后退出
             // Catch Ctrl+C exception and exit gracefully
             std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。"
                       << "\nProgram received Ctrl+C signal, exited safely." << std::endl;
@@ -218,7 +216,6 @@ int repl() {
 
     while (true) {
         try {
-            // 根据终端是否支持颜色，设置不同的提示符样式
             // Set prompt style based on whether the terminal supports color
             std::string prompt;
             if (brace_level > 0) {
@@ -247,18 +244,15 @@ int repl() {
             bool execute_now = false;
             if (line == "\x04") {   // Ctrl+D (EOF)
                 if (brace_level > 0) {
-                    // 在多行模式下，Ctrl+D 意味着输入结束，立即执行代码
                     // In multi-line mode, Ctrl+D means end of input, execute code immediately
                     execute_now = true;
                 } else {
-                    // 在主提示符的空行上，Ctrl+D 退出
                     // On an empty line at the main prompt, Ctrl+D exits
                     break;
                 }
             } else {
                 code_buffer += line + "\n";
 
-                // 简单地通过计算大括号来检查代码块是否完整
                 // Simply check if the code block is complete by counting braces
                 for (char c: line) {
                     if (c == '{') {
@@ -333,13 +327,13 @@ int repl() {
             auto tokens = Lexer::tokenize(line_to_process);
             auto ast = Parser::parse(tokens);
 
-            // 检查AST是否生成成功
+
             // Check if AST generation succeeded
             if (!ast) {
                 print_traceback("<stdin>", lineno);
                 return 1;
             }
-            // 仅支持BlockStmt类型的AST（代码块语句）
+
             // Only support AST of type BlockStmt (block statement)
             auto* block = dynamic_cast<BlockStmt*>(ast.get());
             if (!block) return 1;
@@ -347,7 +341,7 @@ int repl() {
             interpreter.save_repl_ast(std::move(ast));
 
             try {
-                // 执行代码块中的每个语句
+
                 // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
@@ -363,7 +357,7 @@ int repl() {
                                 true);
                         break;
                     }
-                    // 捕获break语句在循环外使用的异常
+
                     // Catch break statement used outside loop
                     catch (const BreakException&) {
                         Interpreter::print_warning(
@@ -372,7 +366,7 @@ int repl() {
                                 true);
                         break;
                     }
-                    // 捕获continue语句在循环外使用的异常
+
                     // Catch continue statement used outside loop
                     catch (const ContinueException&) {
                         Interpreter::print_warning(
@@ -381,7 +375,7 @@ int repl() {
                                 true);
                         break;
                     }
-                    // 捕获其他标准异常
+
                     // Catch other standard exceptions
                     catch (const std::exception& e) {
                         Interpreter::print_error(e.what(), true);
@@ -389,25 +383,23 @@ int repl() {
                     }
                 }
             }
-            // 捕获代码块执行过程中的顶层运行时错误
+
             // Catch top-level runtime errors during block execution
             catch (const RuntimeError& re) {
                 interpreter.print_stack_trace(re, true);
             }
-            // 捕获从内层循环逃逸的return异常
+
             // Catch return exceptions escaping the inner loop
             catch (const ReturnException&) {
                 Interpreter::print_warning(
                         "Return语句不能在函数外使用\nReturn statement used outside function",
                         true);
             }
-            // 捕获所有其他未预料的异常
             // Catch all other unexpected exceptions
             catch (...) {
                 Interpreter::print_error("发生未知错误\nUnknown error occurred", true);
             }
         }
-        // 捕获并处理REPL循环中的所有异常，确保REPL不崩溃
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(
