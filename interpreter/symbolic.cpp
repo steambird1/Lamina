@@ -166,7 +166,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// TODO: Debug output:
 	std::cerr << "[Debug output] Init: Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 	
-	// TODO: 1 乘以某个内容，直接返回另一边
+	// TODO: 1 或 -1 乘以某个内容，直接返回另一边
+	// TODO: 加快运算速度，数字和 Multiply 相乘时，直接处理 Multiply 内的数字，不进入指数环节
 	
     // 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
@@ -242,7 +243,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			|| is_compounded_sqrt(obj);
 	};
 	
-	// TODO: 和指数类型乘法合并/简化
+	// 考虑：和指数类型乘法合并/简化
 	auto sqrt_and_auxiliary = [is_power_compatible, power_compatible, is_compounded_sqrt, is_for_auxiliary]
 		(const std::shared_ptr<SymbolicExpr> &obj, bool no_simplify = false) -> std::shared_ptr<SymbolicExpr> {
 		
@@ -373,6 +374,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			// TODO: Debug output:
 			std::cerr << "[Debug output] [1] preparing to merge exponents" << std::endl;
 			
+			// TODO: 这边可能还需要测试
 			if (lcom->operands[1]->is_number() && rcom->operands[1]->is_number()) {
 				
 				auto lcr = lcom->operands[1]->convert_rational();
@@ -489,8 +491,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						if (i.first == ::Rational(1)) continue;
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [2] exponent referring (" << i.first.to_string() << ")^(" << i.second.to_string() << ")\n";
-						// 不要化简
-						auto cres = SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second));
+						auto cres = SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second))->simplify();
 						if (inits) {
 							res = cres;
 							inits = false;
@@ -524,7 +525,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						if (i.first == ::Rational(0)) continue;
 						std::shared_ptr<SymbolicExpr> cres;
 						if (i.first == ::Rational(1)) cres = i.second;
-						else cres = SymbolicExpr::power(i.second, SymbolicExpr::number(i.first));
+						else cres = SymbolicExpr::power(i.second, SymbolicExpr::number(i.first))->simplify();
 						if (inits) {
 							cres = res;
 							inits = false;
@@ -759,6 +760,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	
 	if (exponent->is_int() || exponent->is_big_int()) {
 		auto rconv = exponent->convert_rational();
+		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
+		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
+		if (rconv.get_denominator() == ::BigInt(2) && rconv.get_numerator() >= ::BigInt(-3) 
+			&& rconv.get_numerator() <= ::BigInt(3)) {
+			return SymbolicExpr::sqrt(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())))->simplify();
+		}
 		if (rconv == ::Rational(-1)) {
 			// 这里一定不是整数，尝试分母有理化
 			
@@ -787,8 +794,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			// 转为倒数的情况
 			return SymbolicExpr::power(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())), SymbolicExpr::number(-1))->simplify();
 		}
-		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
-		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
 		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() > ::BigInt(1) && rconv.get_numerator() <= ::BigInt(4)) {
 			int exps = rconv.get_numerator().to_int();
 			std::shared_ptr<SymbolicExpr> result = std::make_shared<SymbolicExpr>(*base);
