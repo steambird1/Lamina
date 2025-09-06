@@ -469,7 +469,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					}
 				}
 				
+				int exponent_merger_cnt = 0, base_merger_cnt = 0;
+				
 				if (exponent_merger) {
+					// 同底数合并
 					for (auto &cvt : result) {
 						// 已经检查过了
 						::Rational base = cvt->operands[0]->convert_rational();
@@ -477,10 +480,27 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						auto finder = base_ref.find(base);
 						if (finder != base_ref.end()) {
 							finder->second = finder->second + exponent;
+							exponent_merger_cnt++;
 						} else {
 							base_ref[base] = exponent;
 						}
 					}
+				}
+				
+				if (base_merger) {
+					// 同指数合并
+					for (auto &cvt : result) {
+						auto cvt_rational = cvt->operands[1]->convert_rational();
+						auto finder = exponent_ref.find(cvt_rational);
+						if (finder != exponent_ref.end()) {
+							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
+						} else {
+							exponent_ref[cvt_rational] = cvt->operands[0];
+						}
+					}
+				}
+				
+				if (exponent_merger && (exponent_merger_cnt >= base_merger_cnt)) {
 					// 由于只允许两项乘法，此处需要递归构造
 					// 为了后续处理方便，现在构造成 数值*后续表达式 的形式，如果要提升性能可以改二叉树
 					auto res = SymbolicExpr::number(1);
@@ -499,16 +519,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
-				} else if (base_merger) {
-					for (auto &cvt : result) {
-						auto cvt_rational = cvt->operands[1]->convert_rational();
-						auto finder = exponent_ref.find(cvt_rational);
-						if (finder != exponent_ref.end()) {
-							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
-						} else {
-							exponent_ref[cvt_rational] = cvt->operands[0];
-						}
-					}
+				} else if (base_merger && (base_merger_cnt >= exponent_merger_cnt)) {
 					// 先这么复制下来，万一以后逻辑不同
 					auto res = SymbolicExpr::number(1);
 					bool inits = true;
@@ -748,6 +759,15 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				return SymbolicExpr::power(current_new_base, SymbolicExpr::number(es_n));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
+			
+		}
+		
+		// 避免修改，重新获取
+		auto rconv = exponent->convert_rational();
+		
+		if (rconv.get_denominator() == ::BigInt(2) && rconv.get_numerator() >= ::BigInt(-3) 
+			&& rconv.get_numerator() <= ::BigInt(3)) {
+			return SymbolicExpr::sqrt(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())))->simplify();
 		}
     } else if (base->type == SymbolicExpr::Type::Power || base->type == SymbolicExpr::Type::Sqrt) {
 		if (base->type == SymbolicExpr::Type::Sqrt) {
@@ -762,10 +782,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		auto rconv = exponent->convert_rational();
 		if (rconv == ::Rational(0)) return SymbolicExpr::number(1);
 		if (rconv == ::Rational(1)) return std::make_shared<SymbolicExpr>(*base);
-		if (rconv.get_denominator() == ::BigInt(2) && rconv.get_numerator() >= ::BigInt(-3) 
-			&& rconv.get_numerator() <= ::BigInt(3)) {
-			return SymbolicExpr::sqrt(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())))->simplify();
-		}
 		if (rconv == ::Rational(-1)) {
 			// 这里一定不是整数，尝试分母有理化
 			
