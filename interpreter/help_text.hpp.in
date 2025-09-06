@@ -1,0 +1,4 @@
+#pragma once
+#include <string>
+
+const std::string HELP_TEXT = R"(@HELP_TEXT@)";
