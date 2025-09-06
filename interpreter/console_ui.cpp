@@ -183,16 +183,13 @@ int argv_parser(const int argc, const char* const argv[]) {
             return repl();
         } catch (const CtrlCException&) {
             // Catch Ctrl+C exception and exit gracefully
-            std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。"
-                      << "\nProgram received Ctrl+C signal, exited safely." << std::endl;
+            std::cout << "Program received Ctrl+C signal, exited safely." << std::endl;
             return 0;
         } catch (const std::exception& e) {
-            std::cerr << "程序发生异常: " << e.what()
-                      << "\nProgram exception occurred: " << e.what() << std::endl;
+            std::cerr << "Program exception occurred: " << e.what() << std::endl;
             return 1;
         } catch (...) {
-            std::cerr << "程序发生未知异常"
-                      << "\nProgram encountered an unknown exception." << std::endl;
+            std::cerr << "Program encountered an unknown exception." << std::endl;
             return 1;
         }
     }
@@ -210,7 +207,6 @@ int repl() {
     Interpreter interpreter;
     int lineno = 1; // 记录当前输入的行号，用于错误提示
 
-    // REPL主循环
     std::string code_buffer;
     int brace_level = 0;
 
@@ -272,7 +268,7 @@ int repl() {
                 continue;
             }
 
-            brace_level = 0;    // 重置 (Reset)
+            brace_level = 0;    // Reset
 
             if (code_buffer.empty() || code_buffer == "\n") {
                 ++lineno;
@@ -283,7 +279,6 @@ int repl() {
             std::string line_to_process = code_buffer;
             code_buffer.clear();
 
-            // 只有在单行模式下才处理REPL命令
             // Only process REPL commands in single-line mode
             if (brace_level == 0) {
                 std::string trimmed_line = line;
@@ -294,11 +289,11 @@ int repl() {
                     break;
                 }
                 if (trimmed_line == ":help") {
-                    std::cout << "Lamina解释器命令 / Lamina Interpreter Commands:\n";
-                    std::cout << "  :exit - 退出解释器 / Exit interpreter\n";
-                    std::cout << "  :help - 显示此帮助信息 / Show this help message\n";
-                    std::cout << "  :vars - 显示所有变量 / Show all variables\n";
-                    std::cout << "  :clear - 清空屏幕 / Clear screen\n";
+                    std::cout << "Lamina Interpreter Commands:\n";
+                    std::cout << "  :exit - Exit interpreter\n";
+                    std::cout << "  :help - Show this help message\n";
+                    std::cout << "  :vars - Show all variables\n";
+                    std::cout << "  :clear - Clear screen\n";
                     ++lineno;
                     continue;
                 }
@@ -351,8 +346,7 @@ int repl() {
                         break;
                     } catch (const ReturnException&) {
                         Interpreter::print_warning(
-                                "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）" +
-                                        "Return statement used outside function (line " +
+                                "Return statement used outside function (line " +
                                         std::to_string(lineno) + ")",
                                 true);
                         break;
@@ -361,8 +355,7 @@ int repl() {
                     // Catch break statement used outside loop
                     catch (const BreakException&) {
                         Interpreter::print_warning(
-                                "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）" +
-                                        "Break statement used outside loop (line " + std::to_string(lineno) + ")",
+                                "Break statement used outside loop (line " + std::to_string(lineno) + ")",
                                 true);
                         break;
                     }
@@ -370,7 +363,7 @@ int repl() {
                     // Catch continue statement used outside loop
                     catch (const ContinueException&) {
                         Interpreter::print_warning(
-                                "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）" + "Continue statement used outside loop (line " +
+                                "Continue statement used outside loop (line " +
                                         std::to_string(lineno) + ")",
                                 true);
                         break;
@@ -392,18 +385,18 @@ int repl() {
             // Catch return exceptions escaping the inner loop
             catch (const ReturnException&) {
                 Interpreter::print_warning(
-                        "Return语句不能在函数外使用\nReturn statement used outside function",
+                        "Return statement used outside function",
                         true);
             }
             // Catch all other unexpected exceptions
             catch (...) {
-                Interpreter::print_error("发生未知错误\nUnknown error occurred", true);
+                Interpreter::print_error("Unknown error occurred", true);
             }
         }
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(
-                    "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
+                    "REPL environment caught exception, but recovered",
                     true);
         }
 
