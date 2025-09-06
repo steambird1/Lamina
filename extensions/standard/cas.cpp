@@ -6,9 +6,9 @@
 #include "cas.hpp"
 #include "../../interpreter/interpreter.hpp"
 #include "../../interpreter/value.hpp"
+#include <cstring>
 #include <iostream>
 #include <sstream>
-#include <cstring>
 
 using namespace LaminaCAS;
 
@@ -49,7 +49,7 @@ Value cas_parse(const std::vector<Value>& args) {
         std::cerr << "Error: cas_parse() requires one string argument" << std::endl;
         return Value();
     }
-    
+
     try {
         std::string expr_str = std::get<std::string>(args[0].data);
         Parser parser(expr_str);
@@ -67,7 +67,7 @@ Value cas_simplify(const std::vector<Value>& args) {
         std::cerr << "Error: cas_simplify() requires one argument" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         auto simplified = expr->simplify();
@@ -83,7 +83,7 @@ Value cas_differentiate(const std::vector<Value>& args) {
         std::cerr << "Error: cas_differentiate() requires expression and variable name" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         std::string variable = std::get<std::string>(args[1].data);
@@ -101,11 +101,11 @@ Value cas_evaluate(const std::vector<Value>& args) {
         std::cerr << "Error: cas_evaluate() requires at least one argument" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         std::map<std::string, double> variables;
-        
+
         // 处理变量赋值
         for (size_t i = 1; i < args.size(); i++) {
             if (args[i].is_string()) {
@@ -119,7 +119,7 @@ Value cas_evaluate(const std::vector<Value>& args) {
                 }
             }
         }
-        
+
         double result = expr->evaluate(variables);
         return Value(result);
     } catch (const std::exception& e) {
@@ -134,7 +134,7 @@ Value cas_store(const std::vector<Value>& args) {
         std::cerr << "Error: cas_store() requires name and expression" << std::endl;
         return Value();
     }
-    
+
     try {
         std::string name = std::get<std::string>(args[0].data);
         auto expr = valueToExpression(args[1]);
@@ -152,7 +152,7 @@ Value cas_load(const std::vector<Value>& args) {
         std::cerr << "Error: cas_load() requires expression name" << std::endl;
         return Value();
     }
-    
+
     try {
         std::string name = std::get<std::string>(args[0].data);
         auto it = stored_expressions.find(name);
@@ -173,11 +173,11 @@ Value cas_evaluate_at(const std::vector<Value>& args) {
         std::cerr << "Error: cas_evaluate_at() requires expression, variable, and value" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         std::string variable = std::get<std::string>(args[1].data);
-        
+
         double point;
         if (args[2].is_int()) {
             point = static_cast<double>(std::get<int>(args[2].data));
@@ -186,7 +186,7 @@ Value cas_evaluate_at(const std::vector<Value>& args) {
         } else {
             throw std::runtime_error("Point must be a number");
         }
-        
+
         std::map<std::string, double> variables = {{variable, point}};
         double result = expr->evaluate(variables);
         return Value(result);
@@ -202,22 +202,22 @@ Value cas_solve_linear(const std::vector<Value>& args) {
         std::cerr << "Error: cas_solve_linear() requires equation and variable" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         std::string variable = std::get<std::string>(args[1].data);
-        
+
         // 简单的线性方程求解：ax + b = 0 的解为 x = -b/a
         // 计算 f(0) 和 f(1) 来估算线性系数
         std::map<std::string, double> vars_0 = {{variable, 0.0}};
         std::map<std::string, double> vars_1 = {{variable, 1.0}};
-        
-        double f_0 = expr->evaluate(vars_0);  // b
-        double f_1 = expr->evaluate(vars_1);  // a + b
-        
-        double a = f_1 - f_0;  // 斜率
-        double b = f_0;        // 截距
-        
+
+        double f_0 = expr->evaluate(vars_0);    // b
+        double f_1 = expr->evaluate(vars_1);    // a + b
+
+        double a = f_1 - f_0;   // 斜率
+        double b = f_0;         // 截距
+
         if (std::abs(a) < 1e-10) {
             if (std::abs(b) < 1e-10) {
                 return Value("Infinitely many solutions");
@@ -225,10 +225,10 @@ Value cas_solve_linear(const std::vector<Value>& args) {
                 return Value("No solution");
             }
         }
-        
+
         double solution = -b / a;
         return Value(solution);
-        
+
     } catch (const std::exception& e) {
         std::cerr << "CAS Solve Error: " << e.what() << std::endl;
         return Value();
@@ -241,12 +241,12 @@ Value cas_numerical_derivative(const std::vector<Value>& args) {
         std::cerr << "Error: cas_numerical_derivative() requires expression, variable, and point" << std::endl;
         return Value();
     }
-    
+
     try {
         auto expr = valueToExpression(args[0]);
         std::string variable = std::get<std::string>(args[1].data);
         double point;
-        
+
         if (args[2].is_int()) {
             point = static_cast<double>(std::get<int>(args[2].data));
         } else if (args[2].is_float()) {
@@ -254,18 +254,18 @@ Value cas_numerical_derivative(const std::vector<Value>& args) {
         } else {
             throw std::runtime_error("Point must be a number");
         }
-        
+
         // 使用差分近似求导数：f'(x) ≈ (f(x+h) - f(x-h)) / (2h)
         double h = 1e-8;
         std::map<std::string, double> vars_plus = {{variable, point + h}};
         std::map<std::string, double> vars_minus = {{variable, point - h}};
-        
+
         double f_plus = expr->evaluate(vars_plus);
         double f_minus = expr->evaluate(vars_minus);
-        
+
         double derivative = (f_plus - f_minus) / (2 * h);
         return Value(derivative);
-        
+
     } catch (const std::exception& e) {
         std::cerr << "CAS Numerical Derivative Error: " << e.what() << std::endl;
         return Value();

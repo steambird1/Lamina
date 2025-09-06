@@ -5,9 +5,11 @@
 </div>
 
 ## 概述
+
 Lamina 支援以動態庫（DLL/SO）模組擴充功能。模組系統採用現代化設計，提供型別安全的跨平台 API，支援命名空間管理與函式註冊機制。
 
 ## 專案結構
+
 ```
 Lamina/
 ├── interpreter/          # 核心解譯器
@@ -30,12 +32,14 @@ Lamina/
 ## 模組 API 概述
 
 ### 核心特色
+
 - **命名空間支援**：每個模組擁有獨立命名空間，避免函式名稱衝突
 - **型別安全**：統一的 `LaminaValue` 型別系統，支援基本資料型態
 - **跨平台相容**：使用 `LAMINA_EXPORT` 及 `LAMINA_CALL` 巨集確保平台相容性
 - **動態載入**：執行時載入模組，無需重新編譯解譯器
 
 ### 資料型態系統
+
 ```cpp
 // 支援的值型態
 typedef enum {
@@ -59,6 +63,7 @@ typedef struct {
 ```
 
 ### 模組介面結構
+
 ```cpp
 // 模組函式簽名
 typedef LaminaValue (LAMINA_CALL *LaminaFunction)(const LaminaValue* args, int argc);
@@ -88,6 +93,7 @@ typedef struct {
 ## 建立第一個模組
 
 ### 1. 最簡單的模組範例
+
 以下為一個完整最小模組實作（參考 `extensions/minimal/ultra_minimal.cpp`）：
 
 ```cpp
@@ -138,6 +144,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 ### 2. CMakeLists.txt 設定
+
 ```cmake
 # 最小模組建構配置
 cmake_minimum_required(VERSION 3.10)
@@ -178,9 +185,11 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 ```
+
 ## 編譯與使用模組
 
 ### 編譯模組
+
 ```bash
 # 配置建構
 cmake -B build -DCMAKE_BUILD_TYPE=Debug .
@@ -192,6 +201,7 @@ cmake --build build --config Debug --parallel
 ```
 
 ### 在 Lamina 腳本中使用模組
+
 ```lamina
 // 載入模組
 include "minimal.dll";
@@ -205,6 +215,7 @@ print("Hello result: " + hello_result);  // 輸出: Hello result: 100
 ```
 
 ### 執行範例
+
 ```bash
 # 確保模組檔案可存取
 cd build/Debug
@@ -216,6 +227,7 @@ cd build/Debug
 ## 進階模組開發
 
 ### 參數處理與型別檢查
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args, int argc) {
     LaminaValue result = {0};
@@ -245,6 +257,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args,
 ```
 
 ### 字串處理
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, int argc) {
     static char buffer[512];  // 靜態緩衝區確保生命週期
@@ -266,6 +279,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, 
 ```
 
 ### 錯誤處理模式
+
 ```cpp
 // 統一的錯誤回傳模式
 static LaminaValue make_error(const char* message) {
@@ -287,12 +301,14 @@ static LaminaValue make_success_int(int value) {
 ## 最佳實踐
 
 ### 1. 模組設計原則
+
 - **單一職責**：每個模組專注於特定功能領域
 - **命名空間明確**：使用簡潔且具描述性的命名空間名稱
 - **函式命名**：以動詞描述函式功能，保持一致性
 - **版本管理**：採用語意化版本號（major.minor.patch）
 
 ### 2. 程式碼規範
+
 ```cpp
 // 良好函式命名範例
 {"calculate", math_calculate, "Calculate mathematical expression"},
@@ -305,18 +321,21 @@ static LaminaValue make_success_int(int value) {
 ```
 
 ### 3. 錯誤處理策略
+
 - 始終驗證參數數量及型別
 - 回傳具意義的錯誤訊息
 - 採用一致錯誤格式
 - 避免程式崩潰，優雅處理異常情況
 
 ### 4. 記憶體安全
+
 - 使用靜態緩衝區或全域變數儲存回傳字串
 - 避免回傳區域變數指標
 - 使用安全字串函式（`snprintf`、`strncpy`）
 - 確保緩衝區大小足夠且不溢位
 
 ### 5. 跨平台相容性
+
 - 使用提供的 `LAMINA_EXPORT` 與 `LAMINA_CALL` 巨集
 - 避免平台特定型態或函式
 - 測試多平台及編譯器
@@ -326,7 +345,9 @@ static LaminaValue make_success_int(int value) {
 ### 常見問題與解決方法
 
 #### 1. 模組載入失敗
+
 **問題**：`ERROR: Module not loaded`
+
 ```cpp
 // 檢查：
 // - DLL 檔案是否在正確位置
@@ -335,12 +356,15 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解決方法**：
+
 - 確保模組檔案在 `build/Debug/` 目錄
 - 檢查檔案副檔名（Windows: `.dll`, Linux: `.so`）
 - 使用依賴工具檢查缺失的動態庫
 
 #### 2. 函式找不到
+
 **問題**：`ERROR: Function 'funcname' not found in module`
+
 ```cpp
 // 檢查：
 // - 函式是否正確註冊於 functions 陣列
@@ -349,23 +373,29 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解決方法**：
+
 - 驗證 `LaminaFunctionEntry` 陣列中的函式名稱
 - 確認呼叫時使用正確命名空間前綴
 - 檢查 `function_count` 是否正確
 
 #### 3. 命名空間不一致
+
 **問題**：`ERROR: Namespace mismatch`
+
 ```cpp
 // 腳本：include "minimal.dll"; minimal.test();
 // 模組：namespace_name = "different_name"
 ```
 
 **解決方法**：
+
 - 確保模組的 `namespace_name` 與呼叫時前綴一致
 - 建議命名空間名稱與檔案名相同
 
 #### 4. 編譯錯誤
+
 **問題**：編譯時出現連結錯誤或符號未定義
+
 ```cpp
 // 常見原因：
 // - 缺少 LAMINA_EXPORT 巨集
@@ -374,6 +404,7 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解決方法**：
+
 - 確保所有匯出函式使用 `LAMINA_EXPORT` 與 `LAMINA_CALL`
 - 檢查 `module_api.hpp` 包含路徑
 - 驗證 CMake 設定正確
@@ -381,6 +412,7 @@ static LaminaValue make_success_int(int value) {
 ### 除錯技巧
 
 #### 1. 加入除錯輸出
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, int argc) {
     #ifdef _DEBUG
@@ -395,6 +427,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, in
 ```
 
 #### 2. 模組載入驗證
+
 ```cpp
 LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
     printf("Module initializing: %s v%s\n", 
@@ -405,6 +438,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 #### 3. 使用系統工具
+
 - **Windows**: 使用 `dumpbin /exports module.dll` 檢查匯出符號
 - **Linux**: 使用 `nm -D module.so` 或 `objdump -T module.so`
 - **除錯器**: 使用 GDB (Linux) 或 Visual Studio 除錯器 (Windows)
@@ -412,15 +446,18 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ## 範例與參考
 
 ### 完整範例模組
+
 參見專案內示例模組獲取完整實作：
 
 #### minimal 模組 (`extensions/minimal/`)
+
 - **檔案**: `ultra_minimal.cpp`
 - **功能**: 最基礎模組範例
 - **函式**: `test()`, `hello()`
 - **用途**: 學習模組開發基礎
 
 #### standard 模組 (`extensions/standard/`)
+
 - **array.cpp**: 陣列操作函式
 - **math.cpp**: 數學運算函式
 - **stdio.cpp**: 輸入輸出函式
@@ -429,15 +466,18 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 - **sockets.cpp**: 網路通訊功能
 
 ### 快速開始模板
+
 建立新模組完整流程：
 
 1. **建立目錄結構**
+
 ```bash
 mkdir extensions/mymodule
 cd extensions/mymodule
 ```
 
 2. **建立原始檔 (mymodule.cpp)**
+
 ```cpp
 #include "../../interpreter/module_api.hpp"
 
@@ -464,6 +504,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 3. **建立建構檔 (CMakeLists.txt)**
+
 ```cmake
 add_library(mymodule SHARED mymodule.cpp)
 set_target_properties(mymodule PROPERTIES
@@ -474,11 +515,13 @@ set_target_properties(mymodule PROPERTIES
 
 4. **加入主建構系統**
 於主 `CMakeLists.txt` 中添加：
+
 ```cmake
 add_subdirectory(extensions/mymodule)
 ```
 
 5. **編譯與測試**
+
 ```bash
 cmake --build build --config Debug
 cd build/Debug
@@ -488,6 +531,7 @@ cd build/Debug
 ### API 參考速查
 
 #### 型態定義
+
 ```cpp
 LAMINA_TYPE_NULL     // 空值
 LAMINA_TYPE_BOOL     // 布林值
@@ -497,12 +541,14 @@ LAMINA_TYPE_STRING   // 字串
 ```
 
 #### 巨集定義
+
 ```cpp
 LAMINA_EXPORT        // 匯出函式宣告
 LAMINA_CALL          // 呼叫約定
 ```
 
 #### 必要函式
+
 ```cpp
 lamina_module_init() // 模組初始化入口
 ```

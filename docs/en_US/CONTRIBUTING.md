@@ -7,10 +7,10 @@ This document has been expired
 </div>
 <br>
 
-*   Please read [README](README.md) first to understand the basic information of the project before proceeding with development!
-*   This project uses the LGPL-2.1 license; please strictly abide by this license!
+* Please read [README](README.md) first to understand the basic information of the project before proceeding with development!
+* This project uses the LGPL-2.1 license; please strictly abide by this license!
 
-## Project Structure:
+## Project Structure
 
 ```
 Lamina
@@ -62,7 +62,7 @@ Lamina
 
 Total: 5 folders, 39 files.
 
-## Creating a Pull Request:
+## Creating a Pull Request
 
 ```
 1. Fork the code to your repository.
@@ -76,13 +76,14 @@ Total: 5 folders, 39 files.
 
 When creating a pull request, you must ensure that your PR content meets the following requirements:
 
-*   Clear purpose
+* Clear purpose
 
-*   Fluent language
+* Fluent language
 
-*   Code compliance with standards
+* Code compliance with standards
 
 When writing the pull request title, it must carry one of the ranks, mainly divided into these types:
+
 ```
 1. [Feature]
 
@@ -95,13 +96,13 @@ If it is for a specific module, please include the type and your module name in 
 [Feature][stdio] Add support for file stream operations in the print function
 ```
 
-## About Libraries/Standard Libraries:
+## About Libraries/Standard Libraries
 
 The standard library code is stored in the `extensions/standard` directory. Each file corresponds to a module, where the module name is the same as the file name, and each module must have a corresponding header file that registers Lamina functions.
 
 All Lamina variables registered in the extension layer are global variables.
 
-### How to Register Lamina Functions:
+### How to Register Lamina Functions
 
 Call the ```LAMINA_FUNC``` macro, for example:
 
@@ -112,6 +113,7 @@ namespace lamina{
 ```
 
 But, in fact, you can also register functions directly without placing them in the lamina namespace, for example:
+
 ```c++
 LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 ```
@@ -124,33 +126,33 @@ However, due to some historical issues, some content in the Lamina standard libr
 
 When writing standard library code, you must follow these guidelines:
 
-*   The code must ensure a certain level of security.
+* The code must ensure a certain level of security.
 
-*   The code must conform to the style of Lamina extensions.
+* The code must conform to the style of Lamina extensions.
 
-## !! The same applies when you write other libraries for Lamina.
+## !! The same applies when you write other libraries for Lamina
 
-## Module Analysis:
+## Module Analysis
 
 The main core modules of Lamina include:
 
-*  bigint.hpp: Big integer module
+* bigint.hpp: Big integer module
 
-*   interpreter.cpp: Interpreter module
+* interpreter.cpp: Interpreter module
 
-*   irrational.hpp: Irrational number module
+* irrational.hpp: Irrational number module
 
-*   lamina.hpp: Module for accessing some core resources of Lamina
+* lamina.hpp: Module for accessing some core resources of Lamina
 
-*   module.cpp: Module for loading Lamina dynamic libraries
+* module.cpp: Module for loading Lamina dynamic libraries
 
-*   rational.hpp: Rational number module
+* rational.hpp: Rational number module
 
-*   value.hpp: Value module
+* value.hpp: Value module
 
-*   parser.cpp: Parser module
+* parser.cpp: Parser module
 
-*   lexer.cpp: Lexer module
+* lexer.cpp: Lexer module
 
 Let's start from scratch and explain the functions within these modules to help you get started with Lamina library development!
 
@@ -249,17 +251,15 @@ struct global_var_##name##_registrar { \
 }
 ```
 
-*   The `LAMINA_FUNC_WIT_ANY_ARGS` macro is used to register a Lamina function that can accept any number of arguments.
+* The `LAMINA_FUNC_WIT_ANY_ARGS` macro is used to register a Lamina function that can accept any number of arguments.
 
-*   The `LAMINA_FUNC` macro is used to register a Lamina function that accepts a fixed number of arguments.
+* The `LAMINA_FUNC` macro is used to register a Lamina function that accepts a fixed number of arguments.
 
-*   The `LAMINA_FUNC_MULTI_ARGS` macro is used to register a Lamina function that accepts 0 to a fixed number of arguments.
+* The `LAMINA_FUNC_MULTI_ARGS` macro is used to register a Lamina function that accepts 0 to a fixed number of arguments.
 
 The internal implementation of these macros is quite similar, with only slight differences in the judgment of the number of arguments.
 
 After being compiled into a dynamic library, their symbol tables look like this:
-
-
 
 ```
 0000000000020edc T \_Z10test\_entryR11Interpreter
@@ -286,7 +286,6 @@ The `LAMINA_MATRIX` macro is used to manipulate matrix data types in Lamina.
 The `LAMINA_NULL` macro is used to manipulate null values in Lamina.
 
 You can use macros like `LAMINA_BOOL` to intuitively manipulate the return values of Lamina functions. For example, in the random library:
-
 
 ```c++
 Value randstr(const std::vector<Value> &args) {
@@ -319,9 +318,9 @@ Value randstr(const std::vector<Value> &args) {
 
 This Lamina library code demonstrates generating a random string based on the user-input length, returning the value via the `LAMINA_STRING` macro, or returning a null value via the `LAMINA_NULL` macro if it fails.
 
-*   The `LAMINA_GET_VAR` macro is used to retrieve the value of a variable in Lamina within a registered function during interpreter runtime.
+* The `LAMINA_GET_VAR` macro is used to retrieve the value of a variable in Lamina within a registered function during interpreter runtime.
 
-*   The `LAMINA_GLOBAL_VAR` macro is used to define global variables in Lamina.
+* The `LAMINA_GLOBAL_VAR` macro is used to define global variables in Lamina.
 
 These two are not yet used in the standard library, but we still provide an example for development:
 
@@ -357,12 +356,11 @@ We've covered the library section. Now, let's move beyond the Lamina extension l
 
 Lamina's interpreter mainly consists of these modules, which collectively support Lamina's excellence in mathematical calculations:
 
+* Big integer module
 
-*   Big integer module
+* Irrational number module
 
-*   Irrational number module
-
-*   Rational number module
+* Rational number module
 
 Additionally, there are more underlying parser and lexer modules, collectively referred to as syntax processing modules below.
 
@@ -511,11 +509,11 @@ This function requires passing an error message string, which will be printed, a
 
 The `StackFrame` struct stores tracking information about function calls, with these member variables:
 
-*   `function_name`: Function name
+* `function_name`: Function name
 
-*   `file_name`: File name
+* `file_name`: File name
 
-*   `line_number`: Line number
+* `line_number`: Line number
 
 This information will be printed when an error occurs during function calls at runtime to help developers locate the error.
 
@@ -580,7 +578,6 @@ Member variables:
 Next, we continue from the interpreter to Lamina's number processing section.
 
 First, let's explain the big integer module:
-
 
 ```c++
 #pragma once
@@ -736,9 +733,9 @@ public:
 
 Internally, `BigInt` defines two member variables:
 
-*   `std::vector<int> digits`: Stores each digit of the big integer, with the least significant digit first.
+* `std::vector<int> digits`: Stores each digit of the big integer, with the least significant digit first.
 
-*   `bool negative`: Indicates the sign of the big integer; `true` for negative, `false` for positive.
+* `bool negative`: Indicates the sign of the big integer; `true` for negative, `false` for positive.
 
 `BigInt` has multiple overloaded constructors, allowing big integers to be constructed from different types such as `int`, `long long`, `std::string`, etc.
 
@@ -752,7 +749,6 @@ The irrational number module supports precise representation of common irrationa
 
 In the irrational number module, we define an enum class to represent the type of irrational number. There are four types, and we directly show the enum class code here:
 
-
 ```c++
    enum class Type {
         SQRT,      // √n 形式
@@ -762,16 +758,16 @@ In the irrational number module, we define an enum class to represent the type o
         COMPLEX    // 复合形式 (a*√b + c*π + d*e + ...)
     };
 ```
-In the private member variables, we define two variables to express the form of √n:
 
+In the private member variables, we define two variables to express the form of √n:
 
 ```c++
     // 对于 √n 形式：coefficient * √radicand
     double coefficient;  // 系数
     long long radicand;  // 根号内的数
 ```
-The irrational number module handles different forms specifically. For example, the √n form uses coefficient \* √radicand, and for composite forms, we use a coefficient mapping approach:
 
+The irrational number module handles different forms specifically. For example, the √n form uses coefficient \* √radicand, and for composite forms, we use a coefficient mapping approach:
 
 ```c++
     std::map<std::string, double> coefficients;
@@ -802,11 +798,11 @@ Next, we can move to the library loading module.
 
 Currently, library loading only supports loading on Linux platforms. Library loading mainly consists of these parts:
 
-1.  Loading of dynamic link libraries
+1. Loading of dynamic link libraries
 
-2.  Symbol lookup and binding
+2. Symbol lookup and binding
 
-3.  Function calling
+3. Function calling
 
 In the library loading module, we use the `dlopen` function to load dynamic link libraries, `dlsym` to find symbols, and `dlclose` to close dynamic link libraries.
 

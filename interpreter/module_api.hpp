@@ -133,14 +133,14 @@ typedef LaminaModuleExports* (*LaminaModuleInit)(void);
 #define LAMINA_MODULE_SIGNATURE "LAMINA_MODULE_V2"
 
 // 辅助宏
-#define LAMINA_MAKE_NULL()      \
-    {                           \
-        LAMINA_TYPE_NULL, { 0 } \
-    }
-#define LAMINA_MAKE_BOOL(b)                           \
-    {                                                 \
-        LAMINA_TYPE_BOOL, { .bool_val = (b) ? 1 : 0 } \
-    }
+#define LAMINA_MAKE_NULL()    \
+    {                         \
+            LAMINA_TYPE_NULL, \
+            {0}}
+#define LAMINA_MAKE_BOOL(b)   \
+    {                         \
+            LAMINA_TYPE_BOOL, \
+            {.bool_val = (b) ? 1 : 0}}
 #define LAMINA_MAKE_INT(i)                  \
     {                                       \
         LAMINA_TYPE_INT, { .int_val = (i) } \

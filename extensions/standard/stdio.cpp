@@ -178,11 +178,11 @@ inline Value touch_file(const std::vector<Value>& args) {
 
 inline Value assert(const std::vector<Value>& args) {
     const bool cond = !args.empty()
-                    ?args[0].as_bool()
-                    :false ;
-    const auto msg = args.size()>1
-                    ?args[1].to_string()
-                        :"None";
+                              ? args[0].as_bool()
+                              : false;
+    const auto msg = args.size() > 1
+                             ? args[1].to_string()
+                             : "None";
     if (!cond) {
         L_ERR("Assertion: " + msg);
     }

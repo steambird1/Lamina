@@ -146,13 +146,13 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
-    }else if (auto* a = dynamic_cast<StructDeclStmt*>(node.get())) {
+    } else if (auto* a = dynamic_cast<StructDeclStmt*>(node.get())) {
         std::vector<std::pair<std::string, Value>> struct_init_val{};
-        for (const auto& [n,e]: a->init_vec) {
+        for (const auto& [n, e]: a->init_vec) {
             auto val = eval(e.get());
             struct_init_val.emplace_back(n, val);
         }
-        set_variable(a->name,new_lstruct(struct_init_val));
+        set_variable(a->name, new_lstruct(struct_init_val));
     } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
             error_and_exit("Null condition in if statement");
@@ -251,7 +251,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             error_and_exit("Empty expression statement");
         }
-    } else if (auto *nullstmt = dynamic_cast<NullStmt*>(node.get())) {
+    } else if (auto* nullstmt = dynamic_cast<NullStmt*>(node.get())) {
         (void) nullstmt;
     }
 }

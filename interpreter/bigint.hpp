@@ -13,7 +13,7 @@ public:
     // 友元类声明
     friend class Fraction;
     // 构造函数
-    BigInt() : negative(false), digits({0}){}
+    BigInt() : negative(false), digits({0}) {}
 
     explicit BigInt(int n) : negative(n < 0) {
         if (n == 0) {
@@ -92,29 +92,29 @@ public:
         return result;
     }
 
-    //快速乘10
-    void mul_pow10(size_t n/*乘10次数*/) {
-        if (n <= 0)return;
+    // 快速乘10
+    void mul_pow10(size_t n /* 乘10次数 */) {
+        if (n <= 0) return;
         remove_leading_zeros();
-        for (size_t i = 0; i < n; i++)digits.push_back(0);
-        for (size_t i = digits.size()-1; i >= n; i--) {
+        for (size_t i = 0; i < n; i++) digits.push_back(0);
+        for (size_t i = digits.size() - 1; i >= n; i--) {
             digits[i] = digits[i - n];
         }
-        for (size_t i = n - 1; i < n; i--)digits[i] = 0;
+        for (size_t i = n - 1; i < n; i--) digits[i] = 0;
     }
 
-    //返回末尾0的数量
+    // 返回末尾0的数量
     size_t count_end_zero() {
-        if (is_zero())return 0;
-        size_t i = digits.size()-1;
-        while (!digits[i])i--;
+        if (is_zero()) return 0;
+        size_t i = digits.size() - 1;
+        while (!digits[i]) i--;
         return digits.size() - 1 - i;
     }
 
     //去除掉末尾的0
     void del_end_zero() {
-        if (is_zero())return ;
-        while (!digits.back())digits.pop_back();
+        if (is_zero()) return;
+        while (!digits.back()) digits.pop_back();
     }
 
     // 乘法
@@ -122,38 +122,39 @@ public:
         BigInt result;
         BigInt numa = *this, numb = other;
         size_t end_zeros = numa.count_end_zero() + numb.count_end_zero();
-        numa.del_end_zero(); numb.del_end_zero();//统计并去除末尾的0
-        numa.negative = false; numb.negative = false;
+        numa.del_end_zero();
+        numb.del_end_zero();    //统计并去除末尾的0
+        numa.negative = false;
+        numb.negative = false;
         result.digits.assign(digits.size() + other.digits.size(), 0);
 
-        if (numa.digits.size()>>7 and numb.digits.size()>>7) {
-            //等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
-            //如果两数长度均大于50使用卡拉楚巴算法优化
-            //算法思想可以将两个四位数乘法看成
-            //(100a + b)(100c + d) = 10000ac + 100(bc + ad) + bd
-            //时间复杂度O(n^1.585)   = 10000ac + 100[(a + b)(c + d) - ac - bd] + bd
-            //虽然n基本到了100位以上才有显著提升（一倍）,不过是针对pow才做的优化
-            
+        if (numa.digits.size() >> 7 and numb.digits.size() >> 7) {
+            // 等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
+            // 如果两数长度均大于50使用卡拉楚巴算法优化
+            // 算法思想可以将两个四位数乘法看成
+            // (100a + b)(100c + d) = 10000ac + 100(bc + ad) + bd
+            // 时间复杂度O(n^1.585)   = 10000ac + 100[(a + b)(c + d) - ac - bd] + bd
+            // 虽然n基本到了100位以上才有显著提升（一倍）,不过是针对pow才做的优化
+
             size_t moven = numb.digits.size() >> 1;
-            if(numa.digits.size()>numb.digits.size())moven = numa.digits.size() >> 1/*除2*/;//使用位数较大的一方作为移动基准
+            if (numa.digits.size() > numb.digits.size()) moven = numa.digits.size() >> 1 /*除2*/;   //使用位数较大的一方作为移动基准
             BigInt a = numa >> moven;
             BigInt b = numa << (numa.digits.size() - moven);
-            //b.remove_leading_zeros();
+            // b.remove_leading_zeros();
             BigInt c = numb >> moven;
             BigInt d = numb << (numb.digits.size() - moven);
-            //d.remove_leading_zeros();
+            // d.remove_leading_zeros();
 
-            BigInt bd = b * d; 
-            result = a * c;//使用result记录ac节省内存
+            BigInt bd = b * d;
+            result = a * c; // 使用result记录ac节省内存
             BigInt ad_bc = (a + b) * (c + d) - result - bd;
             result.mul_pow10(moven);
             result = result + ad_bc;
             result.mul_pow10(moven);
             result = result + bd;
 
-        }
-        else {
-            //否则暴力计算
+        } else {
+            // 否则暴力计算
             for (size_t i = 0; i < numa.digits.size(); i++) {
                 for (size_t j = 0; j < numb.digits.size(); j++) {
                     result.digits[i + j] += numa.digits[i] * numb.digits[j];
@@ -179,7 +180,7 @@ public:
             result.negative = negative;
             result.digits.clear();
             size_t maxn = other.digits.size();
-            if(digits.size()>other.digits.size())maxn = digits.size();
+            if (digits.size() > other.digits.size()) maxn = digits.size();
             result.digits.reserve(maxn + 1);
             int carry = 0;
             for (size_t i = 0; i < maxn || carry; ++i) {
@@ -223,7 +224,7 @@ public:
         BigInt result;
         result.negative = result_negative;
         result.digits.clear();
-        int borrow = 0,diff;
+        int borrow = 0, diff;
         for (size_t i = 0; i < p1->digits.size(); ++i) {
             diff = p1->digits[i] - (i < p2->digits.size() ? p2->digits[i] : 0) - borrow;
             if (diff < 0) {
@@ -340,22 +341,28 @@ public:
 
     //十进制左移运算，注意不是补0，而是忽略左边的n位,补0请使用mul_pow10;
     BigInt operator<<(size_t n) const {
-        if (n >= digits.size())return BigInt(0);
+        if (n >= digits.size()) return BigInt(0);
         BigInt re = *this;
-        while (n) { re.digits.pop_back(); n--; }
-        while(!re.digits.back() and re.digits.size() > 1)re.digits.pop_back();
+        while (n) {
+            re.digits.pop_back();
+            n--;
+        }
+        while (!re.digits.back() and re.digits.size() > 1) re.digits.pop_back();
         return re;
     }
 
     //十进制右移运算
     BigInt operator>>(size_t n) const {
-        if (n >= digits.size())return BigInt(0);
+        if (n >= digits.size()) return BigInt(0);
         BigInt re = *this;
-        if (n == 0)return re;
+        if (n == 0) return re;
         for (size_t i = n; i < re.digits.size(); i++) {
             re.digits[i - n] = re.digits[i];
         }
-        while (n) { re.digits.pop_back(); n--; }
+        while (n) {
+            re.digits.pop_back();
+            n--;
+        }
         return re;
     }
 
@@ -378,7 +385,7 @@ public:
         BigInt exp = exponent;
 
         while (!exp.is_zero()) {
-            if (exp.digits[0] % 2 == 1) {// 如果指数是奇数
+            if (exp.digits[0] % 2 == 1) {   // 如果指数是奇数
                 result = result * base;
             }
             base = base * base;
@@ -412,7 +419,7 @@ public:
     // 比较运算符
     bool operator<(const BigInt& other) const {
         if (negative != other.negative) {
-            return negative > other.negative;// 负数小于正数
+            return negative > other.negative;   // 负数小于正数
         }
 
         if (negative) {
@@ -445,14 +452,14 @@ public:
     }
 
     // Mathematical functions
-    
+
     // Absolute value - returns a copy with positive sign
     [[nodiscard]] BigInt abs() const {
         BigInt result = *this;
         result.negative = false;
         return result;
     }
-    
+
     // Negate - returns a copy with opposite sign
     [[nodiscard]] BigInt negate() const {
         BigInt result = *this;
@@ -461,51 +468,51 @@ public:
         }
         return result;
     }
-    
+
     // Square root using Newton's method for integer square root
     // Returns the floor of the square root
     [[nodiscard]] BigInt sqrt() const {
         if (negative) {
             throw std::runtime_error("Square root of negative BigInt is undefined");
         }
-        
+
         if (is_zero()) {
             return BigInt(0);
         }
-        
+
         if (digits.size() == 1 && digits[0] == 1) {
             return BigInt(1);
         }
-        
+
         // Newton's method for integer square root
         // Start with an initial guess
         BigInt x = *this;
         BigInt y = (*this + BigInt(1)) / BigInt(2);
-        
+
         while (y < x) {
             x = y;
             y = (x + (*this / x)) / BigInt(2);
         }
-        
+
         return x;
     }
-    
+
     // Check if this BigInt is a perfect square
     [[nodiscard]] bool is_perfect_square() const {
         if (negative) {
             return false;
         }
-        
+
         BigInt root = sqrt();
         return (root * root) == *this;
     }
-    
+
     // Power function for non-negative integer exponents (alias for existing power method)
     [[nodiscard]] BigInt pow(const BigInt& exponent) const {
         return power(exponent);
     }
 
-    //将异或重载为幂
+    // 将异或重载为幂
     BigInt operator^(const BigInt& b) {
         return power(b);
     }
@@ -514,44 +521,44 @@ public:
     static BigInt gcd(const BigInt& a, const BigInt& b) {
         BigInt abs_a = a.abs();
         BigInt abs_b = b.abs();
-        
+
         if (abs_b.is_zero()) {
             return abs_a;
         }
-        
+
         return gcd(abs_b, abs_a % abs_b);
     }
-    
+
     // Least Common Multiple
     static BigInt lcm(const BigInt& a, const BigInt& b) {
         if (a.is_zero() || b.is_zero()) {
             return BigInt(0);
         }
-        
+
         BigInt gcd_val = gcd(a, b);
         return (a.abs() / gcd_val) * b.abs();
     }
-    
+
     // Convert to double (with potential precision loss warning)
     [[nodiscard]] double to_double() const {
         if (is_zero()) {
             return 0.0;
         }
-        
+
         double result = 0.0;
         double multiplier = 1.0;
-        
+
         for (size_t i = 0; i < digits.size(); ++i) {
             result += digits[i] * multiplier;
             multiplier *= 10.0;
-            
+
             // Check for overflow - use a large but finite value
             if (multiplier > 1e308) {
                 // Precision loss will occur
                 break;
             }
         }
-        
+
         return negative ? -result : result;
     }
 };

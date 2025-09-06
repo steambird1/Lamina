@@ -1,4 +1,4 @@
-## 編譯方法 
+## 編譯方法
 
 <div align="right">
   <strong>繁體中文</strong> | <a href="../zh_CN/Compile.md">简体中文</a> | <a href="../en_US/Compile.md">English</a>
@@ -6,6 +6,7 @@
 <br>
 
 Linux 平台：
+
 ```shell
 mkdir build
 cd build
@@ -14,6 +15,7 @@ make
 ```
 
 Windows 平台：
+
 ```shell
 mkdir build
 cd build

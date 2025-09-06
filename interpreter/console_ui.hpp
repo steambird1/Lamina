@@ -3,7 +3,7 @@
 #include <string>
 
 inline void print_help() {
-    std::cout << "          -- [ Lamina Help ] --             "  << std::endl;
+    std::cout << "          -- [ Lamina Help ] --             " << std::endl;
     std::cout << "lamina <path>      ||  run the file at path" << std::endl;
     std::cout << "lamina run <path>  || run the file at path" << std::endl;
     std::cout << "lamina version     ||  show the version of lamina" << std::endl;
