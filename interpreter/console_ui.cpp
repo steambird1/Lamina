@@ -242,36 +242,42 @@ int repl() {
                 }
                 std::cout << "\n";
                 break;
-            } else if (line == "\x04") {    // Ctrl+D (EOF)
+            }
+
+            bool execute_now = false;
+            if (line == "\x04") {   // Ctrl+D (EOF)
                 if (brace_level > 0) {
                     // 在多行模式下，Ctrl+D 意味着输入结束，立即执行代码
                     // In multi-line mode, Ctrl+D means end of input, execute code immediately
-                    goto execute_code;
+                    execute_now = true;
                 } else {
                     // 在主提示符的空行上，Ctrl+D 退出
                     // On an empty line at the main prompt, Ctrl+D exits
                     break;
                 }
-            }
+            } else {
+                code_buffer += line + "\n";
 
-            code_buffer += line + "\n";
+                // 简单地通过计算大括号来检查代码块是否完整
+                // Simply check if the code block is complete by counting braces
+                for (char c: line) {
+                    if (c == '{') {
+                        brace_level++;
+                    } else if (c == '}') {
+                        brace_level--;
+                    }
+                }
 
-            // 简单地通过计算大括号来检查代码块是否完整
-            // Simply check if the code block is complete by counting braces
-            for (char c: line) {
-                if (c == '{') {
-                    brace_level++;
-                } else if (c == '}') {
-                    brace_level--;
+                if (brace_level <= 0) {
+                    execute_now = true;
                 }
             }
 
-            if (brace_level > 0) {
+            if (!execute_now) {
                 ++lineno;
                 continue;
             }
 
-        execute_code:           // 用于从Ctrl+D跳转 (Goto label for Ctrl+D)
             brace_level = 0;    // 重置 (Reset)
 
             if (code_buffer.empty() || code_buffer == "\n") {
