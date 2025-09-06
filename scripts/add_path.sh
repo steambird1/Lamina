@@ -1,6 +1,12 @@
 #!/bin/bash
 
-PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+# 获取当前脚本所在目录（scripts/目录）的绝对路径
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+
+# 计算项目根目录（scripts/的父目录）
+PROJECT_ROOT=$(cd "${SCRIPT_DIR}/.." &>/dev/null && pwd)
+
+# 调试目录仍为根目录下的cmake-build-debug
 DEBUG_DIR="${PROJECT_ROOT}/cmake-build-debug"
 
 # 1. 检查 Debug 目录是否存在

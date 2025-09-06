@@ -200,6 +200,7 @@ Lamina 提供了一些特殊的内置模块：
 ```plaintext
 var func if else while for return break continue
 print true false null include define bigint input
+assert struct
 ```
 
 ### 注释
@@ -287,7 +288,7 @@ struct otherInfo{
     country = "US";
 }
 ```
-**注意**: 当前Lamina结构体不支持引用
+**注意**: 当前Lamina结构体类似与**String Dict**且不支持引用
 
 | 函数                       | 描述   | 示例                                   |
 |--------------------------|------|--------------------------------------|

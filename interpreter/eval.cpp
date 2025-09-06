@@ -10,25 +10,23 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
             // Parse as double for floating point numbers and scientific notation
             double d = std::stod(node->value);
             return Value(d);
-        } else {
-            // 先尝试用 int 解析，只有溢出时才用 BigInt
-            try {
-                int i = std::stoi(node->value);
-                return Value(i);
-            } catch (const std::out_of_range&) {
-                // int 溢出，使用 BigInt
-                ::BigInt big(node->value);
-                return Value(big);
-            }
         }
-    } else {
-        // Check for boolean literals
-        if (node->value == "true") return Value(true);
-        if (node->value == "false") return Value(false);
-        if (node->value == "null") return Value(nullptr);
-        // Otherwise it's a string
-        return Value(node->value);
+        // 先尝试用 int 解析，只有溢出时才用 BigInt
+        try {
+            int i = std::stoi(node->value);
+            return Value(i);
+        } catch (const std::out_of_range&) {
+            // int 溢出，使用 BigInt
+            ::BigInt big(node->value);
+            return Value(big);
+        }
     }
+    // Check for boolean literals
+    if (node->value == "true") return Value(true);
+    if (node->value == "false") return Value(false);
+    if (node->value == "null") return Value(nullptr);
+    // Otherwise it's a string
+    return Value(node->value);
 }
 
 Value Interpreter::eval_CallExpr(const CallExpr* call) {
@@ -225,11 +223,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             return Value(l.to_string() + r.to_string());
         }
         // Vector addition
-        else if (l.is_array() && r.is_array()) {
+        if (l.is_array() && r.is_array()) {
             return l.vector_add(r);
         }
         // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-        else if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
+        if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
             std::shared_ptr<SymbolicExpr> leftExpr;
             std::shared_ptr<SymbolicExpr> rightExpr;
             if (l.is_symbolic()) {
@@ -265,7 +263,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             return Value(SymbolicExpr::add(leftExpr, rightExpr)->simplify());
         }
         // Numeric addition with irrational and rational number support
-        else if (l.is_numeric() && r.is_numeric()) {
+        if (l.is_numeric() && r.is_numeric()) {
             // BigInt 优先：如果任一为 BigInt，结果为 BigInt
             if (l.is_bigint() || r.is_bigint()) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
@@ -278,7 +276,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 return Value(result);
             }
 
-            double result = l.as_number() + r.as_number();  // Return int if both operands are int and result is whole
+            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is whole
             if (l.is_int() && r.is_int()) {
                 // check overflow and underflow
                 if (static_cast<int>(result) == INT_MAX ||
@@ -654,6 +652,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     }
 
     error_and_exit("Unknown binary operator '" + bin->op + "'");
+    return {};
 }
 
 Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
@@ -668,14 +667,14 @@ Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
         if (v.type == Value::Type::Int) {
             int vi = std::get<int>(v.data);
             return Value(-vi);
-        } else if (v.type == Value::Type::Float) {
+        }
+        if (v.type == Value::Type::Float) {
             float vf = std::get<double>(v.data);
             return Value(-vf);
-        } else {
-            // For BigInt, negate directly
-            ::BigInt big_val = std::get<::BigInt>(v.data);
-            return Value(big_val.negate());
         }
+        // For BigInt, negate directly
+        ::BigInt big_val = std::get<::BigInt>(v.data);
+        return Value(big_val.negate());
     }
 
     if (unary->op == "!") {
@@ -704,12 +703,11 @@ Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
                 result = result * ::BigInt(j);
             }
             return Value(result);
-        } else {
-            // Use regular int for small factorials
-            int res = 1;
-            for (int j = 1; j <= vi; ++j) res *= j;
-            return Value(res);
         }
+        // Use regular int for small factorials
+        int res = 1;
+        for (int j = 1; j <= vi; ++j) res *= j;
+        return Value(res);
     }
 
     std::cerr << "Error: Unknown unary operator '" << unary->op << "'" << std::endl;

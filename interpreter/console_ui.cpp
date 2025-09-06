@@ -201,7 +201,7 @@ int argv_parser(const int argc, const char* const argv[]) {
 
 
 int repl() {
-    std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit." << std::endl;
+    std::cout << "Lamina REPL v" << LAMINA_VERSION << ".\nPress Ctrl+C or :exit to exit." << std::endl;
     std::cout << "Type :help for help." << std::endl;
 
     Interpreter interpreter;
@@ -380,6 +380,10 @@ int repl() {
             // Catch top-level runtime errors during block execution
             catch (const RuntimeError& re) {
                 interpreter.print_stack_trace(re, true);
+            }
+
+            catch (StdLibException) {
+                continue;
             }
 
             // Catch return exceptions escaping the inner loop

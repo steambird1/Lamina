@@ -1,0 +1,4 @@
+*.lm linguist-language=Lamina          # 关联文件扩展名与语言名
+*.lm linguist-type=programming         # 明确为编程语言类型
+*.lm linguist-grammar=scripts/pygments/lamina_lexer_debug.py:LaminaLexer  # 关键：指定Lexer路径和类名
+examples/*.lm linguist-detectable=true
