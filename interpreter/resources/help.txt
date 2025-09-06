@@ -1,0 +1,6 @@
+          -- [ Lamina Help ] --
+lamina <path>      ||  run the file at path
+lamina run <path>  ||  run the file at path
+lamina version     ||  show the version of lamina
+lamina repl        ||  start repl
+lamina help        ||  show help

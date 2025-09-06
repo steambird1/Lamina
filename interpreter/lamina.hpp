@@ -15,7 +15,9 @@
 #include <stdexcept>
 
 // Lamina 版本号
-#define LAMINA_VERSION "0.1.0"
+#include "version.hpp"
+// Lamina 帮助文本
+#include "help_text.hpp"
 
 /*
     对LAMINA核心资源操作的头文件
