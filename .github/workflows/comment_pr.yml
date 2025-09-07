@@ -26,11 +26,9 @@ jobs:
           # 安全地解析JSON
           if [ -f change_info.json ]; then
             HAS_CHANGES=$(jq -r '.has_changes' change_info.json)
-            CHANGED_FILES=$(jq -r '.changed_files' change_info.json)
             # 验证数据格式
             if [[ "$HAS_CHANGES" =~ ^(true|false)$ ]]; then
               echo "HAS_CHANGES=${HAS_CHANGES}" >> $GITHUB_OUTPUT
-              echo "CHANGED_FILES=${CHANGED_FILES}" >> $GITHUB_OUTPUT
             else
               echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
               echo "Invalid data format"
