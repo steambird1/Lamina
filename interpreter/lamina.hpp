@@ -98,12 +98,6 @@ constexpr bool always_false = false;
 #define LAMINA_GET_VAR(interpreter, var) \
     interpreter.get_variable(#var)
 
-#define L_ERR(msg)                                  \
-    do {                                            \
-        std::cerr << "Error: " << msg << std::endl; \
-        throw std::runtime_error("");                    \
-    } while (0)
-
 #define LAMINA_GLOBAL_VAR(name, value)                                   \
     void global_var_##name##_entry(Interpreter& interpreter) {           \
         interpreter.set_global_variable(#name, Value(value));            \
@@ -115,3 +109,8 @@ constexpr bool always_false = false;
             }                                                            \
         } global_var_##name##_instance;                                  \
     }
+
+
+inline void L_ERR(const std::string& msg) {
+    throw StdLibException(msg);
+}
