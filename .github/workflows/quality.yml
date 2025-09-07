@@ -588,13 +588,10 @@ jobs:
 
       - name: Create change info
         run: |
-          cat > change_info.json << EOF
-          {
-            "has_changes": "${{ steps.changed_files.outputs.HAS_CHANGES }}",
-            "changed_files": "${{ steps.changed_files.outputs.CHANGED_FILES }}",
-            "workflow_run_id": "${{ github.run_id }}"
-          }
-          EOF
+          jq -n \
+            --arg has_changes "${{ steps.changed_files.outputs.HAS_CHANGES }}" \
+            --arg changed_files "${{ steps.changed_files.outputs.CHANGED_FILES }}" \
+            '{has_changes: $has_changes, changed_files: $changed_files}' > change_info.json
 
       - name: Upload change info
         uses: actions/upload-artifact@v4
