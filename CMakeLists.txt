@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(Lamina VERSION 1.0.0 LANGUAGES CXX)
+project(Lamina VERSION 0.0.1 LANGUAGES CXX)# Lamina version is here
+
+# add sub directory
+add_subdirectory(interpreter)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -56,6 +59,7 @@ set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
 include_directories(
         ${LIBUV_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+        ${CMAKE_CURRENT_BINARY_DIR} # version.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 新增ExprTK头文件路径
 )
 
@@ -98,6 +102,9 @@ add_library(lamina_core SHARED
         extensions/standard/lstruct.cpp
         interpreter/eval.cpp
 )
+
+# Add version header
+target_sources(lamina_core PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
 
 # Set lamina_core properties
 set_target_properties(lamina_core PROPERTIES 
@@ -161,6 +168,9 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
         interpreter/color_style.hpp
         interpreter/eval.cpp
 )
+
+# Add version header
+target_sources(Lamina PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
 
 # Link to lamina_core
 target_link_libraries(Lamina PRIVATE lamina_core)
