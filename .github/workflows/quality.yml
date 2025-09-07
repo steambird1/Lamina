@@ -549,8 +549,6 @@ jobs:
   automated-review:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    permissions:
-      pull-requests: write
 
     steps:
       - name: Checkout
@@ -574,7 +572,7 @@ jobs:
 
           # 获取 PR 中变更的文件
           git fetch origin main
-          changed_files=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp)$' || echo "")
+          changed_files=$(git diff --name-only origin/main...HEAD | grep -E '\.(cpp|hpp|hpp\.in)$' || echo "")
 
           if [ -n "$changed_files" ]; then
             echo "Changed C++ files:"
@@ -587,6 +585,22 @@ jobs:
             echo "No C++ files changed"
             echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Create change info
+        run: |
+          cat > change_info.json << EOF
+          {
+            "has_changes": "${{ steps.changed_files.outputs.HAS_CHANGES }}",
+            "changed_files": "${{ steps.changed_files.outputs.CHANGED_FILES }}",
+            "workflow_run_id": "${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Upload change info
+        uses: actions/upload-artifact@v4
+        with:
+          name: change_info
+          path: change_info.json
 
       - name: Review changed code
         if: steps.changed_files.outputs.HAS_CHANGES == 'true'
@@ -691,10 +705,7 @@ jobs:
 
           echo "Review summary generated"
 
-      - name: Comment on PR
-        if: steps.changed_files.outputs.HAS_CHANGES == 'true' && github.event_name == 'pull_request'
-        uses: peter-evans/create-or-update-comment@v4
+      - uses: actions/upload-artifact@v4
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: review_summary.md
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: review_summary
+          path: review_summary.md
