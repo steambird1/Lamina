@@ -1,6 +1,9 @@
 ﻿@echo off
 
-set "PROJECT_ROOT=%~dp0"
+:: 计算项目根目录（scripts目录的父目录）
+for /f "delims=" %%i in ("%~dp0..\") do set "PROJECT_ROOT=%%~fi"
+
+:: 设置调试目录（根目录下的cmake-build-debug）
 set "DEBUG_DIR=%PROJECT_ROOT%cmake-build-debug"
 if not exist "%DEBUG_DIR%" (
     echo Dir is not exist！path:%DEBUG_DIR%

@@ -1,0 +1,4 @@
+*.lm linguist-language=Lamina
+*.lm linguist-type=programming 
+*.lm linguist-grammar=scripts/pygments/lamina_lexer_debug.py:LaminaLexer
+examples/*.lm linguist-detectable=true

@@ -41,6 +41,16 @@ public:
     RuntimeError(const std::string& msg, const std::vector<StackFrame>& trace)
         : message(msg), stack_trace(trace) {}
 
+    [[nodiscard]] const char* what() const noexcept override {
+        return message.c_str();
+    }
+};
+
+// L_ERR
+class StdLibException : public std::exception {
+public:
+    std::string message;
+    StdLibException(const std::string& msg) : message(msg) {}
     const char* what() const noexcept override {
         return message.c_str();
     }
