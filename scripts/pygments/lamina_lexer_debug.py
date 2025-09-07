@@ -1,4 +1,4 @@
-# lamina_lexer.py：Lamina语言的Pygments Lexer
+# lamina_lexer_debug.py：Lamina语言的Pygments Lexer
 # 该脚本用于在Github上高亮Lamina文件的颜色
 from pygments.lexer import RegexLexer
 from pygments.token import Keyword, Text, Comment  # 导入Pygments的“标记类型”（用于高亮分类）
@@ -17,7 +17,7 @@ class LaminaLexer(RegexLexer):
     tokens = {
         # root是语法分析的入口（所有代码从这里开始匹配）
         'root': [
-            (r'\b(if|while)\b', Keyword.Control),
+            (r'\b(if|while|print|func|struct|else|visit)\b', Keyword.Control),
 
             (r'//.*$', Comment.Single),
 
