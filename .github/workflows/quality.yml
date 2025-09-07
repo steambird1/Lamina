@@ -697,3 +697,4 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: review_summary.md
+          token: ${{ secrets.GITHUB_TOKEN }}
