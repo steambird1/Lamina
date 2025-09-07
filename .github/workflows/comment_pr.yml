@@ -26,6 +26,7 @@ jobs:
           # 安全地解析JSON
           if [ -f change_info.json ]; then
             HAS_CHANGES=$(jq -r '.has_changes' change_info.json)
+            ISSUE_NUMBER=$(jq -r '.issue_number' change_info.json)
             # 验证数据格式
             if [[ "$HAS_CHANGES" =~ ^(true|false)$ ]]; then
               echo "HAS_CHANGES=${HAS_CHANGES}" >> $GITHUB_OUTPUT
@@ -33,6 +34,7 @@ jobs:
               echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
               echo "Invalid data format"
             fi
+            echo "ISSUE_NUMBER=${ISSUE_NUMBER}" >> $GITHUB_OUTPUT
           else
             echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
           fi
@@ -52,8 +54,8 @@ jobs:
         if: steps.change_info.outputs.HAS_CHANGES == 'true' 
         uses: peter-evans/create-or-update-comment@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.workflow_run.pull_requests[0].number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ steps.change_info.outputs.ISSUE_NUMBER }}
           body-path: review_summary.md
 
 

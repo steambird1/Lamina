@@ -590,7 +590,11 @@ jobs:
         run: |
           jq -n \
             --arg has_changes "${{ steps.changed_files.outputs.HAS_CHANGES }}" \
-            '{has_changes: $has_changes}' > change_info.json
+            --arg issue_number "${{ github.event.pull_request.number }}" \
+            '{
+              has_changes: $has_changes,
+              issue_number: $issue_number
+            }' > change_info.json
 
       - name: Upload change info
         uses: actions/upload-artifact@v4
@@ -702,6 +706,7 @@ jobs:
           echo "Review summary generated"
 
       - uses: actions/upload-artifact@v4
+        if: steps.changed_files.outputs.HAS_CHANGES == 'true'
         with:
           name: review_summary
           path: review_summary.md
