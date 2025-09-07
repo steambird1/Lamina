@@ -10,6 +10,10 @@ jobs:
   comment:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
 
     steps:
       - name: Download change info
