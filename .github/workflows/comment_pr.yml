@@ -37,7 +37,7 @@ jobs:
             fi
           else
             echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
-        fi
+          fi
 
       - name:  Download review summary
         if: steps.change_info.outputs.HAS_CHANGES == 'true'
