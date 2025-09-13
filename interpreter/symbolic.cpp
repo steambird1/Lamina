@@ -500,6 +500,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				bool exponent_merger = true, base_merger = true;
 				std::cerr << "[Debug output] [2] Preloading" << std::endl;
 				for (auto &cvt : result) {
+					if (cvt->is_number()) continue;
+					if (cvt->operands.size() < 2) {
+						std::cerr << "[Debug output] [2] WARNING: Format error at " << cvt->to_string() << std::endl;
+						continue;
+					}
 					if (!cvt->operands[0]->is_number()) {
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [2] Flat: exponent fails at " << cvt->operands[0]->to_string() << std::endl;
