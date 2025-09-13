@@ -700,7 +700,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         }
     }
 	
-	std::cerr << "[Debug output] adder: number term = " << number_term->to_string() << std::endl;
+	std::cerr << "[Debug output] adder: number term = " << number_term.to_string() << std::endl;
 	
     std::vector<std::shared_ptr<SymbolicExpr>> result_terms;
     for (const auto& [radicand, coeff] : sqrt_terms) {
