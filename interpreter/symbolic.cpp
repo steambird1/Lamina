@@ -632,6 +632,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 	// 如果为根号，其中 coeff 为根式的系数，radicand 为根号下的值
 	std::function<bool(const std::shared_ptr<SymbolicExpr>&,::Rational&,::Rational&)> extract_sqrt;
     extract_sqrt = [&extract_sqrt](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, ::Rational& radicand) -> bool {
+		if (expr->type == SymbolicExpr::Type::Number) {
+			coeff = expr->convert_rational();
+			radicand = ::Rational(1);
+			return true;
+		}
         if (expr->type == SymbolicExpr::Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
             coeff = ::Rational(1);
             radicand = expr->operands[0]->convert_rational();
