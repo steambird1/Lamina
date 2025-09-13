@@ -724,7 +724,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 		
 		std::cerr << "[Debug output] adder: sqrt term coeff:" << coeff.to_string() << "; radicand:" << radicand.to_string() << std::endl;
 		
-        if (radicand == ::Rational(1) {
+        if (radicand == ::Rational(1)) {
 			result_terms.push_back(SymbolicExpr::number(coeff));
 		} else if (coeff == ::Rational(1)) {
             result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));
