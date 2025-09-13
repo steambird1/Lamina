@@ -74,6 +74,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
             int n = std::get<int>(num_val);
 			auto res = num_process(n);
 			if (res.second == 1) return SymbolicExpr::number(res.first);
+			else if (res.first == 1) return SymbolicExpr::sqrt(SymbolicExpr::number(res.second));
 			else return SymbolicExpr::multiply(SymbolicExpr::number(res.first), SymbolicExpr::sqrt(SymbolicExpr::number(res.second)));
         }
         if (std::holds_alternative<::BigInt>(num_val)) {
@@ -103,15 +104,18 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 			const auto &nobj = std::get<::Rational>(num_val);
 			const auto &nume = nobj.get_numerator();
 			const auto &deme = nobj.get_denominator();
-			
+			// 暂时只判断可以转成int的
 			if (in_simplify_range(nume) && in_simplify_range(deme)) {
 				auto numsimp = num_process(nume.to_int());
 				auto demsimp = num_process(deme.to_int());
 				::Rational numarea = ::Rational(numsimp.first, demsimp.first);
 				::Rational sqarea = ::Rational(numsimp.second, demsimp.second);
-				if (sqarea == ::Rational(1)) {
-					return SymbolicExpr::number(numarea);
-				}
+				
+				// TODO: Debug output:
+				std::cerr << "[Debug output] numa = " << numarea.to_string() << "; sqa = " << sqarea.to_string() << std::endl;
+				
+				if (sqarea == ::Rational(1)) return SymbolicExpr::number(numarea);
+				else if (numarea == ::Rational(1)) return SymbolicExpr::sqrt(SymbolicExpr::number(sqarea));
 				return SymbolicExpr::multiply(generate_component(numarea), SymbolicExpr::sqrt(generate_component(sqarea)));
 			}
 		}
