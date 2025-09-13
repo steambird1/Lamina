@@ -447,8 +447,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					if (lcr == rcr) {
 						// TODO: Debug output:
 						std::cerr << "[Debug output] [1a] Merging exponents in a simplified way" << std::endl;
-						return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
-								SymbolicExpr::number(lcr))->simplify();
+						
+						if (lcom->operands[0]->type == SymbolicExpr::Type::Variable || rcom->operands[0]->type == SymbolicExpr::Type::Variable) {
+							return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify()), SymbolicExpr::number(lcr)); // 不要化简整体！
+						} else {
+							auto tmp = SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
+								SymbolicExpr::number(lcr));
+							return tmp->simplify();
+						}
 					} else if (ldr == ::BigInt(1)) {
 						// 没有分母（特殊处理，避免死循环）；此处，底数、指数均不能合并。
 						// 此处不应再对整体进行 multiply 的化简调用。
@@ -718,7 +724,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 		
 		std::cerr << "[Debug output] adder: sqrt term coeff:" << coeff.to_string() << "; radicand:" << radicand.to_string() << std::endl;
 		
-        if (coeff == ::Rational(1)) {
+        if (radicand == ::Rational(1) {
+			result_terms.push_back(SymbolicExpr::number(coeff));
+		} else if (coeff == ::Rational(1)) {
             result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));
         } else {
             result_terms.push_back(SymbolicExpr::multiply(SymbolicExpr::number(coeff), SymbolicExpr::sqrt(SymbolicExpr::number(radicand))));
