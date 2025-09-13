@@ -526,7 +526,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						::Rational exponent = cvt->operands[1]->convert_rational();
 						auto finder = base_ref.find(base);
 						if (finder != base_ref.end()) {
-							finder->second = SymbolicExpr::add(finder->second, exponent)->simplify();
+							finder->second = finder->second + exponent;
 							exponent_merger_cnt++;
 						} else {
 							base_ref[base] = exponent;
@@ -542,6 +542,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						auto finder = exponent_ref.find(cvt_rational);
 						if (finder != exponent_ref.end()) {
 							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
+							base_merger_cnt++;
 						} else {
 							exponent_ref[cvt_rational] = cvt->operands[0];
 						}
