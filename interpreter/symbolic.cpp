@@ -830,8 +830,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		if (rconv == ::Rational(-1)) {
 			// 这里一定不是整数，尝试分母有理化
 			
-			auto processable = [](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
-				return obj->type == SymbolicExpr::Type::Number || obj->type == SymbolicExpr::Type::Sqrt;
+			std::function<bool(const std::shared_ptr<SymbolicExpr> &)> processable;
+			processable = [&processable](const std::shared_ptr<SymbolicExpr> &obj) -> bool {
+				return obj->type == SymbolicExpr::Type::Number || obj->type == SymbolicExpr::Type::Sqrt
+					|| (obj->type == SymbolicExpr::Type::Multiply && obj->operands.size() == 2
+						&& processable(obj->operands[0]) && processable(obj->operands[1]));
 			};
 			
 			std::cerr << "[Debug output] begin rationalizing attempt\n";
@@ -857,7 +860,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				
 			}
 		}
-		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() >= ::BigInt(-3) && rconv.get_numerator() < ::BigInt(0)) {
+		// 防止死循环
+		if (rconv.get_denominator() == ::BigInt(1) && rconv.get_numerator() >= ::BigInt(-3) && rconv.get_numerator() < ::BigInt(-1)) {
 			// 转为倒数的情况
 			return SymbolicExpr::power(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())), SymbolicExpr::number(-1))->simplify();
 		}
