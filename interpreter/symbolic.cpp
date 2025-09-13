@@ -43,13 +43,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 			simplified_operand->number_value = actual;
 		}
 		
-        auto num_val = simplified_operand->get_number();
-        if (std::holds_alternative<int>(num_val)) {
-            int n = std::get<int>(num_val);
-            if (n < 0) throw std::runtime_error("Square root of negative number");
-            if (n == 0 || n == 1) return SymbolicExpr::number(n);
-            int sqrt_n = static_cast<int>(std::sqrt(n));
-            if (sqrt_n * sqrt_n == n) return SymbolicExpr::number(sqrt_n);
+		// pair 格式：first 为系数，second 为根式下的值
+		// 注意自行判断 second 为 1 的情况。
+		auto num_process = [](int n) -> std::pair<int, int> {
+			if (n < 0) throw std::runtime_error("Square root of negative number");
+			if (n == 0 || n == 1) return std::make_pair(n, 1);
+			int sqrt_n = static_cast<int>(std::sqrt(n));
+            if (sqrt_n * sqrt_n == n) return std::make_pair(sqrt_n, 1);
             int factor = 1, remaining = n;
             for (int i = 2; i * i <= remaining; ++i) {
                 while (remaining % (i * i) == 0) {
@@ -57,10 +57,24 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
                     remaining /= (i * i);
                 }
             }
-            if (factor > 1) {
-                if (remaining == 1) return SymbolicExpr::number(factor);
-                else return SymbolicExpr::multiply(SymbolicExpr::number(factor), SymbolicExpr::sqrt(SymbolicExpr::number(remaining)));
-            }
+            return std::make_pair(factor, remaining);
+		};
+		
+		auto in_simplify_range = [](const ::BigInt& bi) -> bool {
+			return bi <= BigInt(INT_MAX) && bi >= BigInt(INT_MIN);
+		};
+		
+		auto generate_component = [](const ::Rational& rat) -> std::shared_ptr<SymbolicExpr> {
+			if (rat.get_denominator() == ::BigInt(1)) return SymbolicExpr::number(rat.get_numerator());
+			else return SymbolicExpr::number(rat);
+		};
+		
+        auto num_val = simplified_operand->get_number();
+        if (std::holds_alternative<int>(num_val)) {
+            int n = std::get<int>(num_val);
+			auto res = num_process(n);
+			if (res.second == 1) return SymbolicExpr::number(res.first);
+			else return SymbolicExpr::multiply(SymbolicExpr::number(res.first), SymbolicExpr::sqrt(SymbolicExpr::number(res.second)));
         }
         if (std::holds_alternative<::BigInt>(num_val)) {
             const auto& bi = std::get<::BigInt>(num_val);
@@ -80,11 +94,27 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
                 else return SymbolicExpr::multiply(SymbolicExpr::number(factor), SymbolicExpr::sqrt(SymbolicExpr::number(remaining)));
             }*/
             // 暂时只判断可以转成int的
-            if (bi <= BigInt(INT_MAX) && bi >= BigInt(INT_MIN)) {
+            if (in_simplify_range(bi)) {
                 return SymbolicExpr::sqrt(SymbolicExpr::number(bi.to_int()))->simplify();
             }
         }
-		// TODO:实现分数sqrt化简
+		// 分数化简中底数和指数分别判断
+		if (std::holds_alternative<::Rational>(num_val)) {
+			const auto &nobj = std::get<::Rational>(num_val);
+			const auto &nume = nobj.get_numerator();
+			const auto &deme = nobj.get_denominator();
+			
+			if (in_simplify_range(nume) && in_simplify_range(deme)) {
+				auto numsimp = num_process(nume.to_int());
+				auto demsimp = num_process(deme.to_int());
+				::Rational numarea = ::Rational(numsimp.first, demsimp.first);
+				::Rational sqarea = ::Rational(numsimp.second, demsimp.second);
+				if (sqarea == ::Rational(1)) {
+					return SymbolicExpr::number(numarea);
+				}
+				return SymbolicExpr::multiply(generate_component(numarea), SymbolicExpr::sqrt(generate_component(sqarea)));
+			}
+		}
     }
     // sqrt(x*x) 或 sqrt(π*π) 直接返回 x 或 π
     if (simplified_operand->type == SymbolicExpr::Type::Multiply && simplified_operand->operands.size() == 2) {
