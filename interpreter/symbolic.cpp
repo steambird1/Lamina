@@ -253,6 +253,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			}
 		}
 
+		std::cerr << "[Debug output] === Begin adder simplifier ===\n";
 		return res->simplify();
 		
 	}
@@ -698,9 +699,15 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
             others.push_back(term);
         }
     }
+	
+	std::cerr << "[Debug output] adder: number term = " << number_term->to_string() << std::endl;
+	
     std::vector<std::shared_ptr<SymbolicExpr>> result_terms;
     for (const auto& [radicand, coeff] : sqrt_terms) {
         if (coeff.is_integer() && coeff.get_numerator().to_int() == 0) continue;
+		
+		std::cerr << "[Debug output] adder: sqrt term coeff:" << coeff->to_string() << "; radicand:" << radicand->to_string() << std::endl;
+		
         if (coeff == ::Rational(1)) {
             result_terms.push_back(SymbolicExpr::sqrt(SymbolicExpr::number(radicand)));
         } else {
