@@ -237,7 +237,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		if ((left->type == SymbolicExpr::Type::Add) && (right->type == SymbolicExpr::Type::Add)) {
 			for (auto &i : left->operands) {
 				for (auto &j : right->operands) {
-					res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, j)->simplify());
+					auto adt = SymbolicExpr::multiply(i, j)->simplify();
+					std::cerr << "[Debug output] [1] --- Adding term: " << adt->to_string() << std::endl;
+					res = SymbolicExpr::add(res, adt);
 				}
 			}
 		} else {
@@ -245,7 +247,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				std::swap(left, right);
 			
 			for (auto &i : left->operands) {
-				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify());
+				auto adt = SymbolicExpr::multiply(i, right)->simplify();
+				std::cerr << "[Debug output] [2] --- Adding term: " << adt->to_string() << std::endl;
+				res = SymbolicExpr::add(res, adt);
 			}
 		}
 
@@ -596,7 +600,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						if (i.first == ::Rational(1)) cres = i.second;
 						else cres = SymbolicExpr::power(i.second, SymbolicExpr::number(i.first))->simplify();
 						if (inits) {
-							cres = res;
+							res = cres;
 							inits = false;
 						}
 						else res = SymbolicExpr::multiply(cres, res);
@@ -833,6 +837,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		
 		if (rconv.get_denominator() == ::BigInt(2) && rconv.get_numerator() >= ::BigInt(-3) 
 			&& rconv.get_numerator() <= ::BigInt(3)) {
+			std::cerr << "[Debug output] call of sqrt simplifier\n";
 			return SymbolicExpr::sqrt(SymbolicExpr::power(base, SymbolicExpr::number(rconv.get_numerator())))->simplify();
 		}
     } else if (base->type == SymbolicExpr::Type::Power || base->type == SymbolicExpr::Type::Sqrt) {
