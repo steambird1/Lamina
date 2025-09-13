@@ -688,14 +688,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     // std::map<std::string, ::Rational> variable_terms;// TODO
     Rational number_term(0);// 数字部分
     std::vector<std::shared_ptr<SymbolicExpr>> others;// other things
+	
+	std::cerr << "[Debug output] adder: end flatten add\n";
+	
     for (const auto& term : terms) {
         ::Rational coeff;
         ::Rational radicand;
         if (extract_sqrt(term, coeff, radicand)) {
             sqrt_terms[radicand] = sqrt_terms[radicand] + coeff;
+			std::cerr << "[Debug output] adder: got sqrt term " << coeff.to_string() << " at sqrt:" << radicand.to_string() << std::endl;
         } else if (extract_number(term, number_term)) {
             // Do nothing yet
         } else {
+			std::cerr << "[Debug output] adder: undealt item " << term->to_string() << std::endl;
             others.push_back(term);
         }
     }
