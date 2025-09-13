@@ -498,6 +498,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			if (able) {
 				// 尝试合并指数
 				bool exponent_merger = true, base_merger = true;
+				std::cerr << "[Debug output] [2] Preloading" << std::endl;
 				for (auto &cvt : result) {
 					if (!cvt->operands[0]->is_number()) {
 						// TODO: Debug output:
@@ -517,6 +518,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				int exponent_merger_cnt = 0, base_merger_cnt = 0;
 				
 				if (exponent_merger) {
+					std::cerr << "[Debug output] [2m] Ready for exp merger" << std::endl;
 					// 同底数合并
 					for (auto &cvt : result) {
 						// 已经检查过了
@@ -524,7 +526,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						::Rational exponent = cvt->operands[1]->convert_rational();
 						auto finder = base_ref.find(base);
 						if (finder != base_ref.end()) {
-							finder->second = finder->second + exponent;
+							finder->second = SymbolicExpr::add(finder->second, exponent)->simplify();
 							exponent_merger_cnt++;
 						} else {
 							base_ref[base] = exponent;
@@ -533,6 +535,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				}
 				
 				if (base_merger) {
+					std::cerr << "[Debug output] [2n] Ready for base merger" << std::endl;
 					// 同指数合并
 					for (auto &cvt : result) {
 						auto cvt_rational = cvt->operands[1]->convert_rational();
