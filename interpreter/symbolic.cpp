@@ -232,11 +232,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
 		
 		auto res = SymbolicExpr::number(0);
+		// TODO: *** 此处可能导致 res 被反复化简
 		
 		if ((left->type == SymbolicExpr::Type::Add) && (right->type == SymbolicExpr::Type::Add)) {
 			for (auto &i : left->operands) {
 				for (auto &j : right->operands) {
-					res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, j)->simplify())->simplify();
+					res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, j)->simplify());
 				}
 			}
 		} else {
@@ -244,11 +245,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				std::swap(left, right);
 			
 			for (auto &i : left->operands) {
-				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify())->simplify();
+				res = SymbolicExpr::add(res, SymbolicExpr::multiply(i, right)->simplify());
 			}
 		}
 
-		return res;
+		return res->simplify();
 		
 	}
 	
@@ -260,18 +261,21 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// 注意，除法使用指数
 	std::function<std::shared_ptr<SymbolicExpr>(const std::shared_ptr<SymbolicExpr>&)> power_compatible;
 	power_compatible = [&](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
+		std::shared_ptr<SymbolicExpr> ret;
 		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
 			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
 		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
-			auto ret = SymbolicExpr::power(power_compatible(expr->operands[0]), SymbolicExpr::number(::Rational(1, 2)))->simplify();
-			if (ret->type == SymbolicExpr::Type::Number || ret->type == SymbolicExpr::Type::Variable)
-				ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
-			return ret;
+			ret = SymbolicExpr::power(power_compatible(expr->operands[0])->simplify(), SymbolicExpr::number(::Rational(1, 2)));
 		} else if (expr->type == SymbolicExpr::Type::Power) {
-			return SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]))->simplify();
+			ret = SymbolicExpr::power(power_compatible(expr->operands[0]), power_compatible(expr->operands[1]))->simplify();
 		} else {
 			return expr;
 		}
+		if (ret->type == SymbolicExpr::Type::Number || ret->type == SymbolicExpr::Type::Variable)
+			ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
+		if (ret->type == SymbolicExpr::Type::Sqrt)
+			ret = SymbolicExpr::power(ret->operands[0], SymbolicExpr::number(::Rational(1, 2)));
+		return ret;
 	};
 	
 	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
@@ -621,13 +625,15 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 
     // 解析根号
 	// 如果为根号，其中 coeff 为根式的系数，radicand 为根号下的值
-    auto extract_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, ::Rational& radicand) -> bool {
+	std::function<bool(const std::shared_ptr<SymbolicExpr>&,::Rational&,::Rational&)> extract_sqrt;
+    extract_sqrt = [&extract_sqrt](const std::shared_ptr<SymbolicExpr>& expr, ::Rational& coeff, ::Rational& radicand) -> bool {
         if (expr->type == SymbolicExpr::Type::Sqrt && expr->operands.size() == 1 && expr->operands[0]->is_number()) {
             coeff = ::Rational(1);
             radicand = expr->operands[0]->convert_rational();
             return true;
         }
         if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() == 2) {
+			// 先特殊判断两项的情况
             if (expr->operands[0]->is_number() && expr->operands[1]->type == SymbolicExpr::Type::Sqrt && expr->operands[1]->operands.size() == 1 && expr->operands[1]->operands[0]->is_number()) {
                 coeff = expr->operands[0]->convert_rational();
 				//std::holds_alternative<::Rational>(expr->operands[0]->get_number()) ? std::get<::Rational>(expr->operands[0]->get_number()) : ::Rational(std::get<int>(expr->operands[0]->get_number()));
@@ -635,6 +641,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
                 radicand = expr->operands[1]->operands[0]->convert_rational();
                 return true;
             }
+			::Rational coeff1, radicand1, coeff2, radicand2;
+			if (extract_sqrt(expr->operands[0], coeff1, radicand1) && extract_sqrt(expr->operands[1], coeff2, radicand2)) {
+				coeff = coeff1 * coeff2;
+				radicand = radicand1 * radicand2;
+				return true;
+			}
         }
         return false;
     };
