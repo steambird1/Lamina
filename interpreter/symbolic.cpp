@@ -87,6 +87,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
             const auto& bi = std::get<::BigInt>(num_val);
             if (bi.negative) throw std::runtime_error("Square root of negative number");
             if (bi.is_zero() || bi == BigInt(1)) return SymbolicExpr::number(bi);
+			std::cerr << "[Debug output] bigint simplifier init\n";
             if (bi.is_perfect_square()) return SymbolicExpr::number(bi.sqrt());
 			// TODO: Debug output:
 			std::cerr << "[Debug output] bigint simplifier\n";
@@ -128,6 +129,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 			}
 		}
     }
+	std::cerr << "[Debug output] end numeric sqrt simplifier\n";
     // sqrt(x*x) 或 sqrt(π*π) 直接返回 x 或 π
     if (simplified_operand->type == SymbolicExpr::Type::Multiply && simplified_operand->operands.size() == 2) {
         const auto& a = simplified_operand->operands[0];
@@ -175,6 +177,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
     }
     // sqrt(x^2) 或 sqrt(π^2) 直接返回 x 或 π
     if (simplified_operand->type == SymbolicExpr::Type::Power && simplified_operand->operands.size() == 2) {
+		std::cerr << "[Debug output] power simplifier\n";
         const auto& base = simplified_operand->operands[0];
         const auto& exp = simplified_operand->operands[1];
         if (exp->is_number()) {
