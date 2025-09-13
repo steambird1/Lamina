@@ -72,7 +72,7 @@ inline Value sqrt(const std::vector<Value>& args) {
 
         if (num.is_perfect_square() && den.is_perfect_square()) {
             // Both are perfect squares
-            return Value(::Rational(num, den));
+            return Value(::Rational(num.sqrt(), den.sqrt()));
         }
         
         // Return symbolic expression for non-perfect squares
