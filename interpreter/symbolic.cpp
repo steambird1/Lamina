@@ -39,6 +39,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 		auto scvrs = simplified_operand->convert_rational();
 		
 		if (simplified_operand->is_rational() && scvrs.get_denominator() == ::BigInt(1)) {
+			
+			// TODO: Debug output:
+			std::cerr << "[Debug output] x/1 simplifier\n";
+			
 			::BigInt actual = scvrs.get_numerator();
 			simplified_operand->number_value = actual;
 		}
@@ -71,6 +75,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
 		
         auto num_val = simplified_operand->get_number();
         if (std::holds_alternative<int>(num_val)) {
+			// TODO: Debug output:
+			std::cerr << "[Debug output] numeric simplifier\n";
             int n = std::get<int>(num_val);
 			auto res = num_process(n);
 			if (res.second == 1) return SymbolicExpr::number(res.first);
@@ -82,6 +88,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
             if (bi.negative) throw std::runtime_error("Square root of negative number");
             if (bi.is_zero() || bi == BigInt(1)) return SymbolicExpr::number(bi);
             if (bi.is_perfect_square()) return SymbolicExpr::number(bi.sqrt());
+			// TODO: Debug output:
+			std::cerr << "[Debug output] bigint simplifier\n";
             // TODO: 这个等BigInt效率高点再说，或者换个算法
             /*BigInt factor(1), remaining(bi);
             for (BigInt i(2); i * i <= remaining; i = i + BigInt(1)) {
