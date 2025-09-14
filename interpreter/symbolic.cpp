@@ -76,7 +76,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
         auto num_val = simplified_operand->get_number();
         if (std::holds_alternative<int>(num_val)) {
 			// TODO: Debug output:
-			std::cerr << "[Debug output] numeric simplifier\n";
+			//std::cerr << "[Debug output] numeric simplifier\n";
             int n = std::get<int>(num_val);
 			auto res = num_process(n);
 			if (res.second == 1) return SymbolicExpr::number(res.first);
@@ -87,10 +87,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
             const auto& bi = std::get<::BigInt>(num_val);
             if (bi.negative) throw std::runtime_error("Square root of negative number");
             if (bi.is_zero() || bi == BigInt(1)) return SymbolicExpr::number(bi);
-			std::cerr << "[Debug output] bigint simplifier init\n";
+			//std::cerr << "[Debug output] bigint simplifier init\n";
             if (bi.is_perfect_square()) return SymbolicExpr::number(bi.sqrt());
 			// TODO: Debug output:
-			std::cerr << "[Debug output] bigint simplifier\n";
+			//std::cerr << "[Debug output] bigint simplifier\n";
             // TODO: 这个等BigInt效率高点再说，或者换个算法
             /*BigInt factor(1), remaining(bi);
             for (BigInt i(2); i * i <= remaining; i = i + BigInt(1)) {
@@ -216,9 +216,18 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	auto has_no_multiply_effect = [](const std::shared_ptr<SymbolicExpr>& obj) -> bool {
 		return (obj->is_number() && obj->get_rational() == ::Rational(1));
 	};
+	if (has_no_multiply_effect(left)) {
+		std::cerr << "[Debug output] left has no effect\n";
+		return right;
+	}
+	if (has_no_multiply_effect(right)) {
+		std::cerr << "[Debug output] right has no effect\n";
+		return left;
+	}
 	
     // 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
+		std::cerr << "[Debug output] numeric calling in multiplier\n";
         auto left_num = left->get_number();
         auto right_num = right->get_number();
         
@@ -768,6 +777,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	// TODO: Debug output:
 	std::cerr << "[Debug output] Simplifying power: base = " << base->to_string() << "; exponent = " << exponent->to_string()
 		<< std::endl;
+		
+	if (exponent->is_number() && exponent->convert_rational == ::Rational(1)) return base;
 	
     if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
 		auto banum = base->convert_rational();
