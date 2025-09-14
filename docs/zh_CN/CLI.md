@@ -13,7 +13,7 @@ lamina help        ||  show help
 
 **第一步**
 如果你是mingw gcc 套件
-且编译时未使用静态链接，需将以下文件复制到 cmake-build-debug 同级目录：
+且编译时未使用静态链接，需将以下文件复制到 Lamina.exe 同级目录：
 
 ```plaintext
 libgcc_s_seh-1.dll
