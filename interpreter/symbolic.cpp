@@ -7,6 +7,7 @@
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
+	// !! TODO: !! 添加“化简”标记，避免 simplify 重复调用导致效率降低
     switch (type) {
         case Type::Number:
         case Type::Variable:
@@ -409,7 +410,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 							res = SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
 						}
 					}
-					
+					//std::cerr << "[Debug output] [5] Finalize. res: " << res->to_string() << std::endl;
 					return res;
 					
 				}
@@ -888,8 +889,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 				std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 				std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
 				auto current_new_base = SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n)));
-				if (es_n == 1) return current_new_base;
-				return SymbolicExpr::power(current_new_base, SymbolicExpr::number(es_n));
+				if (es_n == d) return current_new_base;
+				return SymbolicExpr::power(current_new_base, SymbolicExpr::number(::Rational(::BigInt(1), ::BigInt(es_d))));
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
 			
