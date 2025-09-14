@@ -386,17 +386,21 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					};
 					
 					if (right->type == SymbolicExpr::Type::Number) {
+						std::cerr << "[Debug output] [5a] res: " << res->to_string() << std::endl;
 						res->operands[0] = SymbolicExpr::multiply(res->operands[0], right)->simplify();
 					} else if (right->type == SymbolicExpr::Type::Sqrt) {
+						std::cerr << "[Debug output] [5b] res: " << res->to_string() << std::endl;
 						res->operands[1] = SymbolicExpr::multiply(res->operands[1], right)->simplify();
 						simplify_res();
 					} else if (is_compounded_sqrt(right)) {
+						std::cerr << "[Debug output] [5c] res: " << res->to_string() << std::endl;
 						res->operands[0] = SymbolicExpr::multiply(res->operands[0], right->operands[0])->simplify();
 						res->operands[1] = SymbolicExpr::multiply(res->operands[1], right->operands[1])->simplify();
 						simplify_res();
 					}
 					
 					if (negative) {
+						std::cerr << "[Debug output] [5] Negative processor. res: " << res->to_string() << std::endl;
 						if (res->type == SymbolicExpr::Type::Multiply) {
 							// 这个需要化简
 							res->operands[0] = SymbolicExpr::multiply(SymbolicExpr::number(-1), res->operands[0])->simplify();
