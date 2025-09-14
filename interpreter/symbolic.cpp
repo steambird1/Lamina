@@ -449,8 +449,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						std::cerr << "[Debug output] [1a] Merging exponents in a simplified way" << std::endl;
 						
 						if (lcom->operands[0]->type == SymbolicExpr::Type::Variable || rcom->operands[0]->type == SymbolicExpr::Type::Variable) {
+							std::cerr << "[Debug output] [1a] Entering special reservation\n";
 							return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify()), SymbolicExpr::number(lcr)); // 不要化简整体！
 						} else {
+							std::cerr << "[Debug output] [1a] No variable, normalizing\n";
 							auto tmp = SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
 								SymbolicExpr::number(lcr));
 							return tmp->simplify();
@@ -871,7 +873,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		}
 		// TODO: Debug output:
 		std::cerr << "[Debug output] Power simplifying embedded power / sqrt" << std::endl;
-		return SymbolicExpr::power(base->operands[0], SymbolicExpr::multiply(base->operands[1], exponent))->simplify();
+		return SymbolicExpr::power(base->operands[0]->simplify(), SymbolicExpr::multiply(base->operands[1], exponent)->simplify());
 	}
 	
 	if (exponent->is_int() || exponent->is_big_int()) {
