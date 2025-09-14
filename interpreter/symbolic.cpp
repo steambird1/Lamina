@@ -226,16 +226,19 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	}
 	
     // 如果两个操作数都是数字，直接相乘
+	// TODO: 有些计算时会出问题
     if (left->is_number() && right->is_number()) {
-		std::cerr << "[Debug output] numeric calling in multiplier\n";
+		std::cerr << "[Debug output] numeric calling in multiplier: ";
         auto left_num = left->get_number();
         auto right_num = right->get_number();
         
         if (std::holds_alternative<int>(left_num) && std::holds_alternative<int>(right_num)) {
             int result = std::get<int>(left_num) * std::get<int>(right_num);
+			std::cerr << result << std::endl;
             return SymbolicExpr::number(result);
         } else {
 			::Rational result = left->convert_rational() * right->convert_rational();
+			std::cerr << result.to_string() << std::endl;
 			return SymbolicExpr::number(result);
 		}
     }
@@ -351,10 +354,16 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					
 					auto res = SymbolicExpr::sqrt(sresult)->simplify();
 					
-					if (negative)
-						return SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
-					else
+					if (negative) {
+						// 终端化到最简，否则难以处理
+						if (res->type == SymbolicExpr::Type::Multiply)
+							return SymbolicExpr::multiply(SymbolicExpr::multiply(SymbolicExpr::number(-1), res->operands[0])->simplify(), res->operands[1]);
+						else
+							return SymbolicExpr::multiply(SymbolicExpr::number(-1), res);
+						
+					} else {
 						return res;
+					}
 					
 				} else {
 					
