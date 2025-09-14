@@ -778,7 +778,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	std::cerr << "[Debug output] Simplifying power: base = " << base->to_string() << "; exponent = " << exponent->to_string()
 		<< std::endl;
 		
-	if (exponent->is_number() && exponent->convert_rational == ::Rational(1)) return base;
+	if (exponent->is_number() && exponent->convert_rational() == ::Rational(1)) return base;
 	
     if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
 		auto banum = base->convert_rational();
