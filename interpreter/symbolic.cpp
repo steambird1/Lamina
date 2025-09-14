@@ -873,7 +873,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		}
 		// TODO: Debug output:
 		std::cerr << "[Debug output] Power simplifying embedded power / sqrt" << std::endl;
-		return SymbolicExpr::power(base->operands[0]->simplify(), SymbolicExpr::multiply(base->operands[1], exponent)->simplify());
+		auto pwr = SymbolicExpr::multiply(base->operands[1], exponent)->simplify();
+		if (pwr->type == SymbolicExpr::Type::Number && pwr->convert_rational() == ::Rational(1))
+			return base->operands[0]->simplify();
+		return SymbolicExpr::power(base->operands[0]->simplify(), pwr);
 	}
 	
 	if (exponent->is_int() || exponent->is_big_int()) {
