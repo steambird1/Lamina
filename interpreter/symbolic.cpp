@@ -213,6 +213,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	
 	// TODO: 1 或 -1 乘以某个内容，直接返回另一边
 	// TODO: 加快运算速度，数字和 Multiply 相乘时，直接处理 Multiply 内的数字，不进入指数环节
+	auto has_no_multiply_effect = [](const std::shared_ptr<SymbolicExpr>& obj) -> bool {
+		return (obj->is_number() && obj->get_rational() == ::Rational(1));
+	};
 	
     // 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
@@ -258,6 +261,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		
 	}
 	
+	// 注意，multiply 不属于这类类型，需要手动化简
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
 			|| expr->type == SymbolicExpr::Type::Power || expr->type == SymbolicExpr::Type::Variable;
@@ -484,32 +488,40 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		} else {
 			
 			// 开始尝试 flatten
-			std::function<bool(const std::shared_ptr<SymbolicExpr>&)> flatten_multiply;
+			std::function<bool(const std::shared_ptr<SymbolicExpr>&, std::shared_ptr<SymbolicExpr>)> flatten_multiply;
 			// 暂时只支持有理指数化简
 			// 键为底数的值，值为指数的值
 			// TODO: 这样可能需要额外判断双层根号问题，以及分母有理化问题
 			std::map<::Rational, ::Rational> base_ref;
 			std::map<::Rational, std::shared_ptr<SymbolicExpr>> exponent_ref;
 			std::vector<std::shared_ptr<SymbolicExpr>> result;
-			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
+			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr, std::shared_ptr<SymbolicExpr> pre_timing) -> bool {
 				if (expr->type == SymbolicExpr::Type::Multiply) {
 					for (auto &i : expr->operands) {
-						if (!flatten_multiply(i)) return false;
+						if (!flatten_multiply(i, pre_timing)) return false;
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
 					auto current = power_compatible(expr);
-					// TODO: Debug output:
-					std::cerr << "Converting " << expr->to_string() << " to " << current->to_string() << std::endl;
-					result.push_back(current);
-					return true;
+					if (!has_no_multiply_effect(pre_timing))	// 略微加快速度
+						current->operands[1] = SymbolicExpr::multiply(current->operands[1], pre_timing)->simplify();
+					if (current->operands[0]->type == SymbolicExpr::Type::Multiply) {
+						for (auto &i : current->operands[0]->operands) {
+							if (!flatten_multiply(i, current->operands[1])) return false;
+						}
+					} else {
+						// TODO: Debug output:
+						std::cerr << "Converting " << expr->to_string() << " to " << current->to_string() << std::endl;
+						result.push_back(current);
+						return true;
+					}
 				}
 				return false;
 			};
 			// 这样传递可能有性能问题
 			// TODO: Debug output:
 			std::cerr << "[Debug output] [2] Begin flat operation" << std::endl;
-			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this));
+			bool able = flatten_multiply(std::make_shared<SymbolicExpr>(*this), SymbolicExpr::number(1));
 			// TODO: Debug output:
 			std::cerr << "[Debug output] [2] End flat operation with " << able << std::endl;
 			if (able) {
