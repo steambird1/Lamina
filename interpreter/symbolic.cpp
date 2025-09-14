@@ -214,7 +214,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// TODO: 1 或 -1 乘以某个内容，直接返回另一边
 	// TODO: 加快运算速度，数字和 Multiply 相乘时，直接处理 Multiply 内的数字，不进入指数环节
 	auto has_no_multiply_effect = [](const std::shared_ptr<SymbolicExpr>& obj) -> bool {
-		return (obj->is_number() && obj->get_rational() == ::Rational(1));
+		return (obj->is_number() && obj->convert_rational() == ::Rational(1));
 	};
 	if (has_no_multiply_effect(left)) {
 		std::cerr << "[Debug output] left has no effect\n";
