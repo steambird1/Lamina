@@ -4,7 +4,10 @@
 #include <memory>
 #include <string>
 #include <variant>
-#include <vector>
+#include <cmath>
+#include "bigint.hpp"
+#include "rational.hpp"
+
 
 // 符号表达式系统
 // 支持精确的数学表达式，不进行数值近似
@@ -12,15 +15,16 @@
 class SymbolicExpr {
 public:
     enum class Type {
-        Number,     // 数字 (BigInt, Rational, int)
-        Sqrt,       // 平方根 √
-        Root,       // n次方根 √[n] TODO
-        Power,      // 幂次 ^
-        Multiply,   // 乘法 *
-        Add,        // 加法 +
-        Subtract,   // 减法 -
-        Divide,     // 除法 /
-        Variable    // 变量 (如 π, e)
+        Number,      // 数字 (BigInt, Rational, int)
+        Sqrt,        // 平方根 √
+        Root,        // n次方根 √[n]，未使用
+        Power,       // 幂次 ^
+        Multiply,    // 乘法 *
+        Add,         // 加法 +
+        Subtract,    // 减法 -，未使用
+        Divide,      // 除法 /，未使用
+        Variable     // 变量 (如 π, e)
+
     };
 
     Type type;
@@ -146,6 +150,15 @@ public:
         }
         throw std::runtime_error("Expression is not a Rational");
     }
+    ::Rational convert_rational() const {
+		if (!is_number()) {
+			throw std::runtime_error("Expression cannot be converted into Rational");
+		}
+		if (is_rational()) return get_rational();
+		else if (is_big_int()) return ::Rational(get_big_int());
+		else return ::Rational(get_int());
+	}
+	
 
     // 尝试计算数值（如果可能的话）
     double to_double() const;
