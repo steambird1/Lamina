@@ -46,7 +46,8 @@ jobs:
       - name: Set up build environment (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          brew install cmake ninja
+          brew uninstall cmake || brew install cmake
+          brew uninstall ninja || brew install ninja
 
       - name: Set up MSVC (Windows)
         if: matrix.os == 'windows-2025'

@@ -1,7 +1,7 @@
 #include "lexer.hpp"
+#include <algorithm>
 #include <cctype>
 #include <iostream>
-#include <algorithm>
 #include <map>
 
 static std::map<std::string, TokenType> keywords;
@@ -100,11 +100,11 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             while (j < src.size()) {
                 // 允许数字、单个小数点（仅一次）和下划线（作为分隔符）
                 if (isdigit(src[j])) {
-                    has_underscore = false;  // 重置下划线标志
+                    has_underscore = false; // 重置下划线标志
                     ++j;
                 } else if (src[j] == '.' && !has_dot) {
                     has_dot = true;
-                    has_underscore = false;  // 重置下划线标志
+                    has_underscore = false; // 重置下划线标志
                     ++j;
                 } else if (src[j] == '_' && !has_underscore && j > i && j + 1 < src.size() && isdigit(src[j + 1])) {
                     has_underscore = true;
@@ -117,15 +117,15 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             // 检查科学计数法（e或E）
             if (j < src.size() && (src[j] == 'e' || src[j] == 'E')) {
                 size_t e_pos = j;
-                ++j;  // 跳过'e'或'E'
+                ++j;    // 跳过'e'或'E'
 
                 // 检查指数部分的可选正负号
                 if (j < src.size() && (src[j] == '+' || src[j] == '-')) {
-                    ++j;  // 跳过符号
+                    ++j;    // 跳过符号
                 }
 
                 // 解析指数部分的数字（允许下划线）
-                has_underscore = false;  // 重置下划线标志
+                has_underscore = false; // 重置下划线标志
                 if (j < src.size() && isdigit(src[j])) {
                     while (j < src.size()) {
                         if (isdigit(src[j])) {

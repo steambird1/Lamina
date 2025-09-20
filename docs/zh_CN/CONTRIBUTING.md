@@ -10,7 +10,8 @@
 - 请先阅读 [README](/README.md) 了解项目的基本情况，在继续进行开发！
 - 本项目使用LGPL-2.1协议，请严格遵守本协议！
 
-## 项目结构：
+## 项目结构
+
 ```angular2html
 Lamina
 ├── assets
@@ -57,9 +58,10 @@ Lamina
 ├── compile-en.md
 ├── CONTRIUTING-CN.md
 ```
+
 总计： 5 文件夹, 38 文件。
 
-## 创建拉取请求:
+## 创建拉取请求
 
 ```angular2html
 1. Fork代码到你的仓库。
@@ -75,30 +77,36 @@ Lamina
 - 代码规范
 
 在编写拉取请求标题时，必须携带如以下标识， 主要分为这几种：
+
 ```angular2html
 1. [Feature]
 2. [Bug Fix]
 ```
+
 如果是针对某一个模块，请在创建拉取请求时，在标题中携带类型以及你的模块名称，例如：
+
 ```angular2html
 [Feature][stdio] 新增print函数对于文件流操作的支持
 ```
 
-## 有关库/标准库:
+## 有关库/标准库
 
 标准库的代码存放在`extensions/standard`目录下，每个文件对应一个模块，模块的名称就是文件的名称，且每个模块都要有对应的头文件，头文件内注册Lamina函数。
 
 在拓展层注册的Lamina变量均为全局变量。
 
-### 注册Lamina函数的方式： 
+### 注册Lamina函数的方式
 
 调用LAMINA_FUNC宏，例如：
+
 ```c++
 namespace lamina{
      LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 }
 ```
+
 其实，您也可以不用将函数注册到lamina命名空间下，而是直接注册，例如：
+
 ```c++
 LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 ```
@@ -114,9 +122,9 @@ LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 - 代码必须要确保一定的安全性。
 - 代码必须要符合Lamina拓展的风格。
 
-## !! 当你为Lamina编写其他库的时候，也亦是如此。
+## !! 当你为Lamina编写其他库的时候，也亦是如此
 
-## 模块解析：
+## 模块解析
 
 Lamina主要的核心模块有
 
@@ -133,6 +141,7 @@ Lamina主要的核心模块有
 让我们从0开始，讲解这些模块内的函数，以便于让你进入Lamina的库开发！
 
 在编写Lamina库中，最重要的便是```lamina.hpp```模块，此模块提供了Lamina库开发的一些基本的宏。
+
 ```c++
 // Source Code:
 #pragma once
@@ -234,6 +243,7 @@ struct global_var_##name##_registrar { \
 他们的宏的内部实现其实都大同小异，只不过对于参数数量的判断略有不同
 
 最终编译成动态库之后，他们的符号表像是这样：
+
 ```
 0000000000020edc T _Z10test_entryR11Interpreter
 ```
@@ -251,6 +261,7 @@ struct global_var_##name##_registrar { \
 ```LAMINA_NULL```宏用于操作Lamina中的空值数据类型
 
 可以使用```LAMINA_BOOL```等宏来直观操作Lamina函数的返回值，例如随机库当中的：
+
 ```c++
 Value randstr(const std::vector<Value> &args) {
      if (args.size() != 1 || !args[0].is_numeric()) {
@@ -286,6 +297,7 @@ Value randstr(const std::vector<Value> &args) {
 - ```LAMINA_GLOBAL_VAR```宏用于定义Lamina中的全局变量。
 
 这两个目前在标准库中还未使用，但是我们仍旧给出一个例子，便于开发：
+
 ```c++
 #include "lamina.hpp"
 
@@ -300,9 +312,11 @@ namespace lamina{
     LAMINA_FUNC(func_a, func_a, 0);
 }
 ```
+
 该例子主要展示了Lamina全局变量的注册方法和使用方法，在获取变量时需要传入一个解释器实例，和一个变量名，在注册全局变量的时候，需要传入一个变量名参数和值。
 
 ```L_ERR```宏用于在Lamina内部执行过程中抛出一个错误，此函数不做过多讲解，仅给使用示例：
+
 ```c++
 #include "lamina.hpp"
 
@@ -325,6 +339,7 @@ Lamina的解释器主要有这几个模块构成，他们共同支撑了Lamina�
 让我们先从```interpreter.cpp```的源文件进行分析。
 
 用于源码过长，这里只展示函数原型和头文件内容。
+
 ```c++
 #pragma once
 #include "lamina.hpp"
@@ -454,15 +469,18 @@ private:
 ```
 
 ```error_and_exit```此函数会打印错误信息并退出程序，他的具体实现如下：
+
 ```c++
 void error_and_exit(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
     exit(1);
 }
 ```
+
 该函数使用时需要传入一个错误信息字符串，该字符串会被打印出来，并且程序会退出。
 
 ```StackFrame```结构体存储了关于函数调用的追踪信息，他有这么几个成员变量：
+
 - ```function_name```：函数名
 - ```file_name```：文件名
 - ```line_number```：行号
@@ -526,6 +544,7 @@ void error_and_exit(const std::string& msg) {
 接下来，我们从解释器继续讲解，引入到Lamina对于数字处理的部分。
 
 首先，我们讲解大整数模块:
+
 ```c++
 #pragma once
 #include <string>
@@ -676,10 +695,10 @@ public:
 };
 ```
 
-
 `BigInt`提供了对于整形处理的更加安全的形式，避免了整形溢出的问题。
 
 在`BigInt`的内部，我们定义了两个成员变量：
+
 - `std::vector<int> digits` 用于存储大整数的每一位数字，低位在前。
 - `bool negative` 用于表示大整数的正负性，`true`表示负数，`false`表示正数。
 
@@ -694,6 +713,7 @@ public:
 无理数模块支持常见的无理数的精确表示，例如π、e等。
 
 在无理数模块当中，我们定义了一个enum类，用于表示无理数的类型，这里一共有四个类型，我们这边直接展示enum类的代码。
+
 ```c++
    enum class Type {
         SQRT,      // √n 形式
@@ -703,7 +723,9 @@ public:
         COMPLEX    // 复合形式 (a*√b + c*π + d*e + ...)
     };
 ```
+
 在私有成员变量里，我们定义了两个变量，用于表达根号下n的形式。
+
 ```c++
     // 对于 √n 形式：coefficient * √radicand
     double coefficient;  // 系数
@@ -711,6 +733,7 @@ public:
 ```
 
 对于不同形式，无理数模块也做了针对性处理，比如根号下n的形式，使用coefficient * √radicand，对于复合形式，我们采用了系数映射的方式：
+
 ```c++
     std::map<std::string, double> coefficients;
     double constant_term;  // 常数项
@@ -747,4 +770,3 @@ public:
 在库加载模块中，我们使用了`dlopen`函数来加载动态链接库，使用`dlsym`函数来查找符号，使用`dlclose`函数来关闭动态链接库。
 
 `findSymbol`函数接受一个符号名作为参数，返回该符号的地址。
-

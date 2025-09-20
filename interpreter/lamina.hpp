@@ -12,10 +12,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
+#include <stdexcept>
 
 // Lamina 版本号
-#define LAMINA_VERSION "0.1.0"
+#include "version.hpp"
+// Lamina 帮助文本
+#include "help_text.hpp"
 
 /*
     对LAMINA核心资源操作的头文件
@@ -96,12 +98,6 @@ constexpr bool always_false = false;
 #define LAMINA_GET_VAR(interpreter, var) \
     interpreter.get_variable(#var)
 
-#define L_ERR(msg)                                  \
-    do {                                            \
-        std::cerr << "Error: " << msg << std::endl; \
-        std::exit(EXIT_FAILURE);                    \
-    } while (0)
-
 #define LAMINA_GLOBAL_VAR(name, value)                                   \
     void global_var_##name##_entry(Interpreter& interpreter) {           \
         interpreter.set_global_variable(#name, Value(value));            \
@@ -113,3 +109,8 @@ constexpr bool always_false = false;
             }                                                            \
         } global_var_##name##_instance;                                  \
     }
+
+
+inline void L_ERR(const std::string& msg) {
+    throw StdLibException(msg);
+}

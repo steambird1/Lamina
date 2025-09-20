@@ -3,59 +3,59 @@
 # 核心解释器相关
 "core":
   - changed-files:
-    - any-glob-to-any-file: 'interpreter/**/*'
+      - any-glob-to-any-file: "interpreter/**/*"
 
 # 扩展/插件相关
 "extensions":
   - changed-files:
-    - any-glob-to-any-file: 'extensions/**/*'
+      - any-glob-to-any-file: "extensions/**/*"
 
 # 文档相关
 "documentation":
   - changed-files:
-    - any-glob-to-any-file: 
-      - 'documents/**/*'
-      - '*.md'
-      - 'README*'
+      - any-glob-to-any-file:
+          - "documents/**/*"
+          - "*.md"
+          - "README*"
 
 # 构建系统相关
 "build":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'CMakeLists.txt'
-      - '**/CMakeLists.txt'
-      - '.github/workflows/**/*'
+      - any-glob-to-any-file:
+          - "CMakeLists.txt"
+          - "**/CMakeLists.txt"
+          - ".github/workflows/**/*"
 
 # 示例相关
 "examples":
   - changed-files:
-    - any-glob-to-any-file: 
-      - 'examples/**/*'
-      - 'interpreter/examples/**/*'
-      - '**/*.lamina'
-      - '**/*.lm'
+      - any-glob-to-any-file:
+          - "examples/**/*"
+          - "interpreter/examples/**/*"
+          - "**/*.lamina"
+          - "**/*.lm"
 
 # 测试相关
 "tests":
   - changed-files:
-    - any-glob-to-any-file: 
-      - 'tests/**/*'
-      - 'test/**/*'
-      - '**/*test*'
-      - 'test_*.lamina'
-      - 'test_*.lm'
+      - any-glob-to-any-file:
+          - "tests/**/*"
+          - "test/**/*"
+          - "**/*test*"
+          - "test_*.lamina"
+          - "test_*.lm"
 
 # 配置文件相关
 "config":
   - changed-files:
-    - any-glob-to-any-file:
-      - '.gitignore'
-      - '.github/**/*'
-      - 'scripts/**/*'
+      - any-glob-to-any-file:
+          - ".gitignore"
+          - ".github/**/*"
+          - "scripts/**/*"
 
 # 依赖相关
 "dependencies":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'external/**/*'
-      - '.gitmodules'
+      - any-glob-to-any-file:
+          - "external/**/*"
+          - ".gitmodules"

@@ -1,0 +1,10 @@
+languages:
+  Lamina:  # 语言名
+    type: programming  # 类型：programming（编程语言）、markup（标记语言）等
+    color: "#123456"   # 可选，GitHub 显示的语言颜色（随便填一个十六进制色值）
+    filenames:
+      - "*.lm"
+    extensions:
+      - .lm  # 绑定 .lm 后缀
+    aliases:  # 可选，语言别名
+      - lamina

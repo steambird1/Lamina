@@ -55,16 +55,19 @@
 ## 🤖 自动化功能
 
 ### 自动标签系统
+
 - 根据文件变更路径自动添加相关标签
 - 根据issue/PR内容智能添加标签
 - 标记破坏性变更
 
 ### PR验证
+
 - 检查PR描述完整性
 - 验证必要信息是否填写
 - 自动欢迎首次贡献者
 
 ### Issue管理
+
 - 自动欢迎新issue
 - 为求助类issue提供资源链接
 - 管理长期无活动的issue
@@ -98,6 +101,7 @@
 ## 📋 标签说明
 
 ### 自动标签
+
 - `bug` - Bug报告
 - `enhancement` - 功能请求
 - `documentation` - 文档相关
@@ -108,11 +112,13 @@
 - `breaking-change` - 破坏性变更
 
 ### 优先级标签
+
 - `priority:high` - 高优先级
 - `priority:medium` - 中等优先级
 - `priority:low` - 低优先级
 
 ### 状态标签
+
 - `good first issue` - 适合新手
 - `stale` - 长期无活动
 - `pinned` - 重要issue（不会被自动关闭）

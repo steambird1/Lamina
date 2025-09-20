@@ -155,7 +155,6 @@ int argv_parser(const int argc, const char* const argv[]) {
     }
 
     if (!is_valid && arguments.size() == 2) {
-        // 如果不匹配任何指令, 默认执行argv[1]
         // if argv[1] not in introduction then run the argv[1](as a path)
         const std::string path = argv[1];
         arguments[1] = "run";
@@ -183,18 +182,14 @@ int argv_parser(const int argc, const char* const argv[]) {
         try {
             return repl();
         } catch (const CtrlCException&) {
-            // 捕获Ctrl+C异常，友好提示后退出
             // Catch Ctrl+C exception and exit gracefully
-            std::cout << "\n程序收到 Ctrl+C 信号，已安全退出。"
-                      << "\nProgram received Ctrl+C signal, exited safely." << std::endl;
+            std::cout << "Program received Ctrl+C signal, exited safely." << std::endl;
             return 0;
         } catch (const std::exception& e) {
-            std::cerr << "程序发生异常: " << e.what()
-                      << "\nProgram exception occurred: " << e.what() << std::endl;
+            std::cerr << "Program exception occurred: " << e.what() << std::endl;
             return 1;
         } catch (...) {
-            std::cerr << "程序发生未知异常"
-                      << "\nProgram encountered an unknown exception." << std::endl;
+            std::cerr << "Program encountered an unknown exception." << std::endl;
             return 1;
         }
     }
@@ -206,99 +201,134 @@ int argv_parser(const int argc, const char* const argv[]) {
 
 
 int repl() {
-    std::cout << "Lamina REPL. Press Ctrl+C or :exit to exit." << std::endl;
+    std::cout << "Lamina REPL v" << LAMINA_VERSION << ".\nPress Ctrl+C or :exit to exit." << std::endl;
     std::cout << "Type :help for help." << std::endl;
 
     Interpreter interpreter;
-    int lineno = 1;         // 记录当前输入的行号，用于错误提示
+    int lineno = 1; // 记录当前输入的行号，用于错误提示
 
-    // REPL主循环
+    std::string code_buffer;
+    int brace_level = 0;
+
     while (true) {
         try {
-            // 根据终端是否支持颜色，设置不同的提示符样式
             // Set prompt style based on whether the terminal supports color
-            std::string prompt = Interpreter::supports_colors()
-                                         ? "\033[1;32m> \033[0m "// 带绿色高亮的提示符（ANSI转义序列）
-                                         : "> ";                 // 普通提示符
+            std::string prompt;
+            if (brace_level > 0) {
+                prompt = Interpreter::supports_colors()
+                                 ? "\033[1;32m. \033[0m "   // 多行输入下等待输入的提示符
+                                 : ". ";
+            } else {
+                prompt = Interpreter::supports_colors()
+                                 ? "\033[1;32m> \033[0m "   // 带绿色高亮的提示符（ANSI转义序列）
+                                 : "> ";                    // 普通提示符
+            }
 
-            std::string line;// 存储用户输入的一行内容
+            std::string line = repl_readline(prompt);
 
-            // 读取用户输入
-            // Read user input
-            try {
-                line = repl_readline(prompt);
-            } catch (const CtrlCException&) {
+            if (line == "\x03") {   // Ctrl+C interrupt
+                if (brace_level > 0) {
+                    code_buffer.clear();
+                    brace_level = 0;
+                    std::cout << "\nKeyboardInterrupt" << std::endl;
+                    continue;
+                }
+                std::cout << "\n";
                 break;
             }
 
-            // 处理EOF（如用户输入Ctrl+D），退出循环
-            // Handle EOF (e.g., user input Ctrl+D) and exit loop
-            if (std::cin.eof()) break;
+            bool execute_now = false;
+            if (line == "\x04") {   // Ctrl+D (EOF)
+                if (brace_level > 0) {
+                    // In multi-line mode, Ctrl+D means end of input, execute code immediately
+                    execute_now = true;
+                } else {
+                    // On an empty line at the main prompt, Ctrl+D exits
+                    break;
+                }
+            } else {
+                code_buffer += line + "\n";
 
-            // 忽略空行输入
-            // Ignore empty input lines
-            if (line.empty()) {
+                // Simply check if the code block is complete by counting braces
+                for (char c: line) {
+                    if (c == '{') {
+                        brace_level++;
+                    } else if (c == '}') {
+                        brace_level--;
+                    }
+                }
+
+                if (brace_level <= 0) {
+                    execute_now = true;
+                }
+            }
+
+            if (!execute_now) {
                 ++lineno;
                 continue;
             }
 
-            // 处理:exit命令：退出REPL
-            // Handle :exit command: exit REPL
-            if (line == ":exit") {
-                break;
-            }
+            brace_level = 0;    // Reset
 
-            // 处理:help命令：显示帮助信息
-            // Handle :help command: show help message
-            if (line == ":help") {
-                std::cout << "Lamina解释器命令 / Lamina Interpreter Commands:\n";
-                std::cout << "  :exit - 退出解释器 / Exit interpreter\n";
-                std::cout << "  :help - 显示此帮助信息 / Show this help message\n";
-                std::cout << "  :vars - 显示所有变量 / Show all variables\n";
-                std::cout << "  :clear - 清空屏幕 / Clear screen\n";
+            if (code_buffer.empty() || code_buffer == "\n") {
                 ++lineno;
+                code_buffer.clear();
                 continue;
             }
 
-            // 处理:vars命令：打印当前所有变量
-            // Handle :vars command: print all current variables
-            if (line == ":vars") {
-                interpreter.printVariables();
-                ++lineno;
-                continue;
-            }
+            std::string line_to_process = code_buffer;
+            code_buffer.clear();
 
-            // 处理:clear命令：清空屏幕（跨平台实现）
-            // Handle :clear command: clear screen (cross-platform implementation)
-            if (line == ":clear") {
+            // Only process REPL commands in single-line mode
+            if (brace_level == 0) {
+                std::string trimmed_line = line;
+                trimmed_line.erase(0, trimmed_line.find_first_not_of(" \t\n\r"));
+                trimmed_line.erase(trimmed_line.find_last_not_of(" \t\n\r") + 1);
+
+                if (trimmed_line == ":exit") {
+                    break;
+                }
+                if (trimmed_line == ":help") {
+                    std::cout << "Lamina Interpreter Commands:\n";
+                    std::cout << "  :exit - Exit interpreter\n";
+                    std::cout << "  :help - Show this help message\n";
+                    std::cout << "  :vars - Show all variables\n";
+                    std::cout << "  :clear - Clear screen\n";
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":vars") {
+                    interpreter.printVariables();
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":clear") {
 #ifdef _WIN32
-                auto result = system("cls");// Windows下使用cls命令
+                    auto result = system("cls");    // Windows下使用cls命令
 #else
-                auto result = system("clear");// Linux/macOS下使用clear命令
+                    auto result = system("clear");  // Linux/macOS下使用clear命令
 #endif
-                (void) result;// 显式忽略system函数的返回值，避免编译器警告
-                ++lineno;
-                continue;
-            }
-
-            // 预留:fns命令（暂未实现）
-            // Reserved :fns command (not implemented yet)
-            if (line == ":fns") {
-                ++lineno;
-                continue;
+                    (void) result;  // 显式忽略system函数的返回值，避免编译器警告
+                    ++lineno;
+                    continue;
+                }
+                if (trimmed_line == ":fns") {
+                    ++lineno;
+                    continue;
+                }
             }
 
             // frontend
-            auto tokens = Lexer::tokenize(line);
+            auto tokens = Lexer::tokenize(line_to_process);
             auto ast = Parser::parse(tokens);
 
-            // 检查AST是否生成成功
+
             // Check if AST generation succeeded
             if (!ast) {
                 print_traceback("<stdin>", lineno);
                 return 1;
             }
-            // 仅支持BlockStmt类型的AST（代码块语句）
+
             // Only support AST of type BlockStmt (block statement)
             auto* block = dynamic_cast<BlockStmt*>(ast.get());
             if (!block) return 1;
@@ -306,8 +336,8 @@ int repl() {
             interpreter.save_repl_ast(std::move(ast));
 
             try {
-                 // 执行代码块中的每个语句
-                 // Execute each statement in the block
+
+                // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
                         interpreter.execute(stmt);
@@ -315,33 +345,30 @@ int repl() {
                         interpreter.print_stack_trace(re, true);
                         break;
                     } catch (const ReturnException&) {
-                         Interpreter::print_warning(
-                         "Return语句不能在函数外使用（第" + std::to_string(lineno) + "行）" +
-                         "Return statement used outside function (line " +
-                         std::to_string(lineno) + ")",
-                         true);
+                        Interpreter::print_warning(
+                                "Return statement used outside function (line " +
+                                        std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
-                    // 捕获break语句在循环外使用的异常
+
                     // Catch break statement used outside loop
                     catch (const BreakException&) {
                         Interpreter::print_warning(
-                             "Break语句不能在循环外使用（第" + std::to_string(lineno) + "行）"+
-                             "Break statement used outside loop (line " + std::to_string(lineno) + ")",
-                              true);
+                                "Break statement used outside loop (line " + std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
-                    // 捕获continue语句在循环外使用的异常
+
                     // Catch continue statement used outside loop
                     catch (const ContinueException&) {
                         Interpreter::print_warning(
-                        "Continue语句不能在循环外使用（第" + std::to_string(lineno) + "行）"
-                        +"Continue statement used outside loop (line " +
-                        std::to_string(lineno) + ")",
-                        true);
+                                "Continue statement used outside loop (line " +
+                                        std::to_string(lineno) + ")",
+                                true);
                         break;
                     }
-                    // 捕获其他标准异常
+
                     // Catch other standard exceptions
                     catch (const std::exception& e) {
                         Interpreter::print_error(e.what(), true);
@@ -349,36 +376,37 @@ int repl() {
                     }
                 }
             }
-            // 捕获代码块执行过程中的顶层运行时错误
+
             // Catch top-level runtime errors during block execution
             catch (const RuntimeError& re) {
                 interpreter.print_stack_trace(re, true);
             }
-            // 捕获从内层循环逃逸的return异常
+
+            catch (StdLibException) {
+                continue;
+            }
+
             // Catch return exceptions escaping the inner loop
             catch (const ReturnException&) {
                 Interpreter::print_warning(
-                "Return语句不能在函数外使用\nReturn statement used outside function",
-                true);
+                        "Return statement used outside function",
+                        true);
             }
-            // 捕获所有其他未预料的异常
             // Catch all other unexpected exceptions
             catch (...) {
-                Interpreter::print_error("发生未知错误\nUnknown error occurred", true);
+                Interpreter::print_error("Unknown error occurred", true);
             }
         }
-        // 捕获并处理REPL循环中的所有异常，确保REPL不崩溃
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(
-            "REPL环境捕获到异常，但已恢复\nREPL environment caught exception, but recovered",
-            true);
+                    "REPL environment caught exception, but recovered",
+                    true);
         }
 
 
-        ++lineno;// 行号递增
+        ++lineno;   // 行号递增
     }
 
     return 0;
 }
-

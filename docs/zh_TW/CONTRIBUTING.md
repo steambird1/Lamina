@@ -8,7 +8,8 @@
 - 請先閱讀 [README](README.md) 以瞭解專案的基本情況，再繼續進行開發！
 - 本專案採用 LGPL-2.1 協議，請務必遵守相關規定！
 
-## 專案結構：
+## 專案結構
+
 ```angular2html
 Lamina
 ├── assets
@@ -55,9 +56,10 @@ Lamina
 ├── compile-en.md
 ├── CONTRIUTING-CN.md
 ```
+
 總計： 5 資料夾, 38 檔案。
 
-## 創建 Pull Request:
+## 創建 Pull Request
 
 ```angular2html
 1. 將程式碼 Fork 到你的倉庫。
@@ -73,30 +75,36 @@ Lamina
 - 程式碼規範
 
 在編寫 PR 標題時，必須包含如下標識，主要分為如下類型：
+
 ```angular2html
 1. [Feature]
 2. [Bug Fix]
 ```
+
 如果是針對某個模組，請在 PR 標題中同時標註類型及模組名稱，例如：
+
 ```angular2html
 [Feature][stdio] 新增 print 函式對文件流操作的支援
 ```
 
-## 關於庫/標準庫:
+## 關於庫/標準庫
 
 標準庫程式碼存放於 `extensions/standard` 目錄下，每個檔案對應一個模組，模組名稱即檔案名稱，且每個模組都需有對應的標頭檔，在標頭檔內註冊 Lamina 函式。
 
 在擴充層註冊的 Lamina 變數皆為全域變數。
 
-### Lamina 函式註冊方式：
+### Lamina 函式註冊方式
 
 呼叫 LAMINA_FUNC 巨集，例如：
+
 ```c++
 namespace lamina{
      LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 }
 ```
+
 事實上，也可以不將函式註冊於 lamina 命名空間下，直接註冊，例如：
+
 ```c++
 LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 ```
@@ -112,9 +120,9 @@ LAMINA_FUNC("lamina_func_name", cpp_func_name, arg_counts);
 - 程式碼必須確保安全性。
 - 程式碼必須符合 Lamina 擴充風格。
 
-## !! 為 Lamina 編寫其他庫時亦應遵循上述規範。
+## !! 為 Lamina 編寫其他庫時亦應遵循上述規範
 
-## 模組解析：
+## 模組解析
 
 Lamina 主要核心模組有
 
@@ -131,6 +139,7 @@ Lamina 主要核心模組有
 讓我們從零開始，逐步講解這些模組內的函式，幫助你進入 Lamina 庫開發！
 
 編寫 Lamina 庫時，最重要的是 `lamina.hpp` 模組，此模組提供 Lamina 庫開發的基本巨集。
+
 ```c++
 // 原始碼:
 #pragma once
@@ -232,6 +241,7 @@ struct global_var_##name##_registrar { \
 這些巨集的內部實作大同小異，只是參數數量判斷略有不同。
 
 編譯成動態庫後，符號表會類似如下：
+
 ```
 0000000000020edc T _Z10test_entryR11Interpreter
 ```
@@ -249,6 +259,7 @@ struct global_var_##name##_registrar { \
 `LAMINA_NULL` 巨集用於操作 Lamina 空值型態資料
 
 可利用上述巨集直觀地操作 Lamina 函式回傳值，如隨機庫中：
+
 ```c++
 Value randstr(const std::vector<Value> &args) {
      if (args.size() != 1 || !args[0].is_numeric()) {
@@ -284,6 +295,7 @@ Value randstr(const std::vector<Value> &args) {
 - `LAMINA_GLOBAL_VAR` 巨集用於定義 Lamina 全域變數。
 
 目前標準庫尚未使用這兩者，但仍提供範例以供開發參考：
+
 ```c++
 #include "lamina.hpp"
 
@@ -298,9 +310,11 @@ namespace lamina{
     LAMINA_FUNC(func_a, func_a, 0);
 }
 ```
+
 此範例展示了 Lamina 全域變數的註冊與使用，在取得變數時需傳入解譯器實例及變數名稱，註冊時則需指定名稱與值。
 
 `L_ERR` 巨集用於在 Lamina 執行過程中丟出錯誤，例：
+
 ```c++
 #include "lamina.hpp"
 
@@ -323,6 +337,7 @@ Lamina 解譯器主要由以下模組構成，共同支援 Lamina 在數學運�
 先介紹 `interpreter.cpp` 原始檔案分析。
 
 因篇幅關係僅展示函式原型與標頭檔內容。
+
 ```c++
 #pragma once
 #include "lamina.hpp"
@@ -452,15 +467,18 @@ private:
 ```
 
 `error_and_exit` 函式會打印錯誤資訊並結束程式，實作如下：
+
 ```c++
 void error_and_exit(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
     exit(1);
 }
 ```
+
 呼叫時需傳入錯誤訊息字串，該字串會被打印並終止程式。
 
 `StackFrame` 結構儲存函式呼叫追蹤資訊，有以下成員：
+
 - `function_name`：函式名稱
 - `file_name`：檔案名稱
 - `line_number`：行號
@@ -468,6 +486,7 @@ void error_and_exit(const std::string& msg) {
 這些資訊在程式運行錯誤時會打印，協助開發定位問題。
 
 Lamina 有多種例外類別，例如：
+
 - `RuntimeError` 繼承自 `std::exception`，表示執行時錯誤。
 - `ReturnException` 表示 return 語句例外。
 - `BreakException` 表示 break 例外。
@@ -521,6 +540,7 @@ Interpreter 類定義多種方法，處理運算、控制台內容、擴充函�
 接下來介紹 Lamina 數字處理部分。
 
 首先介紹大整數模組:
+
 ```c++
 #pragma once
 #include <string>
@@ -673,6 +693,7 @@ public:
 `BigInt` 提供更安全的整數處理方式，避免溢位。
 
 內部定義兩個成員：
+
 - `std::vector<int> digits` 存儲大整數每一位（低位在前）。
 - `bool negative` 表示正負，`true` 為負。
 
@@ -687,6 +708,7 @@ public:
 無理數模組支援精確表示 π、e 等常見無理數。
 
 定義如下 enum 類型：
+
 ```c++
    enum class Type {
         SQRT,      // √n 形式
@@ -696,7 +718,9 @@ public:
         COMPLEX    // 複合形式 (a*√b + c*π + d*e + ...)
     };
 ```
+
 私有成員如下，用於 √n 形式：
+
 ```c++
     // 對 √n：coefficient * √radicand
     double coefficient;  // 系數
@@ -704,6 +728,7 @@ public:
 ```
 
 複合形式則採系數映射方式：
+
 ```c++
     std::map<std::string, double> coefficients;
     double constant_term;  // 常數項

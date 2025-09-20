@@ -146,13 +146,13 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
-    }else if (auto* a = dynamic_cast<StructDeclStmt*>(node.get())) {
+    } else if (auto* a = dynamic_cast<StructDeclStmt*>(node.get())) {
         std::vector<std::pair<std::string, Value>> struct_init_val{};
-        for (const auto& [n,e]: a->init_vec) {
+        for (const auto& [n, e]: a->init_vec) {
             auto val = eval(e.get());
             struct_init_val.emplace_back(n, val);
         }
-        set_variable(a->name,new_lstruct(struct_init_val));
+        set_variable(a->name, new_lstruct(struct_init_val));
     } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
             error_and_exit("Null condition in if statement");
@@ -243,6 +243,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 // std::cerr << "DEBUG: Executing expression statement" << std::endl;
                 Value result = eval(exprstmt->expr.get());
                 // std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
+            } catch (const StdLibException& e){
+                throw StdLibException(e.what());
             } catch (const std::exception& e) {
                 std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
             } catch (...) {
@@ -251,7 +253,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         } else {
             error_and_exit("Empty expression statement");
         }
-    } else if (auto *nullstmt = dynamic_cast<NullStmt*>(node.get())) {
+    } else if (auto* nullstmt = dynamic_cast<NullStmt*>(node.get())) {
         (void) nullstmt;
     }
 }
@@ -600,51 +602,24 @@ void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) 
 }
 
 bool Interpreter::supports_colors() {
-    static bool checked = false;
-    static bool colors_supported = false;
-
-    if (!checked) {
-        checked = true;
-
-        // Check for NO_COLOR environment variable (universal standard)
-        if (getenv("NO_COLOR") != nullptr) {
-            colors_supported = false;
-            return colors_supported;
-        }
-
-#ifdef _WIN32
-        // On Windows, check if we're in a modern terminal that supports ANSI escape codes
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD mode;
-        if (GetConsoleMode(hConsole, &mode)) {
-            // Check if ENABLE_VIRTUAL_TERMINAL_PROCESSING is available (Windows 10+)
-            colors_supported = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
-            if (!colors_supported) {
-                // Try to enable it
-                SetConsoleMode(hConsole, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-                if (GetConsoleMode(hConsole, &mode)) {
-                    colors_supported = (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
-                }
-            }
-        }
-
-        // Also check if output is redirected
-        if (colors_supported && _isatty(_fileno(stderr)) == 0) {
-            colors_supported = false;// Output is redirected, don't use colors
-        }
-#else
-        // On Unix-like systems, check if stderr is a terminal and TERM is set
-        colors_supported = isatty(STDERR_FILENO) && getenv("TERM") != nullptr;
-
-        // Additional check for specific terminal types that don't support colors
-        const char* term = getenv("TERM");
-        if (term && (strcmp(term, "dumb") == 0 || strcmp(term, "unknown") == 0)) {
-            colors_supported = false;
-        }
-#endif
+    const bool is_terminal = isatty(fileno(stdout)) != 0;
+    if (!is_terminal) {
+        return false; // 非终端环境不支持颜色
     }
 
-    return colors_supported;
+    // 检查环境变量, 部分终端通过 TERM 标记支持颜色
+    const char* term = getenv("TERM");
+    if (term != nullptr) {
+        const std::string term_str(term);
+        // 常见支持颜色的终端类型
+        if (term_str == "dumb") { // "dumb" 终端不支持颜色
+            return false;
+        }
+        // 其他如 xterm、linux、vt100 等通常支持颜色
+        return true;
+    }
+
+    return true;
 }
 
 void Interpreter::print_error(const std::string& message, bool use_colors) {

@@ -7,9 +7,11 @@
 </div>
 
 ## 概述
+
 Lamina 支持通过动态库（DLL/SO）模块扩展功能。模块系统采用现代化设计，提供类型安全的跨平台API，支持命名空间管理和函数注册机制。
 
 ## 项目结构
+
 ```
 Lamina/
 ├── interpreter/          # 核心解释器
@@ -32,12 +34,14 @@ Lamina/
 ## 模块API概述
 
 ### 核心特性
+
 - **命名空间支持**：每个模块拥有独立的命名空间，避免函数名冲突
 - **类型安全**：统一的 `LaminaValue` 类型系统，支持基本数据类型
 - **跨平台兼容**：使用 `LAMINA_EXPORT` 和 `LAMINA_CALL` 宏确保不同平台兼容性
 - **动态加载**：运行时加载模块，无需重新编译解释器
 
 ### 数据类型系统
+
 ```cpp
 // 支持的值类型
 typedef enum {
@@ -61,6 +65,7 @@ typedef struct {
 ```
 
 ### 模块接口结构
+
 ```cpp
 // 模块函数签名
 typedef LaminaValue (LAMINA_CALL *LaminaFunction)(const LaminaValue* args, int argc);
@@ -90,6 +95,7 @@ typedef struct {
 ## 创建第一个模块
 
 ### 1. 最简单的模块示例
+
 以下是一个完整的最小模块实现（参考 `extensions/minimal/ultra_minimal.cpp`）：
 
 ```cpp
@@ -140,6 +146,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 ### 2. CMakeLists.txt 配置
+
 ```cmake
 # 最小模块构建配置
 cmake_minimum_required(VERSION 3.10)
@@ -205,7 +212,9 @@ target("minimal")
 ## 构建和使用模块
 
 ### 构建模块
+
 #### 1. 使用 cmake 构建
+
 ```bash
 # 配置构建
 cmake -B build -DCMAKE_BUILD_TYPE=Debug .
@@ -215,12 +224,15 @@ cmake --build build --config Debug --parallel
 
 # 模块将输出到：build/Debug/minimal.dll (Windows) 或 build/Debug/libminimal.so (Linux)
 ```
+
 #### 2. 使用 xmake 构建
+
 ```bash
 xmake
 ```
 
 ### 在 Lamina 脚本中使用模块
+
 ```lamina
 // 加载模块
 include "minimal.dll";
@@ -234,6 +246,7 @@ print("Hello result: " + hello_result);  // 输出: Hello result: 100
 ```
 
 ### 运行示例
+
 ```bash
 # 确保模块文件可访问
 cd build/Debug
@@ -245,6 +258,7 @@ cd build/Debug
 ## 高级模块开发
 
 ### 参数处理和类型检查
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args, int argc) {
     LaminaValue result = {0};
@@ -274,6 +288,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args,
 ```
 
 ### 字符串处理
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, int argc) {
     static char buffer[512];  // 静态缓冲区确保生命周期
@@ -295,6 +310,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, 
 ```
 
 ### 错误处理模式
+
 ```cpp
 // 返回错误信息的统一模式
 static LaminaValue make_error(const char* message) {
@@ -316,12 +332,14 @@ static LaminaValue make_success_int(int value) {
 ## 最佳实践
 
 ### 1. 模块设计原则
+
 - **单一职责**：每个模块专注于特定功能领域
 - **命名空间清晰**：使用简洁且描述性的命名空间名称
 - **函数命名**：使用动词描述函数功能，保持一致性
 - **版本管理**：使用语义化版本号（major.minor.patch）
 
 ### 2. 代码规范
+
 ```cpp
 // 好的函数命名示例
 {"calculate", math_calculate, "Calculate mathematical expression"},
@@ -334,18 +352,21 @@ static LaminaValue make_success_int(int value) {
 ```
 
 ### 3. 错误处理策略
+
 - 始终验证参数数量和类型
 - 返回有意义的错误消息
 - 使用一致的错误格式
 - 避免程序崩溃，优雅处理异常情况
 
 ### 4. 内存安全
+
 - 使用静态缓冲区或全局变量存储返回的字符串
 - 避免返回局部变量指针
 - 使用安全的字符串函数（`snprintf`、`strncpy`）
 - 确保缓冲区大小足够且不会溢出
 
 ### 5. 跨平台兼容性
+
 - 使用提供的 `LAMINA_EXPORT` 和 `LAMINA_CALL` 宏
 - 避免平台特定的数据类型或函数
 - 测试多个平台和编译器
@@ -355,7 +376,9 @@ static LaminaValue make_success_int(int value) {
 ### 常见问题和解决方案
 
 #### 1. 模块加载失败
+
 **问题**：`ERROR: Module not loaded`
+
 ```cpp
 // 检查项：
 // - DLL文件是否存在于正确位置
@@ -364,12 +387,15 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解决方案**：
+
 - 确保模块文件在 `build/Debug/` 目录
 - 检查文件扩展名（Windows: `.dll`, Linux: `.so`）
 - 使用依赖工具检查缺失的动态库
 
 #### 2. 函数未找到
+
 **问题**：`ERROR: Function 'funcname' not found in module`
+
 ```cpp
 // 检查项：
 // - 函数是否正确注册在 functions 数组中
@@ -378,23 +404,29 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解决方案**：
+
 - 验证 `LaminaFunctionEntry` 数组中的函数名
 - 确认调用时使用正确的命名空间前缀
 - 检查 `function_count` 是否正确
 
 #### 3. 命名空间不匹配
+
 **问题**：`ERROR: Namespace mismatch`
+
 ```cpp
 // 在脚本中：include "minimal.dll"; minimal.test();
 // 在模块中：namespace_name = "different_name"
 ```
 
 **解决方案**：
+
 - 确保模块的 `namespace_name` 与调用时使用的前缀一致
 - 建议命名空间名与文件名保持一致
 
 #### 4. 编译错误
+
 **问题**：编译时出现链接错误或符号未定义
+
 ```cpp
 // 常见原因：
 // - 缺少 LAMINA_EXPORT 宏
@@ -403,6 +435,7 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **解决方案**：
+
 - 确保所有导出函数使用 `LAMINA_EXPORT` 和 `LAMINA_CALL`
 - 检查 `module_api.hpp` 的包含路径
 - 验证 CMake 配置正确
@@ -410,6 +443,7 @@ static LaminaValue make_success_int(int value) {
 ### 调试技巧
 
 #### 1. 添加调试输出
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, int argc) {
     #ifdef _DEBUG
@@ -424,6 +458,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, in
 ```
 
 #### 2. 模块加载验证
+
 ```cpp
 LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
     printf("Module initializing: %s v%s\n", 
@@ -434,6 +469,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 #### 3. 使用系统工具
+
 - **Windows**: 使用 `dumpbin /exports module.dll` 查看导出符号
 - **Linux**: 使用 `nm -D module.so` 或 `objdump -T module.so`
 - **调试器**: 使用 GDB (Linux) 或 Visual Studio Debugger (Windows)
@@ -441,15 +477,18 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ## 示例和参考
 
 ### 完整示例模块
+
 查看项目中的示例模块获取完整实现：
 
 #### minimal 模块 (`extensions/minimal/`)
+
 - **文件**: `ultra_minimal.cpp`
 - **功能**: 最基础的模块示例
 - **函数**: `test()`, `hello()`
 - **用途**: 学习模块开发基础
 
 #### standard 模块 (`extensions/standard/`)
+
 - **array.cpp**: 数组操作函数
 - **math.cpp**: 数学计算函数
 - **stdio.cpp**: 输入输出函数
@@ -458,15 +497,18 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 - **sockets.cpp**: 网络通信功能
 
 ### 快速开始模板
+
 创建新模块的完整流程：
 
 1. **创建目录结构**
+
 ```bash
 mkdir extensions/mymodule
 cd extensions/mymodule
 ```
 
 2. **创建源文件 (mymodule.cpp)**
+
 ```cpp
 #include "../../interpreter/module_api.hpp"
 
@@ -493,6 +535,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 3. **创建构建文件 (CMakeLists.txt)**
+
 ```cmake
 add_library(mymodule SHARED mymodule.cpp)
 set_target_properties(mymodule PROPERTIES
@@ -503,11 +546,13 @@ set_target_properties(mymodule PROPERTIES
 
 4. **添加到主构建系统**
 在主 `CMakeLists.txt` 中添加：
+
 ```cmake
 add_subdirectory(extensions/mymodule)
 ```
 
 5. **构建和测试**
+
 ```bash
 cmake --build build --config Debug
 cd build/Debug
@@ -517,6 +562,7 @@ cd build/Debug
 ### API 参考快查
 
 #### 类型定义
+
 ```cpp
 LAMINA_TYPE_NULL     // 空值
 LAMINA_TYPE_BOOL     // 布尔值
@@ -526,15 +572,16 @@ LAMINA_TYPE_STRING   // 字符串
 ```
 
 #### 宏定义
+
 ```cpp
 LAMINA_EXPORT        // 导出函数声明
 LAMINA_CALL          // 调用约定
 ```
 
 #### 必需函数
+
 ```cpp
 lamina_module_init() // 模块初始化入口点
 ```
 
 ---
-

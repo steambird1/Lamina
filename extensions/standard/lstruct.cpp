@@ -21,7 +21,7 @@ lStruct::~lStruct() = default;
 
 // 查找键对应的节点（返回nullptr表示未找到）
 std::shared_ptr<Node> lStruct::find(const std::string& key) const {
-    if (buckets_.empty()) return nullptr; // 桶数组未初始化时直接返回
+    if (buckets_.empty()) return nullptr;   // 桶数组未初始化时直接返回
 
     const size_t hash = hash_string(key);
     const size_t bucket_idx = getBucketIndex(hash);
@@ -39,9 +39,9 @@ std::shared_ptr<Node> lStruct::find(const std::string& key) const {
 }
 
 // 插入或更新键值对
-Value lStruct::insert(const std::string& key, Value& val){
+Value lStruct::insert(const std::string& key, Value& val) {
     if (buckets_.empty()) {
-        buckets_.resize(16, nullptr); // 初始化为16个桶
+        buckets_.resize(16, nullptr);   // 初始化为16个桶
     }
 
     // 检查负载因子
@@ -64,7 +64,7 @@ Value lStruct::insert(const std::string& key, Value& val){
 
     // 不存在则创建新节点
     const auto new_node = std::make_shared<Node>(key, std::move(val));
-    new_node->next = buckets_[bucket_idx]; // 新节点的next指向原头节点
+    new_node->next = buckets_[bucket_idx];  // 新节点的next指向原头节点
     buckets_[bucket_idx] = new_node;
     elem_count_++;
     return LAMINA_NULL;
@@ -108,7 +108,7 @@ Value getattr(const std::vector<Value>& args) {
     const auto& attr_name = std::get<std::string>(args[1].data);
     auto res = lstruct_->find(attr_name);
     if (res == nullptr) {
-        L_ERR("AttrError: struct hasn't attribute named "+attr_name);
+        L_ERR("AttrError: struct hasn't attribute named " + attr_name);
         return LAMINA_NULL;
     }
     return res->value;
@@ -138,4 +138,3 @@ std::string lStruct_to_string(const std::shared_ptr<lStruct>& lstruct) {
     }
     return lstruct->to_string();
 }
-

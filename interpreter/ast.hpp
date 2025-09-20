@@ -1,8 +1,9 @@
 #pragma once
+#include "value.hpp"
 #include <memory>
 #include <string>
 #include "value.hpp"
-#include <vector>
+
 
 // AST 基类
 struct ASTNode {
@@ -158,14 +159,13 @@ struct ExprStmt : public Statement {
 };
 
 // Struct声明
-struct StructDeclStmt: public Statement {
+struct StructDeclStmt : public Statement {
     std::string name;
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec;
     explicit StructDeclStmt(
-        const std::string& n,
-        std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v
-        )
-    : name(n), init_vec(std::move(v)) {}
+            const std::string& n,
+            std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v)
+        : name(n), init_vec(std::move(v)) {}
 };
 
 // Define语句（用于设置常量，如递归深度）

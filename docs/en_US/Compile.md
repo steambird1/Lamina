@@ -6,6 +6,7 @@
 <br>
 
 Linux:
+
 ```shell
 mkdir build
 cd build
@@ -14,6 +15,7 @@ make
 ```
 
 Windows With MinGW:
+
 ```shell
 mkdir build
 cd build
@@ -22,6 +24,7 @@ mingw32-make
 ```
 
 Windows With MSVC:
+
 ```shell
 mkdir build
 cd build
@@ -30,6 +33,7 @@ msbuild ALL_BUILD.vcxproj
 ```
 
 Use xmake
+
 ```shell
 xmake
 ```

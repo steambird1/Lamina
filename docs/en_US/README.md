@@ -1,4 +1,5 @@
-# <img src="/assets/logo-icon.svg" width="10%"> Lamina 
+# <img src="/assets/logo-icon.svg" width="10%"> Lamina
+
 <img src="/assets/logo.svg" width="100%">
 
 <div align="right">
@@ -21,6 +22,7 @@
 [Quick Start](#quick-start) • [Syntax Guide](#basic-syntax) • [Mathematical Features](#precise-mathematics) • [Sample Code](#sample-code) • [Compilation Guide](Compile.md) • [Contributing Guide](CONTRIBUTING.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [Dynamic Library Plugin Development](PLUGIN_GUIDE.md)
 
 ---
+
 ## Contents
 
 - [Overview](#overview)

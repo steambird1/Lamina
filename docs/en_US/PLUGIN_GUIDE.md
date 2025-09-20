@@ -7,9 +7,11 @@ This document has been expired
 </div>
 
 ## Overview
+
 Lamina supports extending functionality via dynamic library modules (DLL/SO). The module system adopts a modern design, providing a type-safe cross-platform API, namespace management, and function registration mechanisms.
 
 ## Project Structure
+
 ```
 Lamina/
 ├── interpreter/          # Core interpreter
@@ -32,12 +34,14 @@ Lamina/
 ## Module API Overview
 
 ### Core Features
+
 - **Namespace Support**: Each module has its own namespace, avoiding function name collisions
 - **Type Safety**: Unified `LaminaValue` type system, supporting basic data types
 - **Cross-Platform Compatibility**: Uses `LAMINA_EXPORT` and `LAMINA_CALL` macros to ensure compatibility across platforms
 - **Dynamic Loading**: Modules are loaded at runtime, no need to recompile the interpreter
 
 ### Data Type System
+
 ```cpp
 // Supported value types
 typedef enum {
@@ -61,6 +65,7 @@ typedef struct {
 ```
 
 ### Module Interface Structure
+
 ```cpp
 // Module function signature
 typedef LaminaValue (LAMINA_CALL *LaminaFunction)(const LaminaValue* args, int argc);
@@ -90,6 +95,7 @@ typedef struct {
 ## Creating Your First Module
 
 ### 1. Minimal Module Example
+
 Below is a complete minimal module implementation (see `extensions/minimal/ultra_minimal.cpp`):
 
 ```cpp
@@ -140,6 +146,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 ### 2. CMakeLists.txt Configuration
+
 ```cmake
 # Minimal module build configuration
 cmake_minimum_required(VERSION 3.10)
@@ -180,9 +187,11 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 ```
+
 ## Building and Using Modules
 
 ### Building Modules
+
 ```bash
 # Configure build
 cmake -B build -DCMAKE_BUILD_TYPE=Debug .
@@ -194,6 +203,7 @@ cmake --build build --config Debug --parallel
 ```
 
 ### Using Modules in Lamina Scripts
+
 ```lamina
 // Load module
 include "minimal.dll";
@@ -207,6 +217,7 @@ print("Hello result: " + hello_result);  // Output: Hello result: 100
 ```
 
 ### Running Example
+
 ```bash
 # Make sure module file is accessible
 cd build/Debug
@@ -218,6 +229,7 @@ cd build/Debug
 ## Advanced Module Development
 
 ### Argument Processing and Type Checking
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args, int argc) {
     LaminaValue result = {0};
@@ -247,6 +259,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL advanced_function(const LaminaValue* args,
 ```
 
 ### String Processing
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, int argc) {
     static char buffer[512];  // Static buffer ensures lifetime
@@ -268,6 +281,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL string_processor(const LaminaValue* args, 
 ```
 
 ### Error Handling Patterns
+
 ```cpp
 // Unified error return pattern
 static LaminaValue make_error(const char* message) {
@@ -289,12 +303,14 @@ static LaminaValue make_success_int(int value) {
 ## Best Practices
 
 ### 1. Module Design Principles
+
 - **Single Responsibility**: Each module focuses on a specific functional area
 - **Clear Namespace**: Use concise and descriptive namespace names
 - **Function Naming**: Use verbs to describe function behavior, keep naming consistent
 - **Versioning**: Use semantic versioning (major.minor.patch)
 
 ### 2. Code Convention
+
 ```cpp
 // Good function naming examples
 {"calculate", math_calculate, "Calculate mathematical expression"},
@@ -307,18 +323,21 @@ static LaminaValue make_success_int(int value) {
 ```
 
 ### 3. Error Handling Strategy
+
 - Always check argument count and types
 - Return meaningful error messages
 - Use consistent error format
 - Avoid program crashes, handle exceptions gracefully
 
 ### 4. Memory Safety
+
 - Use static buffers or global variables for returned strings
 - Avoid returning pointers to local variables
 - Use safe string functions (`snprintf`, `strncpy`)
 - Ensure buffer sizes are sufficient to avoid overflows
 
 ### 5. Cross-Platform Compatibility
+
 - Use the provided `LAMINA_EXPORT` and `LAMINA_CALL` macros
 - Avoid platform-specific data types or functions
 - Test on multiple platforms and compilers
@@ -328,7 +347,9 @@ static LaminaValue make_success_int(int value) {
 ### Common Issues & Solutions
 
 #### 1. Module Fails to Load
+
 **Issue**: `ERROR: Module not loaded`
+
 ```cpp
 // Checklist:
 // - Is the DLL file in the correct location?
@@ -337,12 +358,15 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **Solutions**:
+
 - Make sure the module file is in the `build/Debug/` directory
 - Check file extension (Windows: `.dll`, Linux: `.so`)
 - Use dependency tools to check for missing dynamic libraries
 
 #### 2. Function Not Found
+
 **Issue**: `ERROR: Function 'funcname' not found in module`
+
 ```cpp
 // Checklist:
 // - Is the function registered in the functions array?
@@ -351,23 +375,29 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **Solutions**:
+
 - Verify function names in the `LaminaFunctionEntry` array
 - Make sure correct namespace prefix is used when calling
 - Check that `function_count` is correct
 
 #### 3. Namespace Mismatch
+
 **Issue**: `ERROR: Namespace mismatch`
+
 ```cpp
 // In script: include "minimal.dll"; minimal.test();
 // In module: namespace_name = "different_name"
 ```
 
 **Solutions**:
+
 - Make sure the module's `namespace_name` matches the prefix used when calling
 - It's recommended to keep namespace name and filename consistent
 
 #### 4. Build Errors
+
 **Issue**: Linker errors or undefined symbols during compilation
+
 ```cpp
 // Common causes:
 // - Missing LAMINA_EXPORT macro
@@ -376,6 +406,7 @@ static LaminaValue make_success_int(int value) {
 ```
 
 **Solutions**:
+
 - Ensure all exported functions use `LAMINA_EXPORT` and `LAMINA_CALL`
 - Check the `module_api.hpp` include path
 - Verify CMake configuration is correct
@@ -383,6 +414,7 @@ static LaminaValue make_success_int(int value) {
 ### Debugging Tips
 
 #### 1. Add Debug Output
+
 ```cpp
 LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, int argc) {
     #ifdef _DEBUG
@@ -397,6 +429,7 @@ LAMINA_EXPORT LaminaValue LAMINA_CALL debug_function(const LaminaValue* args, in
 ```
 
 #### 2. Module Load Verification
+
 ```cpp
 LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
     printf("Module initializing: %s v%s\n", 
@@ -407,6 +440,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 #### 3. Use System Tools
+
 - **Windows**: Use `dumpbin /exports module.dll` to inspect exported symbols
 - **Linux**: Use `nm -D module.so` or `objdump -T module.so`
 - **Debugger**: Use GDB (Linux) or Visual Studio Debugger (Windows)
@@ -414,15 +448,18 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ## Examples & References
 
 ### Complete Example Modules
+
 See example modules in the project for full implementations:
 
 #### minimal module (`extensions/minimal/`)
+
 - **File**: `ultra_minimal.cpp`
 - **Features**: Basic module example
 - **Functions**: `test()`, `hello()`
 - **Purpose**: Learn module development basics
 
 #### standard module (`extensions/standard/`)
+
 - **array.cpp**: Array operation functions
 - **math.cpp**: Mathematical computation functions
 - **stdio.cpp**: Input/output functions
@@ -431,15 +468,18 @@ See example modules in the project for full implementations:
 - **sockets.cpp**: Networking functionality
 
 ### Quickstart Template
+
 Full workflow for creating a new module:
 
 1. **Create Directory Structure**
+
 ```bash
 mkdir extensions/mymodule
 cd extensions/mymodule
 ```
 
 2. **Create Source File (mymodule.cpp)**
+
 ```cpp
 #include "../../interpreter/module_api.hpp"
 
@@ -466,6 +506,7 @@ LAMINA_EXPORT LaminaModuleExports* LAMINA_CALL lamina_module_init() {
 ```
 
 3. **Create Build File (CMakeLists.txt)**
+
 ```cmake
 add_library(mymodule SHARED mymodule.cpp)
 set_target_properties(mymodule PROPERTIES
@@ -476,11 +517,13 @@ set_target_properties(mymodule PROPERTIES
 
 4. **Add to Main Build System**
 Add to main `CMakeLists.txt`:
+
 ```cmake
 add_subdirectory(extensions/mymodule)
 ```
 
 5. **Build and Test**
+
 ```bash
 cmake --build build --config Debug
 cd build/Debug
@@ -490,6 +533,7 @@ cd build/Debug
 ### API Quick Reference
 
 #### Type Definitions
+
 ```cpp
 LAMINA_TYPE_NULL     // Null value
 LAMINA_TYPE_BOOL     // Boolean
@@ -499,12 +543,14 @@ LAMINA_TYPE_STRING   // String
 ```
 
 #### Macro Definitions
+
 ```cpp
 LAMINA_EXPORT        // Exported function declaration
 LAMINA_CALL          // Calling convention
 ```
 
 #### Required Function
+
 ```cpp
 lamina_module_init() // Module initialization entry point
 ```

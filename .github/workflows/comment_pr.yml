@@ -1,0 +1,65 @@
+name: Comment On the Pull Request
+
+on:
+  workflow_run:
+    workflows: ["Code Quality"]
+    types:
+      - completed
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Download change info
+        id: change_info
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
+            | jq -r '.artifacts[] | select(.name == "change_info") | .archive_download_url' \
+            | xargs curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o change_info.zip
+
+          unzip change_info.zip
+
+          # 安全地解析JSON
+          if [ -f change_info.json ]; then
+            HAS_CHANGES=$(jq -r '.has_changes' change_info.json)
+            ISSUE_NUMBER=$(jq -r '.issue_number' change_info.json)
+            # 验证数据格式
+            if [[ "$HAS_CHANGES" =~ ^(true|false)$ ]]; then
+              echo "HAS_CHANGES=${HAS_CHANGES}" >> $GITHUB_OUTPUT
+            else
+              echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
+              echo "Invalid data format"
+            fi
+            echo "ISSUE_NUMBER=${ISSUE_NUMBER}" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name:  Download review summary
+        if: steps.change_info.outputs.HAS_CHANGES == 'true'
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
+            | jq -r '.artifacts[] | select(.name == "review_summary") | .archive_download_url' \
+            | xargs curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o review_summary.zip
+
+          unzip review_summary.zip
+
+      - name: Comment on PR
+        if: steps.change_info.outputs.HAS_CHANGES == 'true' 
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ steps.change_info.outputs.ISSUE_NUMBER }}
+          body-path: review_summary.md
+
+
