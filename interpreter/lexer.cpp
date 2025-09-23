@@ -25,6 +25,7 @@ void registerKeywords() {
     keywords["true"] = TokenType::True;
     keywords["false"] = TokenType::False;
     keywords["null"] = TokenType::Null;
+    keywords["do"] = TokenType::Lambda;
     keywords_registered = true;
 }
 
@@ -37,11 +38,11 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     // Debug: std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') {
-            if (tokens.back().type != TokenType::Semicolon
-                && tokens.back().type != TokenType::LBrace
-                && tokens.back().type != TokenType::LBracket
-                && tokens.back().type != TokenType::LParen
-                && tokens.back().type != TokenType::Backslash) {
+            if  (   tokens.back().type != TokenType::Semicolon
+                and tokens.back().type != TokenType::LBrace
+                and tokens.back().type != TokenType::LBracket
+                and tokens.back().type != TokenType::LParen
+                and tokens.back().type != TokenType::Backslash) {
                 tokens.emplace_back(TokenType::Semicolon, ";", line, col);
             }
             ++line;

@@ -167,6 +167,11 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
         interpreter/console_ui.cpp
         interpreter/color_style.hpp
         interpreter/eval.cpp
+        interpreter/new_parser.hpp
+        interpreter/new_parser.cpp
+        interpreter/parse_stmt.cpp
+        interpreter/parse_expr.cpp
+        interpreter/parse_factor.cpp
 )
 
 # Add version header

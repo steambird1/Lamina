@@ -15,6 +15,9 @@
 #include <winnls.h>
 #endif
 
+#include "color_style.hpp"
+
+
 #include <string>
 
 int exec_block(const BlockStmt* block) {
@@ -215,13 +218,9 @@ int repl() {
             // Set prompt style based on whether the terminal supports color
             std::string prompt;
             if (brace_level > 0) {
-                prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m. \033[0m "   // 多行输入下等待输入的提示符
-                                 : ". ";
+                prompt = ConClr::GREEN + ". " + ConClr::RESET ;    // 多行输入下等待输入的提示符
             } else {
-                prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m> \033[0m "   // 带绿色高亮的提示符（ANSI转义序列）
-                                 : "> ";                    // 普通提示符
+                prompt = ConClr::GREEN + "> " + ConClr::RESET ;;   // 带绿色高亮的提示符
             }
 
             std::string line = repl_readline(prompt);
