@@ -30,13 +30,9 @@ public:
 
     // parse factor
     std::unique_ptr<Expression> parse_a_token();
-    std::unique_ptr<Expression> parse_func_call(std::unique_ptr<IdentifierExpr> node);
-    std::unique_ptr<GetMemberStmt> parse_get_member(std::unique_ptr<IdentifierExpr> node);
-    std::unique_ptr<GetItemStmt> parse_get_item(std::unique_ptr<IdentifierExpr> node);
-    // 重载版本
-    std::unique_ptr<Expression> parse_func_call(std::unique_ptr<GetMemberStmt> node);
-    std::unique_ptr<GetMemberStmt> parse_get_member(std::unique_ptr<GetMemberStmt> node);
-    std::unique_ptr<GetItemStmt> parse_get_item(std::unique_ptr<GetMemberStmt> node);
+    std::unique_ptr<Expression> parse_func_call(std::unique_ptr<Expression> node);
+    std::unique_ptr<GetMemberStmt> parse_get_member(std::unique_ptr<Expression> node);
+    std::unique_ptr<GetItemStmt> parse_get_item(std::unique_ptr<Expression> node);
     std::vector<std::unique_ptr<Expression>> NewParser::parse_params(TokenType endswith);
 
     std::unique_ptr<BlockStmt> parse_block(bool is_global);

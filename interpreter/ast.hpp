@@ -104,14 +104,9 @@ struct FuncDefStmt final : public Statement {
 struct GetMemberStmt;
 // 函数调用
 struct CallExpr final : public Expression {
-    std::variant<
-        std::unique_ptr<GetMemberStmt>,
-        std::unique_ptr<IdentifierExpr>
-    > callee;
+    std::unique_ptr<Expression> callee;
     std::vector<std::unique_ptr<Expression>> args;
-    CallExpr(std::unique_ptr<IdentifierExpr> c, std::vector<std::unique_ptr<Expression>> a)
-        : callee(std::move(c)), args(std::move(a)) {}
-    CallExpr(std::unique_ptr<GetMemberStmt> c, std::vector<std::unique_ptr<Expression>> a)
+    CallExpr(std::unique_ptr<Expression> c, std::vector<std::unique_ptr<Expression>> a)
         : callee(std::move(c)), args(std::move(a)) {}
 };
 
@@ -175,7 +170,7 @@ struct StructDeclStmt final : public Statement {
 };
 
 // 匿名Struct声明
-struct LambdaStructDeclStmt final : public Statement {
+struct LambdaStructDeclStmt final : public Expression {
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec;
     explicit LambdaStructDeclStmt(std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v)
         : init_vec(std::move(v)) {}
@@ -198,29 +193,19 @@ struct BigIntDeclStmt final : public Statement {
 };
 
 // 获取成员
-struct GetMemberStmt final : public Statement {
-    std::variant<
-        std::unique_ptr<GetMemberStmt>,
-        std::unique_ptr<IdentifierExpr>
-    > father;
+struct GetMemberStmt final : public Expression {
+    std::unique_ptr<Expression> father;
     std::unique_ptr<IdentifierExpr> child;
-    GetMemberStmt(std::unique_ptr<GetMemberStmt> f, std::unique_ptr<IdentifierExpr> c)
-        :father(std::move(f)), child(std::move(c)) {}
-    GetMemberStmt(std::unique_ptr<IdentifierExpr> f, std::unique_ptr<IdentifierExpr> c)
+    GetMemberStmt(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
         :father(std::move(f)), child(std::move(c)) {}
 };
 
 // 获取项
-struct GetItemStmt final : public Statement {
-    std::variant<
-        std::unique_ptr<GetMemberStmt>,
-        std::unique_ptr<IdentifierExpr>
-    > father;
+struct GetItemStmt final : public Expression {
+    std::unique_ptr<Expression> father;
     std::vector<std::unique_ptr<Expression>> params;
-    GetItemStmt(std::unique_ptr<GetMemberStmt> f, std::vector<std::unique_ptr<Expression>> p)
+    GetItemStmt(std::unique_ptr<Expression> f, std::vector<std::unique_ptr<Expression>> p)
         : father(std::move(f)), params(std::move(p)) {}
-    GetItemStmt(std::unique_ptr<IdentifierExpr> c, std::vector<std::unique_ptr<Expression>> p)
-        : father(std::move(c)), params(std::move(p)) {}
 };
 
 // 声明匿名函数
