@@ -37,6 +37,13 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     // Debug: std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') {
+            if (tokens.back().type != TokenType::Semicolon
+                && tokens.back().type != TokenType::LBrace
+                && tokens.back().type != TokenType::LBracket
+                && tokens.back().type != TokenType::LParen
+                && tokens.back().type != TokenType::Backslash) {
+                tokens.emplace_back(TokenType::Semicolon, ";", line, col);
+            }
             ++line;
             col = 1;
             ++i;
@@ -221,6 +228,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++col;
         } else if (src[i] == '*') {
             tokens.emplace_back(TokenType::Star, "*", line, start_col);
+            ++i;
+            ++col;
+        } else if (src[i] == '\\') {
+            tokens.emplace_back(TokenType::Backslash, "\\", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '/') {

@@ -47,6 +47,7 @@ enum class TokenType {
     Minus,
     Star,
     Slash,
+    Backslash,  // \;
     Percent,
     Caret,
     Bang,
