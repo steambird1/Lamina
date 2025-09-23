@@ -11,34 +11,34 @@ struct ASTNode {
 };
 
 // 表达式基类
-struct Expression : public ASTNode {
+struct Expression :  ASTNode {
     std::string source;// 保存表达式源码
 };
 
 // 语句基类
-struct Statement : public ASTNode {};
+struct Statement :  ASTNode {};
 
 // 字面量
-struct LiteralExpr final : public Expression {
+struct LiteralExpr final :  Expression {
     Value::Type type;
     std::string value;
     LiteralExpr(std::string  v, const Value::Type type) : type(type), value(std::move(v)) {}
 };
 
 // 标识符
-struct IdentifierExpr final : public Expression {
+struct IdentifierExpr final :  Expression {
     std::string name;
     explicit IdentifierExpr(std::string  n) : name(std::move(n)) {}
 };
 
 // 变量引用
-struct VarExpr final : public Expression {
+struct VarExpr final :  Expression {
     std::string name;
     explicit VarExpr(std::string  n) : name(std::move(n)) {}
 };
 
 // 二元运算
-struct BinaryExpr final : public Expression {
+struct BinaryExpr final :  Expression {
     std::string op;
     std::unique_ptr<Expression> left, right;
     BinaryExpr(std::string  o, std::unique_ptr<Expression> l, std::unique_ptr<Expression> r)
@@ -46,7 +46,7 @@ struct BinaryExpr final : public Expression {
 };
 
 // 一元运算
-struct UnaryExpr final : public Expression {
+struct UnaryExpr final :  Expression {
     std::string op;
     std::unique_ptr<Expression> operand;
     UnaryExpr(std::string  o, std::unique_ptr<Expression> e)
@@ -54,7 +54,7 @@ struct UnaryExpr final : public Expression {
 };
 
 // 变量声明
-struct VarDeclStmt final : public Statement {
+struct VarDeclStmt final :  Statement {
     std::string name;
     std::unique_ptr<Expression> expr;
     VarDeclStmt(std::string  n, std::unique_ptr<Expression> e)
@@ -62,7 +62,7 @@ struct VarDeclStmt final : public Statement {
 };
 
 // 赋值
-struct AssignStmt final : public Statement {
+struct AssignStmt final :  Statement {
     std::string name;
     std::unique_ptr<Expression> expr;
     AssignStmt(std::string  n, std::unique_ptr<Expression> e)
@@ -71,12 +71,13 @@ struct AssignStmt final : public Statement {
 
 
 // 复合语句块
-struct BlockStmt final : public Statement {
+struct BlockStmt final :  Statement {
     std::vector<std::unique_ptr<Statement>> statements;
+    explicit BlockStmt(std::vector<std::unique_ptr<Statement>> s) : statements(std::move(s)) {}
 };
 
 // if 语句
-struct IfStmt final : public Statement {
+struct IfStmt final :  Statement {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<BlockStmt> thenBlock;
     std::unique_ptr<BlockStmt> elseBlock;
@@ -85,7 +86,7 @@ struct IfStmt final : public Statement {
 };
 
 // while 语句
-struct WhileStmt final : public Statement {
+struct WhileStmt final :  Statement {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<BlockStmt> body;
     WhileStmt(std::unique_ptr<Expression> cond, std::unique_ptr<BlockStmt> b)
@@ -93,7 +94,7 @@ struct WhileStmt final : public Statement {
 };
 
 // 函数定义
-struct FuncDefStmt final : public Statement {
+struct FuncDefStmt final :  Statement {
     std::string name;
     std::vector<std::string> params;
     std::unique_ptr<BlockStmt> body;
@@ -101,9 +102,9 @@ struct FuncDefStmt final : public Statement {
         : name(std::move(n)), params(p), body(std::move(b)) {}
 };
 
-struct GetMemberStmt;
+struct GetMemberExpr;
 // 函数调用
-struct CallExpr final : public Expression {
+struct CallExpr final :  Expression {
     std::unique_ptr<Expression> callee;
     std::vector<std::unique_ptr<Expression>> args;
     CallExpr(std::unique_ptr<Expression> c, std::vector<std::unique_ptr<Expression>> a)
@@ -111,7 +112,7 @@ struct CallExpr final : public Expression {
 };
 
 // 命名空间函数调用
-struct NamespaceCallExpr final : public Expression {
+struct NamespaceCallExpr final :  Expression {
     std::string namespace_name;
     std::string function_name;
     std::vector<std::unique_ptr<Expression>> args;
@@ -120,47 +121,47 @@ struct NamespaceCallExpr final : public Expression {
 };
 
 // 数组字面量
-struct ArrayExpr final : public Expression {
+struct ArrayExpr final :  Expression {
     std::vector<std::unique_ptr<Expression>> elements;
     explicit ArrayExpr(std::vector<std::unique_ptr<Expression>> elems)
         : elements(std::move(elems)) {}
 };
 
 // return 语句
-struct ReturnStmt final : public Statement {
+struct ReturnStmt final :  Statement {
     std::unique_ptr<Expression> expr;
     explicit ReturnStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };
 
 // include 语句
-struct IncludeStmt final : public Statement {
+struct IncludeStmt final :  Statement {
     std::string module;
     explicit IncludeStmt(std::string  m) : module(std::move(m)) {}
 };
 
 // 空语句
-struct NullStmt final : public Statement {
+struct NullStmt final :  Statement {
     NullStmt() = default;
 };
 
 // break 语句
-struct BreakStmt final : public Statement {
+struct BreakStmt final :  Statement {
     BreakStmt() = default;
 };
 
 // continue 语句
-struct ContinueStmt final : public Statement {
+struct ContinueStmt final :  Statement {
     ContinueStmt() = default;
 };
 
 // 表达式语句
-struct ExprStmt final : public Statement {
+struct ExprStmt final :  Statement {
     std::unique_ptr<Expression> expr;
     explicit ExprStmt(std::unique_ptr<Expression> e) : expr(std::move(e)) {}
 };
 
 // Struct声明
-struct StructDeclStmt final : public Statement {
+struct StructDeclStmt final :  Statement {
     std::string name;
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec;
     explicit StructDeclStmt(
@@ -170,14 +171,14 @@ struct StructDeclStmt final : public Statement {
 };
 
 // 匿名Struct声明
-struct LambdaStructDeclStmt final : public Expression {
+struct LambdaStructDeclExpr final :  Expression {
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec;
-    explicit LambdaStructDeclStmt(std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v)
+    explicit LambdaStructDeclExpr(std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v)
         : init_vec(std::move(v)) {}
 };
 
 // Define语句（用于设置常量，如递归深度）
-struct DefineStmt final : public Statement {
+struct DefineStmt final :  Statement {
     std::string name;
     std::unique_ptr<Expression> value;
     DefineStmt(std::string  n, std::unique_ptr<Expression> v)
@@ -185,7 +186,7 @@ struct DefineStmt final : public Statement {
 };
 
 // BigInt变量声明
-struct BigIntDeclStmt final : public Statement {
+struct BigIntDeclStmt final :  Statement {
     std::string name;
     std::unique_ptr<Expression> init_value;
     explicit BigIntDeclStmt(std::string  n, std::unique_ptr<Expression> v = nullptr)
@@ -193,25 +194,25 @@ struct BigIntDeclStmt final : public Statement {
 };
 
 // 获取成员
-struct GetMemberStmt final : public Expression {
+struct GetMemberExpr final :  Expression {
     std::unique_ptr<Expression> father;
     std::unique_ptr<IdentifierExpr> child;
-    GetMemberStmt(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
+    GetMemberExpr(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
         :father(std::move(f)), child(std::move(c)) {}
 };
 
 // 获取项
-struct GetItemStmt final : public Expression {
+struct GetItemExpr final :  Expression {
     std::unique_ptr<Expression> father;
     std::vector<std::unique_ptr<Expression>> params;
-    GetItemStmt(std::unique_ptr<Expression> f, std::vector<std::unique_ptr<Expression>> p)
+    GetItemExpr(std::unique_ptr<Expression> f, std::vector<std::unique_ptr<Expression>> p)
         : father(std::move(f)), params(std::move(p)) {}
 };
 
 // 声明匿名函数
-struct LambdaDeclStmt final : public Expression {
+struct LambdaDeclExpr final :  Expression {
     std::vector<std::unique_ptr<Expression>> params;
     std::unique_ptr<BlockStmt> body;
-    LambdaDeclStmt(const std::vector<std::unique_ptr<Expression>>& p, std::unique_ptr<BlockStmt> b)
-        : params(p), body(std::move(b)) {}
+    LambdaDeclExpr(std::vector<std::unique_ptr<Expression>> p, std::unique_ptr<BlockStmt> b)
+        : params(std::move(p)), body(std::move(b)) {}
 };

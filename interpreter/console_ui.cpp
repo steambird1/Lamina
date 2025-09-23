@@ -64,7 +64,8 @@ int run_file(const std::string& path) {
     buffer << file.rdbuf();
     std::string source = buffer.str();
     auto tokens = Lexer::tokenize(source);
-    auto ast = Parser::parse(tokens);
+    auto parser = std::make_shared<Parser>(tokens);
+    auto ast = parser->parse_stmt();
 
     // 注释掉自动加载minimal模块，改为按需加载
     // std::cout << "Loading minimal module..." << std::endl;
@@ -319,20 +320,21 @@ int repl() {
 
             // frontend
             auto tokens = Lexer::tokenize(line_to_process);
-            auto ast = Parser::parse(tokens);
-
+            static const auto parser = std::make_shared<Parser>(tokens);
+            auto ast = parser->parse_program();
 
             // Check if AST generation succeeded
-            if (!ast) {
+            if (ast.empty()) {
                 print_traceback("<stdin>", lineno);
                 return 1;
             }
 
             // Only support AST of type BlockStmt (block statement)
-            auto* block = dynamic_cast<BlockStmt*>(ast.get());
+            auto block = std::make_shared<BlockStmt>(ast);
             if (!block) return 1;
             // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(std::move(ast));
+            interpreter.save_repl_ast(ast);
+            // TODO: ...
 
             try {
 

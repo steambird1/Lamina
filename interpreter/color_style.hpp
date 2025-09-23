@@ -3,29 +3,28 @@
 #include <mutex>
 #include "interpreter.hpp"
 
-// CC => Console Color
-class ConsoleColor {
+class LAMINA_API ConsoleColor {
 public:
     ConsoleColor(const ConsoleColor&) = delete;
     ConsoleColor& operator=(const ConsoleColor&) = delete;
 
-    static std::string RESET;
-    static std::string BLACK;
-    static std::string RED;
-    static std::string GREEN;
-    static std::string YELLOW;
-    static std::string BLUE;
-    static std::string MAGENTA;
-    static std::string CYAN;
-    static std::string WHITE;
-    static std::string LIGHT_BLACK;
-    static std::string LIGHT_RED;
-    static std::string LIGHT_GREEN;
-    static std::string LIGHT_YELLOW;
-    static std::string LIGHT_BLUE;
-    static std::string LIGHT_MAGENTA;
-    static std::string LIGHT_CYAN;
-    static std::string LIGHT_WHITE;
+    static LAMINA_API std::string RESET;
+    static LAMINA_API std::string BLACK;
+    static LAMINA_API std::string RED;
+    static LAMINA_API std::string GREEN;
+    static LAMINA_API std::string YELLOW;
+    static LAMINA_API std::string BLUE;
+    static LAMINA_API std::string MAGENTA;
+    static LAMINA_API std::string CYAN;
+    static LAMINA_API std::string WHITE;
+    static LAMINA_API std::string LIGHT_BLACK;
+    static LAMINA_API std::string LIGHT_RED;
+    static LAMINA_API std::string LIGHT_GREEN;
+    static LAMINA_API std::string LIGHT_YELLOW;
+    static LAMINA_API std::string LIGHT_BLUE;
+    static LAMINA_API std::string LIGHT_MAGENTA;
+    static LAMINA_API std::string LIGHT_CYAN;
+    static LAMINA_API std::string LIGHT_WHITE;
 
     static void init() {
         static std::once_flag flag;
@@ -53,26 +52,7 @@ public:
     }
 
 private:
-    // 私有构造函数：防止创建实例
     ConsoleColor() = default;
 };
-
-std::string ConsoleColor::RESET;
-std::string ConsoleColor::BLACK;
-std::string ConsoleColor::RED;
-std::string ConsoleColor::GREEN;
-std::string ConsoleColor::YELLOW;
-std::string ConsoleColor::BLUE;
-std::string ConsoleColor::MAGENTA;
-std::string ConsoleColor::CYAN;
-std::string ConsoleColor::WHITE;
-std::string ConsoleColor::LIGHT_BLACK;
-std::string ConsoleColor::LIGHT_RED;
-std::string ConsoleColor::LIGHT_GREEN;
-std::string ConsoleColor::LIGHT_YELLOW;
-std::string ConsoleColor::LIGHT_BLUE;
-std::string ConsoleColor::LIGHT_MAGENTA;
-std::string ConsoleColor::LIGHT_CYAN;
-std::string ConsoleColor::LIGHT_WHITE;
 
 using ConClr = ConsoleColor;

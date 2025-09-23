@@ -30,7 +30,7 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
 }
 
 Value Interpreter::eval_CallExpr(const CallExpr* call) {
-    std::string actual_callee = call->callee;
+    std::string actual_callee = (dynamic_cast<IdentifierExpr*>(call->callee.get()))->name;
     //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
 
     // 检查调用的名称是否是一个参数，如果是，获取其实际值

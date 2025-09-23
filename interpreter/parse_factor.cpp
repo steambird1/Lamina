@@ -1,6 +1,6 @@
 #include "lexer.hpp"
-#include "new_parser.hpp"
-std::unique_ptr<Expression> NewParser::parse_a_token() {
+#include "parser.hpp"
+std::unique_ptr<Expression> Parser::parse_a_token() {
     const auto tok = skip_token();
     if (tok.type == TokenType::Number) {
         return std::make_unique<LiteralExpr>(tok.text, Value::Type::Int);
@@ -15,7 +15,7 @@ std::unique_ptr<Expression> NewParser::parse_a_token() {
         return std::make_unique<LiteralExpr>(tok.text, Value::Type::Bool);
     }
     if (tok.type == TokenType::False) {
-        return std::make_unique<LiteralExpr>(tok.text, Value::Type::Int);
+        return std::make_unique<LiteralExpr>(tok.text, Value::Type::Bool);
     }
     if (tok.type == TokenType::Identifier) {
         return std::make_unique<IdentifierExpr>(tok.text);
@@ -25,7 +25,7 @@ std::unique_ptr<Expression> NewParser::parse_a_token() {
         auto param = parse_params(TokenType::RParen);
         skip_token();
         auto stmt = parse_block(true);
-        return std::make_unique<LambdaDeclStmt>(param,stmt);
+        return std::make_unique<LambdaDeclExpr>(std::move(param),std::move(stmt));
     }
     if (tok.type == TokenType::LBrace) {
         std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};
@@ -37,41 +37,44 @@ std::unique_ptr<Expression> NewParser::parse_a_token() {
             init_vec.emplace_back(std::move(key), std::move(val));
         }
         skip_token();
-        return std::make_unique<LambdaStructDeclStmt>(std::move(init_vec));
+        return std::make_unique<LambdaStructDeclExpr>(std::move(init_vec));
     }
     if (tok.type == TokenType::LBracket) {
         skip_token();
         auto param = parse_params(TokenType::RBracket);
         skip_token();
-        return std::make_unique<ArrayExpr>(param);
+        return std::make_unique<ArrayExpr>(std::move(param));
     }
     if (tok.type == TokenType::LParen) {
-        return parse_expression();
+        skip_token();
+        auto expr = parse_expression();
+        skip_token();
+        return expr;
     }
     return nullptr;
 }
 
-std::unique_ptr<Expression> NewParser::parse_func_call(std::unique_ptr<Expression> node) {
+std::unique_ptr<Expression> Parser::parse_func_call(std::unique_ptr<Expression> node) {
     skip_token();
     auto param = parse_params(TokenType::RParen);
     skip_token();
     return std::make_unique<CallExpr>(std::move(node),std::move(param));
 }
 
-std::unique_ptr<GetMemberStmt> NewParser::parse_get_member(std::unique_ptr<Expression> node) {
+std::unique_ptr<GetMemberExpr> Parser::parse_get_member(std::unique_ptr<Expression> node) {
     skip_token();
     auto child = std::make_unique<IdentifierExpr>(skip_token().text);
-    return std::make_unique<GetMemberStmt>(std::move(node),std::move(child));
+    return std::make_unique<GetMemberExpr>(std::move(node),std::move(child));
 }
 
-std::unique_ptr<GetItemStmt> NewParser::parse_get_item(std::unique_ptr<Expression> node) {
+std::unique_ptr<GetItemExpr> Parser::parse_get_item(std::unique_ptr<Expression> node) {
     skip_token();
     auto param = parse_params(TokenType::RBracket);
     skip_token();
-    return std::make_unique<GetItemStmt>(std::move(node),std::move(param));
+    return std::make_unique<GetItemExpr>(std::move(node),std::move(param));
 }
 
-std::vector<std::unique_ptr<Expression>> NewParser::parse_params(const TokenType endswith){
+std::vector<std::unique_ptr<Expression>> Parser::parse_params(const TokenType endswith){
     std::vector<std::unique_ptr<Expression>> params;
     while (curr_token().type != endswith) {
         params.emplace_back(parse_expression());

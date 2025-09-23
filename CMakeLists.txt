@@ -75,6 +75,14 @@ add_library(lamina_core SHARED
         interpreter/lexer.hpp
         interpreter/parser.cpp
         interpreter/parser.hpp
+        interpreter/parse_expr.cpp
+        interpreter/parse_factor.cpp
+        interpreter/parse_stmt.cpp
+        interpreter/color_style.hpp
+        interpreter/color_style.cpp
+        # interpreter/parser.old.cpp
+        # interpreter/parser.old.hpp
+        interpreter/eval.cpp
         interpreter/rational.hpp
         interpreter/trackback.hpp
         interpreter/value.hpp
@@ -158,20 +166,14 @@ target_include_directories(lamina_core PUBLIC
 )
 
 # Create main executable
-add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
+add_executable(Lamina interpreter/main.cpp
                # Directly include module_loader.cpp to resolve MinGW linking issues
                interpreter/module_loader.cpp
-               # Include symbolic.cpp for symbolic expression support
-               interpreter/symbolic.cpp
+        # Include symbolic.cpp for symbolic expression support
+        interpreter/symbolic.cpp
+        interpreter/repl_input.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp
-        interpreter/color_style.hpp
-        interpreter/eval.cpp
-        interpreter/new_parser.hpp
-        interpreter/new_parser.cpp
-        interpreter/parse_stmt.cpp
-        interpreter/parse_expr.cpp
-        interpreter/parse_factor.cpp
 )
 
 # Add version header

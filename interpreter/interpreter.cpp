@@ -440,7 +440,8 @@ bool Interpreter::load_module(const std::string& module_name) {
 
     // Lexical and syntax analysis
     auto tokens = Lexer::tokenize(source);
-    auto ast = Parser::parse(tokens);
+    auto parser = std::make_shared<Parser>(tokens);
+    auto ast = parser->parse_stmt();
 
     if (!ast) {
         std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;

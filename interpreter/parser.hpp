@@ -1,34 +1,47 @@
 #pragma once
 #include "ast.hpp"
 #include "lexer.hpp"
-#include <vector>
 
-#ifdef _WIN32
-#ifdef LAMINA_CORE_EXPORTS
-#define LAMINA_API __declspec(dllexport)
-#else
-#define LAMINA_API __declspec(dllimport)
-#endif
-#else
-#define LAMINA_API
-#endif
+
+enum class TokenType;
+struct Token;
 
 class LAMINA_API Parser {
+    const std::vector<Token> tokens_;
+    int curr_tok_idx_ = 0;
+
 public:
-    static std::unique_ptr<ASTNode> parse(const std::vector<Token>& tokens);
-    static std::unique_ptr<Expression> parse_expression(const std::vector<Token>& tokens, size_t& i);
-    // 解析不同层级的表达式，处理正确的运算符优先级
-    static std::unique_ptr<Expression> parse_comparison(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Expression> parse_addition(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Expression> parse_term(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Expression> parse_power(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Expression> parse_unary(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Expression> parse_primary(const std::vector<Token>& tokens, size_t& i);
-    // 解析一组语句，返回 BlockStmt
-    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i, bool is_global);
-    static std::unique_ptr<BlockStmt> parse_block(const std::vector<Token>& tokens, size_t& i);// 兼容老代码
-    // 解析单条语句
-    static std::unique_ptr<Statement> parse_statement(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<Statement> parse_while(const std::vector<Token>& tokens, size_t& i);
-    static std::unique_ptr<StructDeclStmt> parse_struct(const std::vector<Token>& tokens, size_t& i);
+    explicit Parser(const std::vector<Token>& tokens);
+    ~Parser() = default;
+    Token skip_token(const std::string& want_skip = "");
+    void skip_end_of_ln();
+    [[nodiscard]] Token curr_token() const;
+    void must_token(const std::string& text, const std::string& waring) const;
+    std::vector<std::unique_ptr<ASTNode>> parse_program();
+    std::unique_ptr<Statement> parse_stmt();
+
+    std::unique_ptr<Expression> parse_expression();
+    // parse expr
+    std::unique_ptr<Expression> parse_comparison();
+    std::unique_ptr<Expression> parse_add_sub();
+    std::unique_ptr<Expression> parse_mul_div_mod();
+    std::unique_ptr<Expression> parse_power();
+    std::unique_ptr<Expression> parse_unary();
+    std::unique_ptr<Expression> parse_factor();
+
+    // parse factor
+    std::unique_ptr<Expression> parse_a_token();
+    std::unique_ptr<Expression> parse_func_call(std::unique_ptr<Expression> node);
+    std::unique_ptr<GetMemberExpr> parse_get_member(std::unique_ptr<Expression> node);
+    std::unique_ptr<GetItemExpr> parse_get_item(std::unique_ptr<Expression> node);
+    std::vector<std::unique_ptr<Expression>> parse_params(TokenType endswith);
+
+    std::unique_ptr<BlockStmt> parse_block(bool is_global);
+
+    // parse stmt
+    std::unique_ptr<Statement> parse_if();
+    std::unique_ptr<Statement> parse_func();
+    std::unique_ptr<Statement> parse_var();
+    std::unique_ptr<Statement> parse_struct();
+    std::unique_ptr<Statement> parse_while();
 };
