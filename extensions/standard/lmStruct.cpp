@@ -1,9 +1,9 @@
-#include "lstruct.hpp"
 #include "lamina.hpp"
+#include "lmStruct.hpp"
 #include <algorithm>
 
 // 初始化lStruct
-lStruct::lStruct(const std::vector<std::pair<std::string, Value>>& vec) {
+lmStruct::lmStruct(const std::vector<std::pair<std::string, Value>>& vec) {
     // 初始化桶数组
     size_t init_size = 16;
     while (init_size < (vec.size() / load_factor_)) {
@@ -17,10 +17,11 @@ lStruct::lStruct(const std::vector<std::pair<std::string, Value>>& vec) {
     }
 }
 
-lStruct::~lStruct() = default;
+
+lmStruct::~lmStruct() = default;
 
 // 查找键对应的节点（返回nullptr表示未找到）
-std::shared_ptr<Node> lStruct::find(const std::string& key) const {
+std::shared_ptr<Node> lmStruct::find(const std::string& key) const {
     if (buckets_.empty()) return nullptr;   // 桶数组未初始化时直接返回
 
     const size_t hash = hash_string(key);
@@ -39,7 +40,7 @@ std::shared_ptr<Node> lStruct::find(const std::string& key) const {
 }
 
 // 插入或更新键值对
-Value lStruct::insert(const std::string& key, Value& val) {
+Value lmStruct::insert(const std::string& key, Value& val) {
     if (buckets_.empty()) {
         buckets_.resize(16, nullptr);   // 初始化为16个桶
     }
@@ -70,7 +71,7 @@ Value lStruct::insert(const std::string& key, Value& val) {
     return LAMINA_NULL;
 }
 
-std::vector<std::pair<std::string, Value>> lStruct::to_vector() const {
+std::vector<std::pair<std::string, Value>> lmStruct::to_vector() const {
     std::vector<std::pair<std::string, Value>> vec;
     for (const std::shared_ptr<Node>& bucket_head : buckets_) {
         auto current = bucket_head;
@@ -83,7 +84,7 @@ std::vector<std::pair<std::string, Value>> lStruct::to_vector() const {
 }
 
 
-std::string lStruct::to_string() const {
+std::string lmStruct::to_string() const {
     std::string text = "{\n";
     for (const std::shared_ptr<Node>& bucket_head : buckets_) {
         auto current = bucket_head;
@@ -99,12 +100,12 @@ std::string lStruct::to_string() const {
 
 
 Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec) {
-    const auto lstruct_ptr = std::make_shared<lStruct>(vec);
+    const auto lstruct_ptr = std::make_shared<lmStruct>(vec);
     return Value(lstruct_ptr);
 }
 
 Value getattr(const std::vector<Value>& args) {
-    const auto& lstruct_ = std::get<std::shared_ptr<lStruct>>(args[0].data);
+    const auto& lstruct_ = std::get<std::shared_ptr<lmStruct>>(args[0].data);
     const auto& attr_name = std::get<std::string>(args[1].data);
     auto res = lstruct_->find(attr_name);
     if (res == nullptr) {
@@ -115,7 +116,7 @@ Value getattr(const std::vector<Value>& args) {
 }
 
 Value setattr(const std::vector<Value>& args) {
-    std::shared_ptr<lStruct> lstruct_ = std::get<std::shared_ptr<lStruct>>(args[0].data);
+    std::shared_ptr<lmStruct> lstruct_ = std::get<std::shared_ptr<lmStruct>>(args[0].data);
     const auto& attr_name = std::get<std::string>(args[1].data);
     Value value = args[2];
     lstruct_->insert(attr_name, value);
@@ -123,8 +124,8 @@ Value setattr(const std::vector<Value>& args) {
 }
 
 Value update(const std::vector<Value>& args) {
-    std::shared_ptr<lStruct> lstruct_a = std::get<std::shared_ptr<lStruct>>(args[0].data);
-    const auto& lstruct_b = std::get<std::shared_ptr<lStruct>>(args[1].data);
+    std::shared_ptr<lmStruct> lstruct_a = std::get<std::shared_ptr<lmStruct>>(args[0].data);
+    const auto& lstruct_b = std::get<std::shared_ptr<lmStruct>>(args[1].data);
     auto vec = lstruct_b->to_vector();
     for (auto& [key, val]: vec) {
         lstruct_a->insert(key, val);
@@ -132,7 +133,20 @@ Value update(const std::vector<Value>& args) {
     return LAMINA_NULL;
 }
 
-std::string lStruct_to_string(const std::shared_ptr<lStruct>& lstruct) {
+Value copy_struct(const std::vector<Value>& args){
+    if (args.empty()) return LAMINA_NULL;
+    const auto& arg_data = args[0].data;
+    auto& original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
+
+    if (!original_ptr) return LAMINA_NULL;
+
+    const lmStruct& original_obj = *original_ptr;
+    // 复制对象
+    const auto new_obj = std::make_shared<lmStruct>(original_obj);
+    return new_obj;
+}
+
+std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct) {
     if (lstruct == nullptr) {
         return "{}";
     }

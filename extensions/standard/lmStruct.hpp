@@ -17,7 +17,7 @@ inline size_t hash_string(const std::string& key) {
 }
 
 
-class lStruct;
+class lmStruct;
 struct StringBucket;
 using Node = StringBucket;
 
@@ -34,7 +34,7 @@ struct StringBucket {
           next(nullptr) {}
 };
 
-class lStruct {
+class lmStruct {
 private:
     std::vector<std::shared_ptr<Node>> buckets_;    // 桶数组（每个桶是链表头指针）
     size_t elem_count_ = 0;
@@ -69,12 +69,27 @@ private:
     }
 
 public:
-    explicit lStruct(const std::vector<std::pair<std::string, Value>>& vec);
-    ~lStruct();
+    explicit lmStruct(const std::vector<std::pair<std::string, Value>>& vec);
+    ~lmStruct();
     Value insert(const std::string& key, Value& val);
     [[nodiscard]] std::shared_ptr<Node> find(const std::string& key) const;
     [[nodiscard]] std::string to_string() const;
     [[nodiscard]] std::vector<std::pair<std::string, Value>> to_vector() const;
+    // 深拷贝结构体
+    lmStruct(const lmStruct& other)
+        : load_factor_(other.load_factor_)
+    {
+        std::vector<std::pair<std::string, Value>> all_kv = other.to_vector();
+        size_t init_bucket_size = 16;
+        while (init_bucket_size < (all_kv.size() / load_factor_)) {
+            init_bucket_size *= 2;
+        }
+        buckets_.resize(init_bucket_size, nullptr);  // 初始化桶数组
+        for (auto& [key, val] : all_kv) {
+            this->insert(key, val);
+        }
+        this->elem_count_ = other.elem_count_;
+    }
 };
 
 Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
@@ -98,8 +113,15 @@ Value update(const std::vector<Value>& args);
  * args[1] =>  other struct: lstruct
  */
 
+Value copy_struct(const std::vector<Value>& args);
+/* function: copy_struct
+ * arg[0] => source struct: lstruct
+ */
+
+
 namespace Lamina {
     LAMINA_FUNC_MULTI_ARGS("getattr", getattr, 2);
     LAMINA_FUNC_MULTI_ARGS("setattr", setattr, 3);
     LAMINA_FUNC_MULTI_ARGS("update", update, 2);
+    LAMINA_FUNC_MULTI_ARGS("copy_struct", copy_struct, 1);
 } // namespace Lamina

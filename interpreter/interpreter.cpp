@@ -1,5 +1,5 @@
 #include "interpreter.hpp"
-#include "../extensions/standard/lstruct.hpp"
+#include "../extensions/standard/lmStruct.hpp"
 #include "bigint.hpp"
 #include "lamina.hpp"
 #include "lexer.hpp"

@@ -98,8 +98,8 @@ add_library(lamina_core SHARED
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
         extensions/standard/cas.cpp
-        extensions/standard/lstruct.hpp
-        extensions/standard/lstruct.cpp
+        extensions/standard/lmStruct.hpp
+        extensions/standard/lmStruct.cpp
         interpreter/eval.cpp
 )
 

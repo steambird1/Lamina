@@ -110,7 +110,9 @@ constexpr bool always_false = false;
         } global_var_##name##_instance;                                  \
     }
 
+/*#define LAMINA_MODULE(name, funcs, explicit_include) */
 
-inline void L_ERR(const std::string& msg) {
+
+inline void L_ERR(const std::string& msg){
     throw StdLibException(msg);
 }
