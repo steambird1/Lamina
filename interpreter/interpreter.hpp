@@ -90,16 +90,19 @@ public:
     }
     void execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
-    // Print all variables in current scope
+
     static Value eval_LiteralExpr(const LiteralExpr* node);
     Value eval_UnaryExpr(const UnaryExpr* unary);
     Value eval_BinaryExpr(const BinaryExpr* bin);
     Value eval_CallExpr(const CallExpr* call);
 
-    void printVariables() const;
+    // Print all variables in current scope
+    void print_variables() const;
     void add_function(const std::string& name, FuncDefStmt* func);
+
     // Save AST in REPL mode to keep function pointers valid
     void save_repl_ast(std::unique_ptr<ASTNode> ast);
+
     // Stack trace management
     void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
     void pop_frame();
@@ -110,20 +113,27 @@ public:
     static bool supports_colors();
     static void print_error(const std::string& message, bool use_colors = true);
     static void print_warning(const std::string& message, bool use_colors = true);
+
     // Builtin function type
     using BuiltinFunction = std::function<Value(const std::vector<Value>&)>;
+
     // Store builtin functions
     std::unordered_map<std::string, BuiltinFunction> builtin_functions;
     using EntryFunction = void (*)(Interpreter&);
     static void register_entry(EntryFunction func);
+
     // Variable assignment
     void set_variable(const std::string& name, const Value& val);
+
     // built global variable in interpreter
     void set_global_variable(const std::string& name, const Value& val);
+
     // Variable lookup
     Value get_variable(const std::string& name) const;
+
     // Call module function
     Value call_module_function(const std::string& func_name, const std::vector<Value>& args);
+
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
 
@@ -133,7 +143,7 @@ private:
     // List of loaded modules to prevent circular imports
     std::set<std::string> loaded_modules;
     // Store loaded module ASTs to keep function pointers valid
-    std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
+    std::map<std::string, std::unique_ptr<ASTNode>> loaded_module_asts;
     // Store REPL ASTs to keep function pointers valid in interactive mode
     std::vector<std::unique_ptr<ASTNode>> repl_asts;
     // Store loaded module loaders for function calls

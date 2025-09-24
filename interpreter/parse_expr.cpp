@@ -82,6 +82,9 @@ std::unique_ptr<Expression> Parser::parse_factor() {
         if (curr_token().type == TokenType::Dot) {
             node = parse_get_member(std::move(node));
         }
+        else if (curr_token().type == TokenType::DoubleColon) {
+            node = parse_namespace_get_member(std::move(node));
+        }
         else if (curr_token().type == TokenType::LBracket) {
             node = parse_get_item(std::move(node));
         }

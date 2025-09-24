@@ -38,26 +38,28 @@ enum class TokenType {
     LBrace,
     RBrace,
     Lambda,
-    LBracket,// [
-    RBracket,// ]
+    LBracket, // [
+    RBracket, // ]
     Comma,
     Dot,// 新增
+    TripleDot, // ...
     String,
     Semicolon,
     Plus,
     Minus,
     Star,
     Slash,
-    Backslash,  // \;
-    Percent,
-    Caret,
-    Bang,
+    Backslash,   // \;
+    Percent,     // %
+    Caret,       // ^
+    Bang,        // #
     Equal,       // ==
     NotEqual,    // !=
     Less,        // <
     LessEqual,   // <=
     Greater,     // >
     GreaterEqual,// >=
+    DoubleColon, // ::
     EndOfFile,
     Unknown
 };

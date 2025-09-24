@@ -93,6 +93,14 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             tokens.emplace_back(TokenType::Greater, ">", line, start_col);
             ++i;
             ++col;
+        } else if (src[i] == ':') {
+            ++i;
+            ++col;
+            if (src[i] == ':') {
+                ++i;
+                ++col;
+                tokens.emplace_back(TokenType::DoubleColon, "::", line, start_col);
+            }
         } else if (src[i] == '=') {
             tokens.emplace_back(TokenType::Assign, "=", line, start_col);
             ++i;
@@ -299,9 +307,18 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i;
             ++col;
         } else if (src[i] == '.') {
-            tokens.emplace_back(TokenType::Dot, ".", line, start_col);
             ++i;
             ++col;
+            if (src[i] == '.') {
+                ++i;
+                ++col;
+                ++i;
+                ++col;
+                tokens.emplace_back(TokenType::TripleDot, "...", line, start_col);
+            }
+            else {
+                tokens.emplace_back(TokenType::Dot, ".", line, start_col);
+            }
         } else {
             tokens.emplace_back(TokenType::Unknown, std::string(1, src[i]), line, start_col);
             ++i;

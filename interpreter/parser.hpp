@@ -32,6 +32,7 @@ public:
     // parse factor
     std::unique_ptr<Expression> parse_a_token();
     std::unique_ptr<Expression> parse_func_call(std::unique_ptr<Expression> node);
+    std::unique_ptr<NameSpaceGetMemberExpr> parse_namespace_get_member(std::unique_ptr<Expression> node);
     std::unique_ptr<GetMemberExpr> parse_get_member(std::unique_ptr<Expression> node);
     std::unique_ptr<GetItemExpr> parse_get_item(std::unique_ptr<Expression> node);
     std::vector<std::unique_ptr<Expression>> parse_params(TokenType endswith);

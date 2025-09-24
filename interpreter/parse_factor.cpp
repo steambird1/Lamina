@@ -74,6 +74,12 @@ std::unique_ptr<GetMemberExpr> Parser::parse_get_member(std::unique_ptr<Expressi
     return std::make_unique<GetMemberExpr>(std::move(node),std::move(child));
 }
 
+std::unique_ptr<NameSpaceGetMemberExpr> Parser::parse_namespace_get_member(std::unique_ptr<Expression> node) {
+    skip_token("::");
+    auto child = std::make_unique<IdentifierExpr>(skip_token().text);
+    return std::make_unique<NameSpaceGetMemberExpr>(std::move(node),std::move(child));
+}
+
 std::unique_ptr<GetItemExpr> Parser::parse_get_item(std::unique_ptr<Expression> node) {
     skip_token("[");
     auto param = parse_params(TokenType::RBracket);

@@ -299,7 +299,7 @@ int repl() {
                     continue;
                 }
                 if (trimmed_line == ":vars") {
-                    interpreter.printVariables();
+                    interpreter.print_variables();
                     ++lineno;
                     continue;
                 }

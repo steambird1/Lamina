@@ -7,6 +7,10 @@
 
 // AST 基类
 struct ASTNode {
+    int start_ln = 0;
+    int end_ln = 0;
+    int start_col = 0;
+    int end_col = 0;
     virtual ~ASTNode() = default;
 };
 
@@ -164,10 +168,12 @@ struct ExprStmt final :  Statement {
 struct StructDeclStmt final :  Statement {
     std::string name;
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec;
+    std::vector<std::unique_ptr<IdentifierExpr>> includes;
     explicit StructDeclStmt(
             std::string  n,
-            std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v)
-        : name(std::move(n)), init_vec(std::move(v)) {}
+            std::vector<std::pair<std::string, std::unique_ptr<Expression>>> v,
+            std::vector<std::unique_ptr<IdentifierExpr>> i)
+        : name(std::move(n)), init_vec(std::move(v)), includes(std::move(i)) {}
 };
 
 // 匿名Struct声明
@@ -198,6 +204,14 @@ struct GetMemberExpr final :  Expression {
     std::unique_ptr<Expression> father;
     std::unique_ptr<IdentifierExpr> child;
     GetMemberExpr(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
+        :father(std::move(f)), child(std::move(c)) {}
+};
+
+// 命名空间访问成员
+struct NameSpaceGetMemberExpr final :  Expression {
+    std::unique_ptr<Expression> father;
+    std::unique_ptr<IdentifierExpr> child;
+    NameSpaceGetMemberExpr(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
         :father(std::move(f)), child(std::move(c)) {}
 };
 

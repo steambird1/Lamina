@@ -59,10 +59,18 @@ std::unique_ptr<Statement> Parser::parse_var() {
 }
 
 std::unique_ptr<Statement> Parser::parse_struct() {
+    std::vector<std::unique_ptr<IdentifierExpr>> includes{};
     auto name = skip_token().text;
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};
     skip_token("{");
     while (curr_token().type != TokenType::RBrace) {
+
+        if (curr_token().type == TokenType::TripleDot) {
+            skip_token("...");
+            auto other_struct = std::make_unique<IdentifierExpr>(skip_token().text);
+            includes.emplace_back(std::move(other_struct));
+            continue;
+        }
         auto key = skip_token().text;
         skip_token("=");
         auto val = parse_expression();
@@ -71,7 +79,7 @@ std::unique_ptr<Statement> Parser::parse_struct() {
     }
     skip_token("}");
     skip_end_of_ln();
-    return std::make_unique<StructDeclStmt>(name, std::move(init_vec));
+    return std::make_unique<StructDeclStmt>(name, std::move(init_vec),std::move(includes));
 }
 
 std::unique_ptr<Statement> Parser::parse_while() {

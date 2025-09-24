@@ -467,7 +467,7 @@ bool Interpreter::load_module(const std::string& module_name) {
         }
 
         // Store the AST to keep function pointers valid
-        loaded_module_asts.push_back(std::move(ast));
+        loaded_module_asts[module_name] = std::move(ast);
         return true;
     }
     std::cerr << "Error: Module '" << module_name << "' does not contain valid code" << std::endl;
@@ -524,7 +524,7 @@ LAMINA_EXPORT void error_and_exit(const std::string& msg) {
 // }
 
 // 打印当前所有变量
-void Interpreter::printVariables() const {
+void Interpreter::print_variables() const {
     if (variable_stack.empty()) {
         std::cout << "No variables defined." << std::endl;
         return;
