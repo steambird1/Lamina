@@ -333,8 +333,7 @@ int repl() {
             auto block = std::make_shared<BlockStmt>(ast);
             if (!block) return 1;
             // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(ast);
-            // TODO: ...
+            interpreter.save_repl_ast(block);
 
             try {
 
