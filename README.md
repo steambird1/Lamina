@@ -3,7 +3,7 @@
 <img src="./assets/logo.svg" width="100%">
 
 <div align="right">
-  <a href="/docs/zh_TW/README.md"> 繁體中文</a> | <strong> 简体中文</strong> | <a href="/docs/en_US/README.md"> English</a>
+    <strong> 简体中文</strong> | <a href="/docs/en_US/README.md"> English</a>
 </div>
 <br>
 
@@ -30,6 +30,9 @@
 - \ 续行功能
 - 结构体深拷贝
 - 重构 Parser, ast
+- 报错时追踪文件上下文
+- 多语言支持 (延迟到下一个版本）
+- 虚数功能 (延迟到下一个版本）
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
