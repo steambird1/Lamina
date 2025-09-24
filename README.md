@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version v1.3.0 alpha 0
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.3.0 alpha 0
 
 <img src="./assets/logo.svg" width="100%">
 
@@ -16,6 +16,20 @@
 [![Language](https://img.shields.io/badge/language-C%2B%2B-orange.svg)](https://isocpp.org/)
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
+
+## 主要更新
+- 自动添加分号
+- if, while语句表达式部分可以省略圆括号
+- 定义没有参数的函数，可以省略圆括号
+- 匿名结构体声明
+- 匿名函数声明
+- include语句更新
+- .运算符：结构体访问成员运算符
+- ::运算符：命名空间访问成员运算符
+- ...运算符：结构体展开运算符
+- \ 续行功能
+- 结构体深拷贝
+- 重构 Parser, ast
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
