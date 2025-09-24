@@ -330,10 +330,10 @@ int repl() {
             }
 
             // Only support AST of type BlockStmt (block statement)
-            auto block = std::make_shared<BlockStmt>(ast);
+            auto block = std::make_unique<BlockStmt>(std::move(ast));
             if (!block) return 1;
             // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(block);
+            interpreter.save_repl_ast(std::move(block));
 
             try {
 
