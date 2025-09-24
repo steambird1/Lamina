@@ -238,6 +238,7 @@ int repl() {
             }
 
             bool execute_now = false;
+            bool has_missing_expr = false;
             if (line == "\x04") {   // Ctrl+D (EOF)
                 if (brace_level > 0) {
                     // In multi-line mode, Ctrl+D means end of input, execute code immediately
@@ -250,7 +251,7 @@ int repl() {
                 code_buffer += line + "\n";
 
                 // Simply check if the code block is complete by counting braces
-                for (char c: line) {
+                for (const char c: line) {
                     if (c == '{') {
                         brace_level++;
                     } else if (c == '}') {
