@@ -1,3 +1,4 @@
+#define _ALLOW_KEYWORD_MACROS
 #include "console_ui.hpp"
 #include "repl_input.hpp"
 
