@@ -174,6 +174,9 @@ add_executable(Lamina interpreter/main.cpp
         interpreter/repl_input.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp
+        interpreter/error_reporter.hpp
+        interpreter/src_manger.cpp
+        interpreter/src_manger.hpp
 )
 
 # Add version header

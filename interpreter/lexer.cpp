@@ -45,6 +45,9 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 and tokens.back().type != TokenType::Backslash) {
                 tokens.emplace_back(TokenType::Semicolon, ";", line, col);
             }
+            if (tokens.back().type == TokenType::Backslash) {
+                tokens.pop_back();
+            }
             ++line;
             col = 1;
             ++i;

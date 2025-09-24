@@ -320,23 +320,19 @@ int repl() {
 
             // frontend
             auto tokens = Lexer::tokenize(line_to_process);
-            static const auto parser = std::make_shared<Parser>(tokens);
-            auto ast = parser->parse_program();
+            const auto parser = std::make_shared<Parser>(tokens);
+            auto asts = parser->parse_program();
 
             // Check if AST generation succeeded
-            if (ast.empty()) {
+            if (asts.empty()) {
                 print_traceback("<stdin>", lineno);
                 return 1;
             }
 
             // Only support AST of type BlockStmt (block statement)
-            auto block = std::make_unique<BlockStmt>(std::move(ast));
-            if (!block) return 1;
-            // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(std::move(block));
+            auto block = std::make_unique<BlockStmt>(std::move(asts));
 
             try {
-
                 // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
@@ -396,6 +392,8 @@ int repl() {
             catch (...) {
                 Interpreter::print_error("Unknown error occurred", true);
             }
+            // 保存AST以保持函数指针有效
+            interpreter.save_repl_ast(std::move(block));
         }
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {

@@ -86,7 +86,10 @@ void Interpreter::set_global_variable(const std::string& name, const Value& val)
 }
 
 void Interpreter::execute(const std::unique_ptr<Statement>& node) {
-    if (!node) return;
+    if (!node) {
+        std::cout << "[Nothing to execute]" << std::endl;
+        return;
+    }
 
     if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
         if (v->expr) {
@@ -158,8 +161,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             error_and_exit("Null condition in if statement");
         }
         Value cond = eval(ifs->condition.get());
-        bool cond_true = cond.as_bool();
-        if (cond_true) {
+        if (cond.as_bool()) {
             for (auto& stmt: ifs->thenBlock->statements) execute(stmt);
         } else if (ifs->elseBlock) {
             for (auto& stmt: ifs->elseBlock->statements) execute(stmt);
@@ -244,7 +246,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 Value result = eval(exprstmt->expr.get());
                 // std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
             } catch (const StdLibException& e){
-                throw StdLibException(e.what());
+                throw;
             } catch (const std::exception& e) {
                 std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
             } catch (...) {
@@ -255,6 +257,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } else if (auto* nullstmt = dynamic_cast<NullStmt*>(node.get())) {
         (void) nullstmt;
+    } else {
+        std::cout << "[Nothing to execute]" << std::endl;
     }
 }
 

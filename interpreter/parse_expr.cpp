@@ -87,7 +87,8 @@ std::unique_ptr<Expression> Parser::parse_factor() {
         }
         else if (curr_token().type == TokenType::LParen) {
             node = parse_func_call(std::move(node));
-        }else {
+        }
+        else {
             break;
         }
     }

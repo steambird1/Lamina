@@ -17,7 +17,7 @@ public:
     void skip_end_of_ln();
     [[nodiscard]] Token curr_token() const;
     void must_token(const std::string& text, const std::string& waring) const;
-    std::vector<std::unique_ptr<ASTNode>> parse_program();
+    std::vector<std::unique_ptr<Statement>> parse_program();
     std::unique_ptr<Statement> parse_stmt();
 
     std::unique_ptr<Expression> parse_expression();

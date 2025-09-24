@@ -72,7 +72,7 @@ struct AssignStmt final :  Statement {
 
 // 复合语句块
 struct BlockStmt final :  Statement {
-    std::vector<std::unique_ptr<Statement>> statements;
+    std::vector<std::unique_ptr<Statement>> statements{};
     explicit BlockStmt(std::vector<std::unique_ptr<Statement>> s) : statements(std::move(s)) {}
 };
 
@@ -211,8 +211,8 @@ struct GetItemExpr final :  Expression {
 
 // 声明匿名函数
 struct LambdaDeclExpr final :  Expression {
-    std::vector<std::unique_ptr<Expression>> params;
+    std::vector<std::string> params;
     std::unique_ptr<BlockStmt> body;
-    LambdaDeclExpr(std::vector<std::unique_ptr<Expression>> p, std::unique_ptr<BlockStmt> b)
+    LambdaDeclExpr(std::vector<std::string> p, std::unique_ptr<BlockStmt> b)
         : params(std::move(p)), body(std::move(b)) {}
 };
