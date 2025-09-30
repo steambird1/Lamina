@@ -18,34 +18,39 @@
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
 <details>
-<summary><h2>主要更新</h2></summary>
-- 自动添加分号
-- if, while语句表达式部分可以省略圆括号
-- 定义没有参数的函数，可以省略圆括号
-- 匿名结构体声明
-- 匿名函数声明
-- include语句更新+模块系统
-- .运算符：结构体访问成员运算符
-- ::运算符：命名空间访问成员运算符
-- ...运算符：结构体展开运算符
-- \ 续行功能
-- 结构体深拷贝
-- 重构 Parser, ast
-- 将部分内置函数移到内置库
-- cmodule loader更新
-- 新增函数 typeof find replace foreach copy map exit
-- 新增函数 vars locals funcs
-- repl直接打印表达式
-- repl支持不带颜色的输出
-- repl关键字高亮及自动补齐
-***
-- array[index] = item 语法(延迟到下一个版本）
-- struct.item = value 语法(延迟到下一个版本）
-- set 集合类型 (延迟到下一个版本）
-- 线程库(debug) (延迟到下一个版本）
-- 带上下文的报错系统(延迟到下一个版本）
-- 多语言支持 (延迟到下一个版本）
-- 虚数功能 (延迟到下一个版本）
+<summary><b>主要更新</b></summary>
+        <ul>
+            <li>自动添加分号</li>
+            <li>if, while语句表达式部分可以省略圆括号</li>
+            <li>定义没有参数的函数，可以省略圆括号</li>
+            <li>匿名结构体声明</li>
+            <li>匿名函数声明</li>
+            <li>include语句更新+模块系统</li>
+            <li>.运算符：结构体访问成员运算符</li>
+            <li>::运算符：命名空间访问成员运算符</li>
+            <li>...运算符：结构体展开运算符</li>
+            <li>\ 续行功能</li>
+            <li>结构体深拷贝</li>
+            <li>重构 Parser, ast</li>
+            <li>将部分内置函数移到内置库</li>
+            <li>cmodule loader更新</li>
+            <li>新增函数 typeof、find、replace、foreach、copy、map、exit</li>
+            <li>新增函数 vars、locals、funcs</li>
+            <li>repl直接打印表达式</li>
+            <li>repl支持不带颜色的输出</li>
+            <li>repl关键字高亮及自动补齐</li>
+        </ul>
+
+        <b>延迟到下一个版本的特性</b>
+        <ul>
+            <li>array[index] = item 语法</li>
+            <li>struct.item = value 语法</li>
+            <li>set 集合类型</li>
+            <li>线程库(debug)</li>
+            <li>带上下文的报错系统</li>
+            <li>多语言支持</li>
+            <li>虚数功能</li>
+        </ul>
 </details>
 
 ## 一种专注于精确数学计算的面向过程编程语言
