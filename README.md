@@ -18,7 +18,7 @@
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
 <details>
-<summary><b><font size="5">主要更新</font></b>
+<summary><strong>主要更新</strong></b>
  - 点击展开详情
 </summary>
 
