@@ -19,9 +19,9 @@
 
 <details>
 <summary>
-<span style="font-size: 24px"><b>
+<span><h2>
     主要更新
-</b></span>
+</h2></span>
 </summary>
 
 <ul>
