@@ -8,7 +8,7 @@ struct Token;
 
 class LAMINA_API Parser {
     const std::vector<Token> tokens_;
-    int curr_tok_idx_ = 0;
+    long long unsigned int curr_tok_idx_ = 0;
 
 public:
     explicit Parser(const std::vector<Token>& tokens);

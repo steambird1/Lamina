@@ -302,6 +302,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             tokens.emplace_back(TokenType::RBracket, "]", line, start_col);
             ++i;
             ++col;
+        } else if (src[i] == '|') {
+            tokens.emplace_back(TokenType::Pipe, "|", line, start_col);
+            ++i;
+            ++col;
         } else if (src[i] == ',') {
             tokens.emplace_back(TokenType::Comma, ",", line, start_col);
             ++i;

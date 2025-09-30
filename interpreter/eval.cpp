@@ -212,6 +212,10 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
     return Value("<undefined function>");
 }
 
+Value exec_function(LambdaDeclExpr& func, const std::vector<Value>& args) {
+    // ToDo:...
+}
+
 Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value l = eval(bin->left.get());
     Value r = eval(bin->right.get());

@@ -85,10 +85,10 @@ void Interpreter::set_global_variable(const std::string& name, const Value& val)
     }
 }
 
-void Interpreter::execute(const std::unique_ptr<Statement>& node) {
+Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
     if (!node) {
         std::cout << "[Nothing to execute]" << std::endl;
-        return;
+        return LAMINA_NULL;
     }
 
     if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
@@ -203,7 +203,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                         execute(stmt);
                     } catch (const BreakException&) {
                         // 退出整个循环
-                        return;
+                        return LAMINA_NULL;
                     } catch (const ContinueException&) {
                         // 跳到下一次迭代
                         continue_encountered = true;
@@ -212,7 +212,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             }
         } catch (const BreakException&) {
             // 捕获可能从嵌套块冒泡上来的break异常
-            return;
+            return LAMINA_NULL;
         } catch (const ReturnException&) {
             // 函数返回，直接传递给上层
             throw;
@@ -229,11 +229,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
         Value val = eval(ret->expr.get());
         throw ReturnException(val);
-    } else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
-        (void) breakStmt;// 避免未使用变量警告
+    } else if ([[maybe_unused]] auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
         throw BreakException();
-    } else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
-        (void) contStmt;// 避免未使用变量警告
+    } else if ([[maybe_unused]] auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
         throw ContinueException();
     } else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
         if (!load_module(includeStmt->module)) {
@@ -245,7 +243,8 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 // std::cerr << "DEBUG: Executing expression statement" << std::endl;
                 Value result = eval(exprstmt->expr.get());
                 // std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
-            } catch (const StdLibException& e){
+                return result;
+            } catch (const StdLibException& e) {
                 throw;
             } catch (const std::exception& e) {
                 std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
@@ -260,6 +259,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
     } else {
         std::cout << "[Nothing to execute]" << std::endl;
     }
+    return LAMINA_NULL;
 }
 
 
@@ -284,6 +284,17 @@ Value Interpreter::eval(const ASTNode* node) {
     }// Support function calls
     if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         return eval_CallExpr(call);
+    }
+    if (auto* func = dynamic_cast<const LambdaDeclExpr*>(node)) {
+        return func;
+    }
+    if (auto* lm_struct = dynamic_cast<const LambdaStructDeclExpr*>(node)) {
+        std::vector<std::pair<std::string, Value>> struct_init_val{};
+        for (const auto& [n, e]: lm_struct->init_vec) {
+            auto val = eval(e.get());
+            struct_init_val.emplace_back(n, val);
+        }
+        return new_lstruct(struct_init_val);
     }
     if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
         std::vector<Value> elements;
@@ -310,7 +321,7 @@ bool Interpreter::load_module(const std::string& module_name) {
     // 立即插入，防止递归 include
     loaded_modules.insert(module_name);
 
-    bool is_shared_lib = false;
+    [[maybe_unused]] bool is_shared_lib = false;
     std::string clean_name = module_name;
     if (clean_name.rfind("lib", 0) == 0) {
         clean_name = clean_name.substr(3);

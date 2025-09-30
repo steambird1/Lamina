@@ -1,6 +1,7 @@
 #include "parser.hpp"
 
 #include "color_style.hpp"
+#include "interpreter.hpp"
 #include "lexer.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens_(tokens){};

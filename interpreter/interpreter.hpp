@@ -77,6 +77,16 @@ public:
     ContinueException() = default;
 };
 
+struct LmModule {
+    std::string module_name;
+    std::string module_path;
+    std::unordered_map<std::string, Value> sub_item;
+};
+
+struct LmCppFunction {
+    std::function<Value(std::vector<Value>)> function;
+};
+
 class LAMINA_API Interpreter {
     // 禁止拷贝，允许移动
     Interpreter(const Interpreter&) = delete;
@@ -88,13 +98,14 @@ public:
     Interpreter() {
         register_builtin_functions();
     }
-    void execute(const std::unique_ptr<Statement>& node);
+    Value execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
 
     static Value eval_LiteralExpr(const LiteralExpr* node);
     Value eval_UnaryExpr(const UnaryExpr* unary);
     Value eval_BinaryExpr(const BinaryExpr* bin);
     Value eval_CallExpr(const CallExpr* call);
+    Value exec_function(LambdaDeclExpr& func, const std::vector<Value>& args);
 
     // Print all variables in current scope
     void print_variables() const;

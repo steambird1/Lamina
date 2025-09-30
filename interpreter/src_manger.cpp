@@ -1,8 +1,9 @@
 #include "src_manger.hpp"
-
 #include "color_style.hpp"
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <vector>
 
 namespace {
     std::mutex cache_mutex;

@@ -60,6 +60,7 @@ enum class TokenType {
     Greater,     // >
     GreaterEqual,// >=
     DoubleColon, // ::
+    Pipe,        // |
     EndOfFile,
     Unknown
 };

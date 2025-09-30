@@ -221,7 +221,7 @@ int repl() {
             if (brace_level > 0) {
                 prompt = ConClr::GREEN + ". " + ConClr::RESET ;    // 多行输入下等待输入的提示符
             } else {
-                prompt = ConClr::GREEN + "> " + ConClr::RESET ;;   // 带绿色高亮的提示符
+                prompt = ConClr::GREEN + "> " + ConClr::RESET ;   // 带绿色高亮的提示符
             }
 
             std::string line = repl_readline(prompt);
@@ -238,7 +238,6 @@ int repl() {
             }
 
             bool execute_now = false;
-            bool has_missing_expr = false;
             if (line == "\x04") {   // Ctrl+D (EOF)
                 if (brace_level > 0) {
                     // In multi-line mode, Ctrl+D means end of input, execute code immediately
@@ -337,7 +336,10 @@ int repl() {
                 // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
-                        interpreter.execute(stmt);
+                        const auto result = interpreter.execute(stmt);
+                        if (! result.is_null()) {
+                            std::cout << "[exec the expr]: " << result.to_string() << std::endl;
+                        }
                     } catch (const RuntimeError& re) {
                         interpreter.print_stack_trace(re, true);
                         break;

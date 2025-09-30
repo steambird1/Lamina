@@ -110,6 +110,9 @@ constexpr bool always_false = false;
         } global_var_##name##_instance;                                  \
     }
 
+/*#define LAMINA_EXEC_FUNC(func, argv)*/
+
+
 /*#define LAMINA_MODULE(name, funcs, explicit_include) */
 
 

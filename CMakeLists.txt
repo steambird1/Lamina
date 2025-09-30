@@ -79,7 +79,6 @@ add_library(lamina_core SHARED
         interpreter/parse_factor.cpp
         interpreter/parse_stmt.cpp
         interpreter/color_style.hpp
-        interpreter/color_style.cpp
         # interpreter/parser.old.cpp
         # interpreter/parser.old.hpp
         interpreter/eval.cpp
@@ -177,6 +176,7 @@ add_executable(Lamina interpreter/main.cpp
         interpreter/error_reporter.hpp
         interpreter/src_manger.cpp
         interpreter/src_manger.hpp
+        interpreter/color_style.cpp
 )
 
 # Add version header

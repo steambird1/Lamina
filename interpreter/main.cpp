@@ -1,9 +1,11 @@
-#define _ALLOW_KEYWORD_MACROS
+#define ALLOW_KEYWORD_MACROS
+#include "color_style.hpp"
 #include "console_ui.hpp"
 #include "repl_input.hpp"
 
 int main(const int argc, const char* const argv[]) {
     try {
+        ConClr::init(Interpreter::supports_colors());
         enable_ansi_escape();           // 设置编码
         return argv_parser(argc, argv); // 主要执行这里
 

@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <set>
 #include <string>
 #include <variant>
 #include <vector>
@@ -20,34 +21,32 @@
 #define LAMINA_API
 #endif
 
+
+struct LambdaDeclExpr;
 class lmStruct;
 LAMINA_API std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct);
 
 class LAMINA_API Value {
 public:
-    enum class Type { Null,
-                      Bool,
-                      Int,
-                      Float,
-                      String,
-                      Array,
-                      Matrix,
-                      BigInt,
-                      Rational,
-                      Irrational,
-                      lStruct,
-                      Symbolic };
+    enum class Type {
+        Lambda, lmStruct, Symbolic,
+        Null, Bool,
+        Int, Float, BigInt,
+        Rational, Irrational,
+        String, Array, Set, Matrix,};
     Type type;
     std::variant<
             std::nullptr_t,
             bool, int, double, std::string,
+            std::set<Value>,
             std::vector<Value>,
             std::vector<std::vector<Value>>,
             std::vector<std::pair<std::string, Value>>,
             ::BigInt, ::Rational, ::Irrational,
             std::shared_ptr<SymbolicExpr>,
-            std::shared_ptr<lmStruct>>
-            data;
+            std::shared_ptr<lmStruct>,
+            std::shared_ptr<LambdaDeclExpr>
+    >  data;
 
     virtual ~Value() = default;
 
@@ -64,7 +63,9 @@ public:
     Value(const ::BigInt& bi) : type(Type::BigInt), data(bi) {}
     Value(const ::Rational& r) : type(Type::Rational), data(r) {}
     Value(const ::Irrational& ir) : type(Type::Irrational), data(ir) {}
-    Value(const std::shared_ptr<lmStruct>& lstruct) : type(Type::lStruct), data(lstruct) {}
+    Value(const std::shared_ptr<lmStruct>& lstruct) : type(Type::lmStruct), data(lstruct) {}
+    Value(const std::set<Value>& set) : type(Type::Set), data(set) {}
+    Value(const std::shared_ptr<LambdaDeclExpr>& func_def_stmt) : type(Type::Lambda), data(func_def_stmt) {}
     Value(const std::shared_ptr<SymbolicExpr>& sym) : type(Type::Symbolic), data(sym) {}
     Value(const std::vector<Value>& arr) {
         // Check if this is a matrix (array of arrays)
@@ -103,8 +104,10 @@ public:
     bool is_matrix() const { return type == Type::Matrix; }
     bool is_bigint() const { return type == Type::BigInt; }
     bool is_rational() const { return type == Type::Rational; }
+    bool is_set() const { return type == Type::Set; }
+    bool is_lambda() const { return type == Type::Lambda; }
     bool is_irrational() const { return type == Type::Irrational; }
-    bool is_lstruct() const { return type == Type::lStruct; }
+    bool is_lstruct() const { return type == Type::lmStruct; }
     bool is_symbolic() const { return type == Type::Symbolic; }
     bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt || type == Type::Rational || type == Type::Irrational || type == Type::Symbolic; }
     // Get numeric value as double
@@ -229,8 +232,14 @@ public:
             case Type::Symbolic: {
                 return std::get<std::shared_ptr<SymbolicExpr>>(data)->to_string();
             }
-            case Type::lStruct: {
+            case Type::lmStruct: {
                 return lStruct_to_string(std::get<std::shared_ptr<lmStruct>>(data));
+            }
+            case Type::Lambda: {
+                const auto* func_ptr = std::get<std::shared_ptr<LambdaDeclExpr>>(data).get();
+                std::stringstream ss;
+                ss << std::hex << func_ptr;  // 以十六进制格式输出指针地址
+                return "<Lamina lambda at " + ss.str() + " >";
             }
         }
         return "<unknown>";

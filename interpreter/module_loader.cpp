@@ -105,7 +105,7 @@ ModuleLoader::ModuleLoader(const std::string& path) : m_handle(nullptr), m_path(
     // 验证模块签名
     const char* (*sig_func)() = nullptr;
 #ifdef _WIN32
-    sig_func = (const char* (*) ()) GetProcAddress((HMODULE) m_handle, "lamina_module_signature");
+    sig_func = reinterpret_cast<const char* (*) ()>(GetProcAddress(static_cast<HMODULE>(m_handle), "lamina_module_signature"));
 #else
     sig_func = (const char* (*) ()) dlsym(m_handle, "lamina_module_signature");
 #endif
@@ -125,7 +125,7 @@ ModuleLoader::ModuleLoader(const std::string& path) : m_handle(nullptr), m_path(
     // 获取初始化函数
     LaminaModuleExports* (*init_func)() = nullptr;
 #ifdef _WIN32
-    init_func = (LaminaModuleExports * (*) ()) GetProcAddress((HMODULE) m_handle, "lamina_module_init");
+    init_func = reinterpret_cast<LaminaModuleExports* (*) ()>(GetProcAddress(static_cast<HMODULE>(m_handle), "lamina_module_init"));
 #else
     init_func = (LaminaModuleExports * (*) ()) dlsym(m_handle, "lamina_module_init");
 #endif

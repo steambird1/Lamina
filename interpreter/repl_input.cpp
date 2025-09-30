@@ -202,16 +202,16 @@ std::string repl_readline(const std::string& prompt) {
             buffer.insert(buffer.begin() + cursor, (char) ch);
             ++cursor;
             if (buffer.size() > maxlen) maxlen = buffer.size();
-            for (size_t i = cursor - 1; i < buffer.size(); ++i) std::cout << buffer[i];
-            for (size_t i = buffer.size(); i < maxlen; ++i) std::cout << ' ';
-            for (size_t i = cursor; i < maxlen; ++i) std::cout << "\b";
-            std::cout << std::flush;
+            //for (size_t i = cursor - 1; i < buffer.size(); ++i) std::cout << buffer[i];
+            //for (size_t i = buffer.size(); i < maxlen; ++i) std::cout << ' ';
+            //for (size_t i = cursor; i < maxlen; ++i) std::cout << "\b";
+            //std::cout << std::flush;
             if (history_index != -1) { history_index = -1; }
         }
     }
     if (!buffer.empty() && (history.empty() || buffer != history.back())) {
         history.push_back(buffer);
-        if ((int) history.size() > history_max) history.erase(history.begin());
+        if (static_cast<int>(history.size()) > history_max) history.erase(history.begin());
     }
 #else
     static std::vector<std::string> history;
