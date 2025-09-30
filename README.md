@@ -17,7 +17,8 @@
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
-## 主要更新
+<details>
+<summary><h2>主要更新</h2></summary>
 - 自动添加分号
 - if, while语句表达式部分可以省略圆括号
 - 定义没有参数的函数，可以省略圆括号
@@ -37,7 +38,7 @@
 - repl直接打印表达式
 - repl支持不带颜色的输出
 - repl关键字高亮及自动补齐
-
+***
 - array[index] = item 语法(延迟到下一个版本）
 - struct.item = value 语法(延迟到下一个版本）
 - set 集合类型 (延迟到下一个版本）
@@ -45,6 +46,7 @@
 - 带上下文的报错系统(延迟到下一个版本）
 - 多语言支持 (延迟到下一个版本）
 - 虚数功能 (延迟到下一个版本）
+</details>
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
