@@ -37,8 +37,9 @@
 <li>重构 Parser, ast</li>
 <li>将部分内置函数移到内置库</li>
 <li>cmodule loader更新</li>
-<li>新增函数 typeof、find、replace、foreach、copy、map、exit</li>
+<li>新增函数 typeof、find、replace、foreach、copy、map、exit、tostring</li>
 <li>新增函数 vars、locals、funcs</li>
+<li>loop语句</li>
 <li>repl直接打印表达式</li>
 <li>repl支持不带颜色的输出</li>
 <li>repl关键字高亮及自动补齐</li>
