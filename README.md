@@ -18,8 +18,7 @@
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
 <br/>
-<br/>
-<h2>更新了什么</h2>
+<h2>🎊更新了什么</h2>
 <details>
 <summary><strong>点击展开详情</strong></b>
 </summary>
