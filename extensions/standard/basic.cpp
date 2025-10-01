@@ -209,6 +209,8 @@ inline Value typeof_(const std::vector<Value>& args) {
         case Value::Type::Array:     return LAMINA_STRING("array");
         case Value::Type::Set:       return LAMINA_STRING("set");
         case Value::Type::Matrix:    return LAMINA_STRING("matrix");
+        case Value::Type::lmCppFunction:return LAMINA_STRING("cpp_func");
+        case Value::Type::lmModule:  return LAMINA_STRING("module");
         default: return LAMINA_NULL;
     }
 

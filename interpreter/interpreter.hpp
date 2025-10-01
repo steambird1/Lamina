@@ -9,7 +9,6 @@
 #define LAMINA_API
 #endif
 #include "ast.hpp"
-#include "module_loader.hpp"
 #include "value.hpp"
 #include <functional>
 #include <memory>
@@ -77,15 +76,6 @@ public:
     ContinueException() = default;
 };
 
-struct LmModule {
-    std::string module_name;
-    std::string module_path;
-    std::unordered_map<std::string, Value> sub_item;
-};
-
-struct LmCppFunction {
-    std::function<Value(std::vector<Value>)> function;
-};
 
 class LAMINA_API Interpreter {
     // 禁止拷贝，允许移动
@@ -105,7 +95,7 @@ public:
     Value eval_UnaryExpr(const UnaryExpr* unary);
     Value eval_BinaryExpr(const BinaryExpr* bin);
     Value eval_CallExpr(const CallExpr* call);
-    Value exec_function(LambdaDeclExpr& func, const std::vector<Value>& args);
+    Value call_function(LambdaDeclExpr& func, const std::vector<Value>& args);
 
     // Print all variables in current scope
     void print_variables() const;
@@ -142,9 +132,6 @@ public:
     // Variable lookup
     Value get_variable(const std::string& name) const;
 
-    // Call module function
-    Value call_module_function(const std::string& func_name, const std::vector<Value>& args);
-
     // Variable scope stack, top is the current scope
     std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
 
@@ -157,8 +144,6 @@ private:
     std::map<std::string, std::unique_ptr<ASTNode>> loaded_module_asts;
     // Store REPL ASTs to keep function pointers valid in interactive mode
     std::vector<std::unique_ptr<ASTNode>> repl_asts;
-    // Store loaded module loaders for function calls
-    std::vector<std::unique_ptr<ModuleLoader>> module_loaders;
 
     // Stack trace for function calls
     std::vector<StackFrame> call_stack;

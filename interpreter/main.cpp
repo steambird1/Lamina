@@ -1,7 +1,7 @@
 #define ALLOW_KEYWORD_MACROS
-#include "color_style.hpp"
 #include "console_ui.hpp"
-#include "repl_input.hpp"
+#include "utils/color_style.hpp"
+#include "utils/repl_input.hpp"
 
 int main(const int argc, const char* const argv[]) {
     try {

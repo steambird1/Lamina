@@ -5,9 +5,11 @@
 #include "symbolic.hpp"
 
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -20,7 +22,21 @@
 #else
 #define LAMINA_API
 #endif
+class Value;
 
+struct LmModule {
+    std::string module_name;
+    int id;
+    std::unordered_map<std::string, Value> sub_item;
+    LmModule(std::string module_name, int id)
+        : module_name(std::move(module_name)), id(id) {}
+};
+
+struct LmCppFunction {
+    std::function<Value(std::vector<Value>)> function;
+    explicit LmCppFunction(std::function<Value(std::vector<Value>)> function)
+        : function(std::move(function)) {}
+};
 
 struct LambdaDeclExpr;
 class lmStruct;
@@ -30,6 +46,7 @@ class LAMINA_API Value {
 public:
     enum class Type {
         Lambda, lmStruct, Symbolic,
+        lmModule, lmCppFunction,
         Null, Bool,
         Int, Float, BigInt,
         Rational, Irrational,
@@ -38,6 +55,8 @@ public:
     std::variant<
             std::nullptr_t,
             bool, int, double, std::string,
+            std::shared_ptr<LmModule>,
+            std::shared_ptr<LmCppFunction>,
             std::set<Value>,
             std::vector<Value>,
             std::vector<std::vector<Value>>,
@@ -67,6 +86,8 @@ public:
     Value(const std::set<Value>& set) : type(Type::Set), data(set) {}
     Value(const std::shared_ptr<LambdaDeclExpr>& func_def_stmt) : type(Type::Lambda), data(func_def_stmt) {}
     Value(const std::shared_ptr<SymbolicExpr>& sym) : type(Type::Symbolic), data(sym) {}
+    Value(const std::shared_ptr<LmCppFunction>& func) : type(Type::lmCppFunction), data(func) {}
+    Value(const std::shared_ptr<LmModule>& module) : type(Type::lmModule), data(module) {}
     Value(const std::vector<Value>& arr) {
         // Check if this is a matrix (array of arrays)
         bool is_matrix = !arr.empty() && arr[0].is_array();
@@ -109,6 +130,8 @@ public:
     bool is_irrational() const { return type == Type::Irrational; }
     bool is_lstruct() const { return type == Type::lmStruct; }
     bool is_symbolic() const { return type == Type::Symbolic; }
+    bool is_lmModule() const { return type == Type::lmModule; }
+    bool is_lmCppFunction() const { return type == Type::lmCppFunction; }
     bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt || type == Type::Rational || type == Type::Irrational || type == Type::Symbolic; }
     // Get numeric value as double
     double as_number() const {

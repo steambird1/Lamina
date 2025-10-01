@@ -186,34 +186,13 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         return Value(); // Default value when no return
     }
 
-    // Check if it's a module function before reporting undefined
-    bool is_module_func = actual_callee.find(".") != std::string::npos;
-    if (is_module_func) {
-        // Prepare arguments for module function call
-        std::vector<Value> args;
-        for (const auto& arg: call->args) {
-            if (!arg) {
-                std::cerr << "Error: Null argument in call to module function '" << actual_callee << "'" << std::endl;
-                args.push_back(Value());
-            } else {
-                args.push_back(eval(arg.get()));
-            }
-        }
-
-        // Try to call the module function
-        Value result = call_module_function(actual_callee, args);
-        if (result.to_string() != "null") { // 检查是否成功调用
-            return result;
-        }
-        // If module function call failed, fall through to undefined function error
-    }
 
     std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
     return Value("<undefined function>");
 }
 
-Value exec_function(LambdaDeclExpr& func, const std::vector<Value>& args) {
-    // ToDo:...
+Value call_function(LambdaDeclExpr& func, const std::vector<Value>& args) {
+    // ToDo: ...
 }
 
 Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {

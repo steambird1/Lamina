@@ -1,7 +1,7 @@
 
 #include "color_style.hpp"
 
-#include "interpreter.hpp"
+#include "../interpreter.hpp"
 void ConClr::init(const bool use_color) {
     RESET = use_color ? "\033[0m" : "";
     BLACK = use_color ? "\033[30m" : "";

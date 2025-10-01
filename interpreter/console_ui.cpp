@@ -3,8 +3,8 @@
 #include "lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "repl_input.hpp"
 #include "trackback.hpp"
+#include "utils/repl_input.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -15,7 +15,7 @@
 #include <winnls.h>
 #endif
 
-#include "color_style.hpp"
+#include "utils/color_style.hpp"
 
 
 #include <string>

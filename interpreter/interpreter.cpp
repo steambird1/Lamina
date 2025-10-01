@@ -3,7 +3,6 @@
 #include "bigint.hpp"
 #include "lamina.hpp"
 #include "lexer.hpp"
-#include "module_loader.hpp"
 #include "parser.hpp"
 
 #include <cmath>
@@ -275,8 +274,74 @@ Value Interpreter::eval(const ASTNode* node) {
     if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         return eval_CallExpr(call);
     }
+    if (auto* g_mem = dynamic_cast<const GetMemberExpr*>(node)) {
+        auto left = eval(g_mem->father.get());
+        if (left.is_lstruct()) {
+            const auto& lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            const auto& attr_name = g_mem->child->name;
+            auto res = lstruct_->find(attr_name);
+            if (res == nullptr) {
+                L_ERR("AttrError: struct hasn't attribute named " + attr_name);
+                return LAMINA_NULL;
+            }
+            return res->value;
+        }
+        L_ERR("Type of left can't get it member");
+        return LAMINA_NULL;
+    }
+    if (auto* g_item = dynamic_cast<const GetItemExpr*>(node)) {
+        auto left = eval(g_item->father.get());
+        if (g_item->params.empty()) {
+            L_ERR("Getitem need one parameter");
+            return LAMINA_NULL;
+        }
+        const auto& subscript = eval(g_item->params[0].get());
+        if (left.is_array() and subscript.is_int()) {
+            const auto& larray_ = std::get<std::vector<Value>>(left.data);
+            Value val;
+            try {
+                val = larray_.at(std::get<int>(subscript.data));
+            }
+            catch (const std::out_of_range& e) {
+                L_ERR("Index out of range");
+                return LAMINA_NULL;
+            }
+            return val;
+        }
+
+        if (left.is_lstruct() and subscript.is_string()) {
+            const auto& lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            const auto& attr_name = std::get<std::string>(subscript.data);
+            auto res = lstruct_->find(attr_name);
+            if (res == nullptr) {
+                L_ERR("AttrError: struct hasn't attribute named " + attr_name);
+                return LAMINA_NULL;
+            }
+            return res->value;
+        }
+        L_ERR("Type of left is not subscriptable");
+        return LAMINA_NULL;
+    }
     if (auto* func = dynamic_cast<const LambdaDeclExpr*>(node)) {
         return func;
+    }
+    if (auto* ns_g_mem = dynamic_cast<const NameSpaceGetMemberExpr*>(node)) {
+        auto left = eval(ns_g_mem->father.get());
+        if (left.is_lmModule()) {
+            const auto& lmodule_ = std::get<std::shared_ptr<LmModule>>(left.data);
+            const auto& attr_name = ns_g_mem->child->name;
+            Value val;
+            try {
+                val = lmodule_->sub_item.at(attr_name);
+            }
+            catch (const std::out_of_range& e) {
+                L_ERR("Attr "+attr_name+" not in module "+lmodule_->module_name);
+                return LAMINA_NULL;
+            }
+            return val;
+        }
+        L_ERR("Type of left is not a lamina module");
+        return LAMINA_NULL;
     }
     if (auto* lm_struct = dynamic_cast<const LambdaStructDeclExpr*>(node)) {
         std::vector<std::pair<std::string, Value>> struct_init_val{};
@@ -293,7 +358,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 elements.push_back(eval(element.get()));
             } else {
                 std::cerr << "Error: Null element in array literal" << std::endl;
-                return Value();
+                return {};
             }
         }
         return Value(elements);
@@ -304,175 +369,7 @@ Value Interpreter::eval(const ASTNode* node) {
 
 // Load and execute module
 bool Interpreter::load_module(const std::string& module_name) {
-    // Check if already loaded to avoid circular imports
-    if (loaded_modules.contains(module_name)) {
-        return true;// Already loaded
-    }
-    // 立即插入，防止递归 include
-    loaded_modules.insert(module_name);
-
-    [[maybe_unused]] bool is_shared_lib = false;
-    std::string clean_name = module_name;
-    if (clean_name.rfind("lib", 0) == 0) {
-        clean_name = clean_name.substr(3);
-    }
-
-// 平台相关动态库扩展名
-#if defined(_WIN32)
-    const std::string lib_ext = ".dll";
-#elif defined(__APPLE__)
-    const std::string lib_ext = ".dylib";
-#else
-    const std::string lib_ext = ".so";
-#endif
-
-    // Handle built-in hidden library "splash"
-    if (module_name == "splash") {
-        print_logo();
-        return true;
-    }
-    // Handle built-in hidden library "them" (credits)
-    if (module_name == "them") {
-        print_them();
-        return true;
-    }
-
-    // Build possible file paths
-    std::string filename = module_name;
-    bool has_lm = filename.find(".lm") != std::string::npos;
-    bool has_lib = filename.find(lib_ext) != std::string::npos;
-
-    // Try different paths: current directory, examples directory, etc.
-    const std::vector<std::string> search_paths = {"", ".", "include", "extensions"};
-    std::string full_path;
-
-    // 如果指定了动态库扩展名，直接尝试加载动态库
-    if (has_lib) {
-        std::vector<std::string> tried_paths;
-        for (const auto& path: search_paths) {
-            full_path = (std::filesystem::path(path) / filename).string();
-            std::ifstream testfile(full_path, std::ios::binary);
-            tried_paths.push_back(full_path);
-            if (testfile) {
-                testfile.close();
-                auto loader = std::make_unique<ModuleLoader>(full_path);
-                if (loader->isLoaded()) {
-                    if (loader->registerToInterpreter(*this)) {
-                        // 保存模块加载器实例
-                        module_loaders.push_back(std::move(loader));
-                        return true;
-                    }
-                    std::cerr << "Failed to register module: " << full_path << std::endl;
-                } else {
-                    std::cerr << "Failed to load shared library: " << full_path << std::endl;
-                }
-            }
-        }
-        // 如果指定了.dll/.so/.dylib但没找到，直接返回失败
-        if (tried_paths.empty()) {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
-        } else {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\nTried paths:\n";
-            for (const auto& p : tried_paths) {
-                std::cerr << "  - " << p << "\n";
-            }
-        }
-        return false;
-    }
-
-    // 如果没有指定扩展名，默认添加.lm
-    if (!has_lm) {
-        filename += ".lm";
-    }
-
-    std::ifstream file;
-    for (const auto& path: search_paths) {
-        full_path = (std::filesystem::path(path) / filename).string();
-        file.open(full_path);
-        if (file) break;
-    }
-
-    // 如果没找到脚本文件，尝试查找动态库（lib前缀和无前缀，自动适配扩展名）
-    if (!file) {
-        std::vector<std::string> lib_names = {
-                "lib" + clean_name + lib_ext,
-                clean_name + lib_ext};
-        is_shared_lib = true;
-        bool found = false;
-        for (const auto& libfile: lib_names) {
-            for (const auto& path: search_paths) {
-                full_path = (std::filesystem::path(path) / libfile).string();
-                std::ifstream testfile(full_path, std::ios::binary);
-                if (testfile) {
-                    testfile.close();
-                    auto loader = std::make_unique<ModuleLoader>(full_path);
-                    if (loader->isLoaded()) {
-                        if (loader->registerToInterpreter(*this)) {
-                            // 保存模块加载器实例
-                            module_loaders.push_back(std::move(loader));
-                            found = true;
-                            break;
-                        }
-                        std::cerr << "Failed to register module: " << full_path << std::endl;
-                    } else {
-                        std::cerr << "Failed to load shared library: " << full_path << std::endl;
-                    }
-                }
-            }
-            if (found) break;
-        }
-        if (!found) {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
-            std::cerr << "  Searched in: ";
-            for (const auto& libfile: lib_names) {
-                for (const auto& path: search_paths) {
-                    std::cerr << (std::filesystem::path(path) / libfile).string() << " ";
-                }
-            }
-            std::cerr << "\n";
-            return false;
-        }
-        return true;
-    }
-
-
-    // Read file into string
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string source = buffer.str();
-    file.close();
-
-
-    // Lexical and syntax analysis
-    auto tokens = Lexer::tokenize(source);
-    auto parser = std::make_shared<Parser>(tokens);
-    auto ast = parser->parse_stmt();
-
-    if (!ast) {
-        std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;
-        loaded_modules.erase(module_name);// Remove from loaded modules on failure
-        return false;
-    }// Execute module code (should be a block statement)
-    auto* block = dynamic_cast<BlockStmt*>(ast.get());
-    if (block) {
-        // Execute module code in the current scope (not a new scope)
-        // This allows variables and functions to be accessible after inclusion
-        try {
-            for (auto& stmt: block->statements) {
-                execute(stmt);
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "Error: Exception while executing module '" << module_name << "': " << e.what() << std::endl;
-            loaded_modules.erase(module_name);// 失败时移除，防止死锁
-            return false;
-        }
-
-        // Store the AST to keep function pointers valid
-        loaded_module_asts[module_name] = std::move(ast);
-        return true;
-    }
-    std::cerr << "Error: Module '" << module_name << "' does not contain valid code" << std::endl;
-    return false;
+    // ToDo: ...
 }
 
 // 使用函数内的静态变量来避免DLL导出/导入问题
@@ -636,27 +533,6 @@ void Interpreter::print_error(const std::string& message, bool use_colors) {
     } else {
         std::cerr << "Error: " << message << "\n";
     }
-}
-
-// Call module function implementation
-Value Interpreter::call_module_function(const std::string& func_name, const std::vector<Value>& args) {
-    // Try each loaded module
-    for (auto& loader: module_loaders) {
-        if (loader && loader->isLoaded()) {
-            // Check if this module has the function (by namespace)
-            size_t dot_pos = func_name.find(".");
-            if (dot_pos != std::string::npos) {
-                std::string ns = func_name.substr(0, dot_pos);
-                const auto* module_info = loader->getModuleInfo();
-                if (module_info && std::string(module_info->namespace_name) == ns) {
-                    return loader->callModuleFunction(func_name, args);
-                }
-            }
-        }
-    }
-
-    std::cerr << "ERROR: Module function '" << func_name << "' not found in any loaded module" << std::endl;
-    return Value();// null value
 }
 
 void Interpreter::print_warning(const std::string& message, bool use_colors) {

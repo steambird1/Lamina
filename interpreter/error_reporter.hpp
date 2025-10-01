@@ -1,7 +1,7 @@
 #pragma once
-#include "color_style.hpp"
 #include "lexer.hpp"
-#include "src_manger.hpp"
+#include "utils/color_style.hpp"
+#include "utils/src_manger.hpp"
 #include "version.hpp"
 
 enum class WarningLevel: unsigned char {
