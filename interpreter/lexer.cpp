@@ -64,15 +64,28 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             size_t j = i + 1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
             std::string ident = src.substr(i, j - i);
-            TokenType type = TokenType::Identifier;
-            if (keywords.count(ident)) type = keywords[ident];
+            auto type = TokenType::Identifier;
+            if (keywords.contains(ident)) type = keywords[ident];
             tokens.emplace_back(type, ident, line, start_col);
             col += (j - i);
             i = j;
+        } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '>') {
+            tokens.emplace_back(TokenType::FatArrow, "=>", line, start_col);
+            i += 2;
+            col += 2;
+        }
+        else if (src[i] == '-' && i + 1 < src.size() && src[i + 1] == '>') {
+            tokens.emplace_back(TokenType::ThinArrow, "->", line, start_col);
+            i += 2;
+            col += 2;
         } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '=') {
             tokens.emplace_back(TokenType::Equal, "==", line, start_col);
             i += 2;
             col += 2;
+        } else if (src[i] == '!') {
+            tokens.emplace_back(TokenType::ExclamationMark, "!", line, start_col);
+            ++i;
+            ++col;
         } else if (src[i] == '!' && i + 1 < src.size() && src[i + 1] == '=') {
             tokens.emplace_back(TokenType::NotEqual, "!=", line, start_col);
             i += 2;

@@ -91,8 +91,9 @@ int run_file(const std::string& path) {
     // }
 
     if (!ast) {
-        print_traceback(path, 1);
-        return 2;
+        // print_traceback(path, 1);
+        // return 2;
+        std::cout << "[Nothing to execute]" << std::endl;
     }
 
     // 只支持 BlockStmt
@@ -325,8 +326,9 @@ int repl() {
 
             // Check if AST generation succeeded
             if (asts.empty()) {
-                print_traceback("<stdin>", lineno);
-                return 1;
+                // print_traceback("<stdin>", lineno);
+                // return 1;
+                std::cout << "[Nothing to execute]" << std::endl;
             }
 
             // Only support AST of type BlockStmt (block statement)

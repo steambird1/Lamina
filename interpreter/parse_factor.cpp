@@ -21,17 +21,37 @@ std::unique_ptr<Expression> Parser::parse_a_token() {
         return std::make_unique<IdentifierExpr>(tok.text);
     }
     if (tok.type == TokenType::Lambda) {
-        std::vector<std::string> params;
-        while (curr_token().type != TokenType::RParen) {
-            params.emplace_back(skip_token().text);
-            if (curr_token().type == TokenType::Comma) skip_token(",");
+        std::vector<std::string> params{};
+        if (curr_token().type == TokenType::Pipe) {
+            skip_token("|");
+            while (curr_token().type != TokenType::Pipe) {
+                params.emplace_back(skip_token().text);
+                if (curr_token().type == TokenType::Comma) skip_token(",");
+            }
+            skip_token("|");
         }
-        skip_token("|");
 
         skip_token("{");
         auto stmt = parse_block(true);
         skip_token("}");
         return std::make_unique<LambdaDeclExpr>(std::move(params),std::move(stmt));
+    }
+    if (tok.type == TokenType::Pipe) {
+        std::vector<std::string> params;
+        while (curr_token().type != TokenType::Pipe) {
+            params.emplace_back(skip_token().text);
+            if (curr_token().type == TokenType::Comma) skip_token(",");
+        }
+        skip_token("|");
+        skip_token("=>");
+        auto expr = parse_expression();
+        std::vector<std::unique_ptr<Statement>> stmts;
+        stmts.emplace_back(std::make_unique<ReturnStmt>(std::move(expr)));
+
+        return std::make_unique<LambdaDeclExpr>(
+            std::move(params),
+            std::make_unique<BlockStmt>(std::move(stmts))
+        );
     }
     if (tok.type == TokenType::LBrace) {
         std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};

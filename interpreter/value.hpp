@@ -238,9 +238,18 @@ public:
             case Type::Lambda: {
                 const auto* func_ptr = std::get<std::shared_ptr<LambdaDeclExpr>>(data).get();
                 std::stringstream ss;
-                ss << std::hex << func_ptr;  // 以十六进制格式输出指针地址
+                ss << std::hex << func_ptr;// 以十六进制格式输出指针地址
                 return "<Lamina lambda at " + ss.str() + " >";
             }
+            case Type::Set: {
+                std::string text = "{";
+                for (const auto & i: std::get<std::set<Value>>(data)) {
+                    text += i.to_string() + ", ";
+                }
+                return text + "}";
+            }
+            default:
+                return "<unknown>";
         }
         return "<unknown>";
     }

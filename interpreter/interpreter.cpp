@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #ifdef _WIN32
 #include <direct.h>
@@ -54,17 +55,19 @@ void Interpreter::pop_scope() {
 }
 
 Value Interpreter::get_variable(const std::string& name) const {
-    for (auto it = variable_stack.rbegin(); it != variable_stack.rend(); ++it) {
-        auto found = it->find(name);
-        if (found != it->end()) return found->second;
+    for (const auto & it : std::ranges::reverse_view(variable_stack)) {
+        auto found = it.find(name);
+        if (found != it.end()) return found->second;
     }
 
     // 如果变量找不到，检查是否是函数名
-    auto func_it = functions.find(name);
+    const auto func_it = functions.find(name);
     if (func_it != functions.end()) {
-        // 返回一个函数类型的值（这里我们需要扩展Value类型）
-        // 暂时返回一个特殊的字符串值表示函数
-        return Value("__function_" + name);
+        auto func = std::make_shared<LambdaDeclExpr>(
+            std::move(func_it->second->params),
+            std::move(func_it->second->body)
+            );
+        return {func};
     }
 
     RuntimeError error("Undefined variable '" + name + "'");
@@ -105,19 +108,6 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
             error_and_exit("Null expression in define statement for '" + d->name + "'");
         }
         Value val = eval(d->value.get());
-        // 删除递归限制
-        /*if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
-            int new_depth = std::get<int>(val.data);
-            if (new_depth > 0 && new_depth <= 10000) {
-                max_recursion_depth = new_depth;
-                std::cout << "Recursion depth limit set to: " << new_depth << std::endl;
-            } else {
-                error_and_exit("Invalid recursion depth value: " + std::to_string(new_depth) + " (must be between 1 and 10000)");
-            }
-        } else {
-            // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
-            // 已替换
-        }*/
     } else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
         if (bi->init_value) {
             Value val = eval(bi->init_value.get());
@@ -583,7 +573,7 @@ std::vector<StackFrame> Interpreter::get_stack_trace() const {
     return call_stack;
 }
 
-void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) const {
+void Interpreter::print_stack_trace(const RuntimeError& error, const bool use_colors) const {
     bool colors_enabled = supports_colors() && use_colors;
 
     // Use stack trace from error if available, otherwise use current call stack

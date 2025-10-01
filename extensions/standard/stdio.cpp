@@ -190,6 +190,30 @@ inline Value assert(const std::vector<Value>& args) {
     return LAMINA_NULL;
 }
 
+inline Value typeof_(const std::vector<Value>& args) {
+    if (args.empty()) {
+        return LAMINA_NULL;
+    }
+    switch (args[0].type) {
+        case Value::Type::Lambda:    return LAMINA_STRING("lambda");
+        case Value::Type::lmStruct:  return LAMINA_STRING("struct");
+        case Value::Type::Symbolic:  return LAMINA_STRING("symbolic");
+        case Value::Type::Null:      return LAMINA_STRING("null");
+        case Value::Type::Bool:      return LAMINA_STRING("bool");
+        case Value::Type::Int:       return LAMINA_STRING("int");
+        case Value::Type::Float:     return LAMINA_STRING("float");
+        case Value::Type::BigInt:    return LAMINA_STRING("bigint");
+        case Value::Type::Rational:  return LAMINA_STRING("rational");
+        case Value::Type::Irrational:return LAMINA_STRING("irrational");
+        case Value::Type::String:    return LAMINA_STRING("string");
+        case Value::Type::Array:     return LAMINA_STRING("array");
+        case Value::Type::Set:       return LAMINA_STRING("set");
+        case Value::Type::Matrix:    return LAMINA_STRING("matrix");
+        default: return LAMINA_NULL;
+    }
+
+}
+
 
 namespace lamina {
     LAMINA_FUNC_MULTI_ARGS("input", input, 1);
@@ -200,4 +224,5 @@ namespace lamina {
     LAMINA_FUNC("exist", exist, 1);
     LAMINA_FUNC("touch_file", touch_file, 1);
     LAMINA_FUNC_WIT_ANY_ARGS("assert", assert);
+    LAMINA_FUNC("typeof", typeof_, 1);
 }// namespace lamina

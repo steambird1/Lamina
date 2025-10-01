@@ -6,6 +6,11 @@
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens_(tokens){};
 
+std::string Parser::get_module_name() const {
+    return module_name_;
+}
+
+
 Token Parser::skip_token(const std::string& want_skip) {
     if (curr_tok_idx_ < tokens_.size()) {
         auto& tok = tokens_[curr_tok_idx_];
@@ -54,7 +59,11 @@ std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
     std::vector<std::unique_ptr<Statement>>
         stmts = {};
     while (curr_token().type != TokenType::EndOfFile) {
-        stmts.push_back(parse_stmt());
+        if (auto s = parse_stmt();
+            s != nullptr
+        ) {
+            stmts.push_back(std::move(s));
+        }
     }
     return stmts;
 }
@@ -107,11 +116,25 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
     if (tok.type == TokenType::Define) {
         skip_token("define");
+        const auto name = skip_token().text;
+        skip_token("=");
+        auto value = parse_a_token();
+        skip_end_of_ln();
+        if (const auto string_val = dynamic_cast<LiteralExpr*>(value.get());
+            name == "module_name" and string_val->type == Value::Type::String
+        ) {
+            module_name_ = string_val->value;
+            return nullptr;
+        }
+        return std::make_unique<DefineStmt>(name, std::move(value));
+    }
+    if (tok.type == TokenType::Bigint) {
+        skip_token("bigint");
         const auto name = curr_token().text;
         skip_token("=");
         auto value = parse_expression();
         skip_end_of_ln();
-        return std::make_unique<DefineStmt>(std::move(name), std::move(value));
+        return std::make_unique<BigIntDeclStmt>(name, std::move(value));
     }
     if (tok.type == TokenType::Identifier
         and curr_tok_idx_ + 1 < tokens_.size()
@@ -121,7 +144,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_token("=");
         auto expr = parse_expression();
         skip_end_of_ln();
-        return std::make_unique<AssignStmt>(std::move(name), std::move(expr));
+        return std::make_unique<AssignStmt>(name, std::move(expr));
     }
     if (auto expr = parse_expression();
         expr != nullptr

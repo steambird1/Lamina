@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -44,11 +45,12 @@ enum class TokenType {
     Dot,// 新增
     TripleDot, // ...
     String,
-    Semicolon,
+    Semicolon, // ;
+    ExclamationMark, // !
     Plus,
     Minus,
     Star,
-    Slash,
+    Slash,       // /
     Backslash,   // \;
     Percent,     // %
     Caret,       // ^
@@ -61,6 +63,8 @@ enum class TokenType {
     GreaterEqual,// >=
     DoubleColon, // ::
     Pipe,        // |
+    FatArrow,    // =>
+    ThinArrow,   // ->
     EndOfFile,
     Unknown
 };
@@ -70,8 +74,8 @@ struct Token {
     std::string text;
     size_t line;
     size_t column;
-    Token(TokenType t, const std::string& txt, int l, int c)
-        : type(t), text(txt), line(l), column(c) {}
+    Token(const TokenType t, std::string  txt, const int l, const int c)
+        : type(t), text(std::move(txt)), line(l), column(c) {}
 };
 
 class LAMINA_API Lexer {

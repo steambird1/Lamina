@@ -79,6 +79,10 @@ std::unique_ptr<Expression> Parser::parse_factor() {
     auto node = parse_a_token();
 
     while (true) {
+        if (curr_token().type == TokenType::ExclamationMark) {
+            skip_token("!");
+            node = std::make_unique<UnaryExpr>("!", std::move(node));
+        }
         if (curr_token().type == TokenType::Dot) {
             node = parse_get_member(std::move(node));
         }
