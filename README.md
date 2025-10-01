@@ -17,7 +17,9 @@
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
-<h1>更新了什么</h1>
+<br/>
+<br/>
+<h2>更新了什么</h2>
 <details>
 <summary><strong>点击展开详情</strong></b>
 </summary>
@@ -56,6 +58,8 @@
 <li>虚数功能</li>
 </ul>
 </details>
+
+---
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
