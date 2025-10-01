@@ -17,9 +17,9 @@
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
+<h1>What's new更新了什么</h1>
 <details>
-<summary><strong>主要更新</strong></b>
- - 点击展开详情
+<summary><strong>点击展开详情</strong></b>
 </summary>
 
 <ul>
