@@ -92,7 +92,7 @@ add_library(lamina_core SHARED
         interpreter/symbolic.hpp
         interpreter/symbolic.cpp
         extensions/standard/math.cpp
-        extensions/standard/stdio.cpp
+        extensions/standard/basic.cpp
         extensions/standard/random.cpp
         extensions/standard/random.hpp
         extensions/standard/times.cpp
