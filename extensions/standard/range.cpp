@@ -136,12 +136,13 @@ std::string Range::BasicRange::to_string() const {
 
 Range::Range(Value lamina_value) {
 	if (!lamina_value.is_lstruct()) return;
-	int sz = getattr_raw(lamina_value, "size").as_number();
+	auto lamina_val = std::get<std::shared_ptr<lStruct> >(lamina_value.data);
+	int sz = getattr_raw(lamina_val, "size").as_number();
 	for (int i = 1; i <= sz; i++) {
-		Value l = getattr_raw(lamina_value, "l_" + std::to_string(i));
-		Value r = getattr_raw(lamina_value, "r_" + std::to_string(i));
-		Value l_incl = getattr_raw(lamina_value, "l_inc_" + std::to_string(i));
-		Value r_incl = getattr_raw(lamina_value, "r_inc_" + std::to_string(i));
+		Value l = getattr_raw(lamina_val, "l_" + std::to_string(i));
+		Value r = getattr_raw(lamina_val, "r_" + std::to_string(i));
+		Value l_incl = getattr_raw(lamina_val, "l_inc_" + std::to_string(i));
+		Value r_incl = getattr_raw(lamina_val, "r_inc_" + std::to_string(i));
 		
 		segments.push_back(BasicRange(from_lamina(l), from_lamina(r), l_incl.as_bool(), r_incl.as_bool()));
 	}
@@ -284,14 +285,14 @@ Value lamina_rangex(const std::vector<Value> &args) {
 }
 
 Value lamina_intersect(const std::vector<Value> &args) {
-	if (!args.size()) return to_lamina(Range());
+	if (!args.size()) return Range().lamina();
 	Range result = Range(args[0]);
 	for (size_t i = 1; i < args.size(); i++) result = intersect(result, Range(args[i]));
 	return result.lamina();
 }
 
 Value lamina_join(const std::vector<Value> &args) {
-	if (!args.size()) return to_lamina(Range());
+	if (!args.size()) return Range().lamina();
 	Range result = Range(args[0]);
 	for (size_t i = 1; i < args.size(); i++) result = join(result, Range(args[i]));
 	return result.lamina();
