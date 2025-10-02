@@ -172,15 +172,15 @@ public:
         return ::Irrational::constant(0);
     }
 	
-	::SymbolicExpr as_symbolic() const {
-		if (type == Type::Symbolic) return std::get<::SymbolicExpr>(data);
+	std::shared_ptr<SymbolicExpr> as_symbolic() const {
+		if (type == Type::Symbolic) return std::get<std::shared_ptr<SymbolicExpr>>(data);
 		if (type == Type::Int || type == Type::Float || type == Type::Rational || type == Type::BigInt) {
-			return *SymbolicExpr::number(as_rational());
+			return SymbolicExpr::number(as_rational());
 		}
 		if (type == Type::Irrational) {
-			return *as_irrational().to_symbolic();
+			return as_irrational().to_symbolic();
 		}
-		return *SymbolicExpr::number(0);
+		return SymbolicExpr::number(0);
 	}
 	
 	bool as_symbolic_compatible() const {
