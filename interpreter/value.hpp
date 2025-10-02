@@ -173,6 +173,7 @@ public:
     }
 	
 	std::shared_ptr<SymbolicExpr> as_symbolic() const {
+		if (type == Type::Infinity) return SymbolicExpr::infinity(std::get<int>(data));
 		if (type == Type::Symbolic) return std::get<std::shared_ptr<SymbolicExpr>>(data);
 		if (type == Type::Int || type == Type::Float || type == Type::Rational || type == Type::BigInt) {
 			return SymbolicExpr::number(as_rational());
