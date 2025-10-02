@@ -118,7 +118,7 @@ Value getattr(const std::vector<Value>& args) {
     return getattr_raw(lstruct_, attr_name);
 }
 
-void setattr_raw(std::shared_ptr<Value> lstruct_, const std::string& attr_name, Value value) {
+void setattr_raw(std::shared_ptr<lStruct> lstruct_, const std::string& attr_name, Value value) {
 	lstruct_->insert(attr_name, value);
 }
 

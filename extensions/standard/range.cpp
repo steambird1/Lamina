@@ -161,6 +161,7 @@ Value Range::lamina() const {
 		tmp = Value(i.r_incl), ls->insert("r_inc_" + std::to_string(it), tmp);
 		it++;
 	}
+	return tmp;
 }
 	
 bool Range::in_range(const RangeValue& val) const {
@@ -302,5 +303,5 @@ Value lamina_join(const std::vector<Value> &args) {
  * function: in_range(range, value)
  */
 Value lamina_range_test(const std::vector<Value> &args) {
-	return Value(Range(args[0]).in_range(args[1]));
+	return Value(Range(args[0]).in_range(args[1].as_symbolic()));
 }

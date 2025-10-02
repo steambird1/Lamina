@@ -78,7 +78,7 @@ public:
 };
 
 Value getattr_raw(const std::shared_ptr<lStruct>& lstruct_, const std::string& attr_name);
-void setattr_raw(std::shared_ptr<Value> lstruct_, const std::string& attr_name, Value value);
+void setattr_raw(std::shared_ptr<lStruct> lstruct_, const std::string& attr_name, Value value);
 
 Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
 /* function: new_lstruct
