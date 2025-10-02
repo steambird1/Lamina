@@ -284,14 +284,14 @@ Value lamina_rangex(const std::vector<Value> &args) {
 }
 
 Value lamina_intersect(const std::vector<Value> &args) {
-	if (!args.size()) return Range();
+	if (!args.size()) return to_lamina(Range());
 	Range result = Range(args[0]);
 	for (size_t i = 1; i < args.size(); i++) result = intersect(result, Range(args[i]));
 	return result.lamina();
 }
 
 Value lamina_join(const std::vector<Value> &args) {
-	if (!args.size()) return Range();
+	if (!args.size()) return to_lamina(Range());
 	Range result = Range(args[0]);
 	for (size_t i = 1; i < args.size(); i++) result = join(result, Range(args[i]));
 	return result.lamina();
