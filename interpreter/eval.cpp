@@ -216,12 +216,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value l = eval(bin->left.get());
     Value r = eval(bin->right.get());
 
-	if (l.is_infinity() || r.is_infinity()) {
-		error_and_exit("Error: Infinity cannot participate in evaluations");
-	}
-
     // Handle arithmetic operations
     if (bin->op == "+") {
+		if (l.is_infinity() || r.is_infinity()) {
+			return l;
+		}
         // String concatenation
         if (l.is_string() || r.is_string()) {
             return Value(l.to_string() + r.to_string());
@@ -297,6 +296,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
         bin->op == "%" || bin->op == "^") {
+		
+		if (l.is_infinity() || r.is_infinity()) {
+			error_and_exit("Error: Infinity cannot participate in evaluations");
+		}
+			
         // Special handling for multiplication
         if (bin->op == "*") {
             // Vector and matrix operations
@@ -579,6 +583,28 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
         bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
         // Handle different type combinations
         if (l.is_numeric() && r.is_numeric()) {
+			if (l.is_infinity() && r.is_infinity()) {
+				int lt = std::get<int>(l.data), rt = std::get<int>(r.data);
+				if (bin->op == "==") return lt == rt;
+				else if (bin->op == "!=") return lt != rt;
+				else if (bin->op == "<") return lt < rt;
+				else if (bin->op == "<=") return lt <= rt;
+				else if (bin->op == ">") return lt > rt;
+				else if (bin->op == ">=") return lt >= rt;
+				else return false;
+			}
+			if (l.is_infinity()) {
+				if (bin->op == "==") return false;
+				if (bin->op == "!=") return true;
+				if (bin->op == ">" || bin->op == ">=") return (std::get<int>(l.data) > 0);
+				else return !(std::get<int>(l.data) > 0);
+			}
+			if (r.is_infinity()) {
+				if (bin->op == "==") return false;
+				if (bin->op == "!=") return true;
+				if (bin->op == "<" || bin->op == "<=") return (std::get<int>(r.data) > 0);
+				else return !(std::get<int>(r.data) > 0);
+			}
             // BigInt 比较优先
             if (l.is_bigint() || r.is_bigint()) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
@@ -676,6 +702,10 @@ Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
     Value v = eval(unary->operand.get());
 
     if (unary->op == "-") {
+		if (v.is_infinity()) {
+			v.data = Value::DataType(std::in_place_index<2>, 0-(std::get<int>(v.data)));
+			return v;
+		}
         if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
             RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
             error.stack_trace = get_stack_trace();
