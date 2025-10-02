@@ -47,7 +47,7 @@ struct Range {
 		char flag = 0;							// Flag = 1: merge failure
 		
 		// For sorter only
-		bool operator < (const BasicRange &other);
+		bool operator < (const BasicRange &other) const;
 		bool is_empty() const;
 		bool in_range(const RangeValue& val) const;
 		BasicRange intersect(const BasicRange &other) const;

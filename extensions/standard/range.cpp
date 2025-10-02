@@ -138,10 +138,10 @@ Range::Range(Value lamina_value) {
 	if (!lamina_value.is_lstruct()) return;
 	int sz = getaddr_raw(lamina_value, "size").as_number();
 	for (int i = 1; i <= sz; i++) {
-		Value l = getaddr_raw(lamina_value, "l_" + to_string(i));
-		Value r = getaddr_raw(lamina_value, "r_" + to_string(i));
-		Value l_incl = getaddr_raw(lamina_value, "l_inc_" + to_string(i));
-		Value r_incl = getaddr_raw(lamina_value, "r_inc_" + to_string(i));
+		Value l = getaddr_raw(lamina_value, "l_" + std::to_string(i));
+		Value r = getaddr_raw(lamina_value, "r_" + std::to_string(i));
+		Value l_incl = getaddr_raw(lamina_value, "l_inc_" + std::to_string(i));
+		Value r_incl = getaddr_raw(lamina_value, "r_inc_" + std::to_string(i));
 		
 		segments.push_back(BasicRange(from_lamina(l), from_lamina(r), from_lamina(l_incl), from_lamina(r_incl)));
 	}
@@ -153,10 +153,10 @@ Value Range::lamina() const {
 	ls->insert("size", segments.size());
 	int it = 1;
 	for (const auto i : segments) {
-		ls->insert("l_" + to_string(it), to_lamina(i.l));
-		ls->insert("r_" + to_string(it), to_lamina(i.r));
-		ls->insert("l_inc_" + to_string(it), to_lamina(i.l_incl));
-		ls->insert("r_inc_" + to_string(it), to_lamina(i.r_incl));
+		ls->insert("l_" + std::to_string(it), to_lamina(i.l));
+		ls->insert("r_" + std::to_string(it), to_lamina(i.r));
+		ls->insert("l_inc_" + std::to_string(it), to_lamina(i.l_incl));
+		ls->insert("r_inc_" + std::to_string(it), to_lamina(i.r_incl));
 		it++;
 	}
 }
@@ -264,7 +264,9 @@ Value lamina_neginf(const std::vector<Value> &args) {
  */
 Value lamina_range(const std::vector<Value> &args) {
 	Range tmp;
-	tmp.segments.push_back(Range::BasicRange(mini(args[0], args[1]), maxi(args[0], args[1])));
+	auto s0 = SymbolicExpr::number(args[0]);
+	auto s1 = SymbolicExpr::number(args[1]);
+	tmp.segments.push_back(Range::BasicRange(mini(s0, s1), maxi(s0, s1)));
 	return tmp.lamina();
 }
 
@@ -274,7 +276,9 @@ Value lamina_range(const std::vector<Value> &args) {
  */
 Value lamina_rangex(const std::vector<Value> &args) {
 	Range tmp;
-	tmp.segments.push_back(Range::BasicRange(mini(args[0], args[1]), maxi(args[0], args[1]), args[2].as_bool(), args[3].as_bool()));
+	auto s0 = SymbolicExpr::number(args[0]);
+	auto s1 = SymbolicExpr::number(args[1]);
+	tmp.segments.push_back(Range::BasicRange(mini(s0, s1), maxi(s0, s1), args[2].as_bool(), args[3].as_bool()));
 	return tmp.lamina();
 }
 
