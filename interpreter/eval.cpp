@@ -216,6 +216,10 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value l = eval(bin->left.get());
     Value r = eval(bin->right.get());
 
+	if (l.is_infinity() || r.is_infinity()) {
+		error_and_exit("Error: Infinity cannot participate in evaluations");
+	}
+
     // Handle arithmetic operations
     if (bin->op == "+") {
         // String concatenation
