@@ -17,6 +17,8 @@
 
 namespace LaminaRange {
 	
+	using namespace Lamina;
+	
 #if RANGE_TEST & 2
 	using Value = int;
 #endif 
