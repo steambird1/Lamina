@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <vector>
 #ifdef _WIN32
+#include <windows.h>
 #include <conio.h>
 #else
 #include <termios.h>
@@ -35,88 +36,8 @@ std::string repl_readline(const std::string& prompt) {
     std::cout << prompt;
     std::cout.flush();    // 确保提示符立即显示
     std::string input;
-
-    int cursor_pos = 0;  // 跟踪光标位置
-
-    while (true) {
-        int c = console_getchar();
-
-        // 处理方向键（Windows使用0xE0作为扩展键前缀）
-        #ifdef _WIN32
-        if (c == 0xE0) {  // 扩展键前缀
-            c = console_getchar();  // 获取实际键值
-            if (c == 0x4B){ // 左方向键 <-
-                if (cursor_pos > 0) {
-                    cursor_pos--;
-                    move_cursor(-1);  // 左移光标
-                    continue;
-                }
-            if (c == 0x4D){ // 右方向键 <-
-                if (cursor_pos < static_cast<int>(input.size())) {
-                    cursor_pos++;
-                    move_cursor(1);   // 右移光标
-                }
-                continue;
-            }
-        }
-        #else
-        // Linux/macOS 方向键是ESC序列：左=\033[D，右=\033[C
-        if (c == '\033') {  // ESC字符
-            if (console_getchar() == '[') {  // 转义序列前缀
-                switch (console_getchar()) {
-                    case 'D':  // 左方向键
-                        if (cursor_pos > 0) {
-                            cursor_pos--;
-                            move_cursor(-1);
-                        }
-                        continue;
-                    case 'C':  // 右方向键
-                        if (cursor_pos < static_cast<int>(input.size())) {
-                            cursor_pos++;
-                            move_cursor(1);
-                        }
-                        continue;
-                }
-            }
-        }
-        #endif
-
-        // 处理回车/换行
-        if (c == '\r' || c == '\n') {
-            #ifdef _WIN32
-            if (c == '\r') std::cout << '\n';
-            #else
-            std::cout << '\n';
-            #endif
-            break;
-        }
-        // 处理退格
-        else if (c == '\b' || c == 127) {
-            if (cursor_pos > 0) {
-                // 从字符串中删除光标前的字符
-                input.erase(cursor_pos - 1, 1);
-                cursor_pos--;
-
-                // 更新显示
-                move_cursor(-1);
-                std::cout << input.substr(cursor_pos) << ' ' << "\b";
-                // 移动光标到正确位置
-                move_cursor(static_cast<int>(input.size()) - cursor_pos);
-                std::cout.flush();
-            }
-        }
-        // 处理可打印字符
-        else if (c >= 32 && c <= 126) {
-            // 在光标位置插入字符
-            input.insert(cursor_pos, 1, static_cast<char>(c));
-            // 显示插入的字符和后面的内容
-            std::cout << static_cast<char>(c) << input.substr(cursor_pos + 1);
-            cursor_pos++;
-            // 移动光标
-            move_cursor(static_cast<int>(input.size()) - cursor_pos);
-            std::cout.flush();
-        }
-    }
+    std::getline(std::cin, input);
+    return input;
 }
 
 int console_getchar() {
@@ -159,7 +80,6 @@ int console_getchar() {
 // 终端光标移动控制函数
 void move_cursor(int steps) {
 #ifdef _WIN32
-#include <windows.h>
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
     COORD new_pos = csbi.dwCursorPosition;
