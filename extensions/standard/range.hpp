@@ -4,6 +4,7 @@
 #include "lstruct.hpp"
 #include "cas.hpp"
 #include <vector>
+#include <limits>
 
 /**
  Range is a kind of set. Must be at least SymbolicExpr to use range

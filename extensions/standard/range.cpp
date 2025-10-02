@@ -251,14 +251,14 @@ Range join(const Range &a, const Range &b) {
  * function: inf()
 */
 Value lamina_inf(const std::vector<Value> &args) {
-	return Value(1.0/0.0);
+	return Value(std::numeric_limits<double>::infinity());
 }
 
 /**
  * function: neginf()
  */
 Value lamina_neginf(const std::vector<Value> &args) {
-	return Value(-1.0/0.0);
+	return Value(-std::numeric_limits<double>::infinity());
 }
 
 /**
