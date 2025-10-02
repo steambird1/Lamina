@@ -39,7 +39,8 @@ public:
                       lStruct,
                       Symbolic };
     Type type;
-    std::variant<
+	
+	using DataType = std::variant<
             std::nullptr_t,
             bool, int, double, std::string,
             std::vector<Value>,
@@ -47,8 +48,8 @@ public:
             std::vector<std::pair<std::string, Value>>,
             ::BigInt, ::Rational, ::Irrational,
             std::shared_ptr<SymbolicExpr>,
-            std::shared_ptr<lStruct>>
-            data;
+            std::shared_ptr<lStruct>>;
+    DataType data;
 
     virtual ~Value() = default;
 
@@ -71,7 +72,7 @@ public:
 		if (res) {
 			if (f < 0) res = -1;
 			this->type = Type::Infinity;
-			this->data = (decltype(this->data))(std::in_place_index<2>, res);
+			this->data = DataType(std::in_place_index<2>, res);
 		}
 	}
     Value(const std::vector<Value>& arr) {
@@ -177,7 +178,7 @@ public:
 			return *SymbolicExpr::number(as_rational());
 		}
 		if (type == Type::Irrational) {
-			return as_irrational().to_symbolic();
+			return *as_irrational().to_symbolic();
 		}
 		return *SymbolicExpr::number(0);
 	}
