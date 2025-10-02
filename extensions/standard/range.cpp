@@ -161,7 +161,7 @@ Value Range::lamina() const {
 		tmp = Value(i.r_incl), ls->insert("r_inc_" + std::to_string(it), tmp);
 		it++;
 	}
-	return tmp;
+	return Value(ls);
 }
 	
 bool Range::in_range(const RangeValue& val) const {
