@@ -42,7 +42,8 @@ void Interpreter::push_scope() {
 }
 
 void Interpreter::add_function(const std::string& name, FuncDefStmt* func) {
-    functions[name] = func;
+    functions[func->name] = std::make_unique<LambdaDeclExpr>(
+            name, func->params, std::move(func->body));
 }
 
 void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
@@ -62,17 +63,32 @@ Value Interpreter::get_variable(const std::string& name) const {
     // 如果变量找不到，检查是否是函数名
     const auto func_it = functions.find(name);
     if (func_it != functions.end()) {
+        const auto& original_func = func_it->second;
+
+        // 克隆 body
+        std::unique_ptr<BlockStmt> cloned_body;
+        if (original_func->body) {
+            const auto stmt_ptr = original_func->body->clone_expr().release();
+            cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
+        }
+        // Make LambdaDeclExpr
         auto func = std::make_shared<LambdaDeclExpr>(
-            std::move(func_it->second->params),
-            std::move(func_it->second->body)
-            );
+            name,
+            original_func->params,
+            std::move(cloned_body) // 转移克隆后的 body 所有权
+        );
+
         return {func};
+    }
+    // 如果是函数名找不到，查找builtins function
+    const auto builtins_it = builtin_functions.find(name);
+    if (builtins_it != builtin_functions.end()) {
+        return {"<builtins function "+builtins_it->first+">"};
     }
 
     RuntimeError error("Undefined variable '" + name + "'");
     error.stack_trace = get_stack_trace();
     throw error;
-    return Value();// Unreachable, but suppress compiler warning
 }
 
 void Interpreter::set_variable(const std::string& name, const Value& val) {
@@ -212,7 +228,8 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
             throw error;
         }
     } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
-        functions[func->name] = func;
+        functions[func->name] = std::make_unique<LambdaDeclExpr>(
+            func->name, func->params, std::move(func->body));
     } else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
         for (auto& stmt: block->statements) execute(stmt);
     } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
@@ -322,8 +339,20 @@ Value Interpreter::eval(const ASTNode* node) {
         L_ERR("Type of left is not subscriptable");
         return LAMINA_NULL;
     }
-    if (auto* func = dynamic_cast<const LambdaDeclExpr*>(node)) {
-        return func;
+    if (auto* f = dynamic_cast<const LambdaDeclExpr*>(node)) {
+        // 克隆 body
+        std::unique_ptr<BlockStmt> cloned_body;
+        if (f->body) {
+            const auto stmt_ptr = f->body->clone_expr().release();
+            cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
+        }
+        // Make LambdaDeclExpr
+        auto func = std::make_shared<LambdaDeclExpr>(
+            f->name,
+            f->params,
+            std::move(cloned_body)
+        );
+        return Value(func);
     }
     if (auto* ns_g_mem = dynamic_cast<const NameSpaceGetMemberExpr*>(node)) {
         auto left = eval(ns_g_mem->father.get());

@@ -30,169 +30,149 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
 }
 
 Value Interpreter::eval_CallExpr(const CallExpr* call) {
-    std::string actual_callee = (dynamic_cast<IdentifierExpr*>(call->callee.get()))->name;
-    //        std::cout << "DEBUG: Call expression with callee: '" << actual_callee << "'" << std::endl;
-
-    // 检查调用的名称是否是一个参数，如果是，获取其实际值
-    try {
-        Value callee_value = get_variable(actual_callee);
-        if (callee_value.is_string() && std::get<std::string>(callee_value.data).substr(0, 11) == "__function_") {
-            // 这是一个函数参数，提取实际的函数名
-            actual_callee = std::get<std::string>(callee_value.data).substr(11);
-            //   std::cout << "DEBUG: Function parameter resolved to: '" << actual_callee << "'" << std::endl;
+    std::shared_ptr<LambdaDeclExpr> func ;
+    std::string function_name;   // 如果能找到函数名才填
+    if (
+        auto f_identifier = dynamic_cast<IdentifierExpr*>(call->callee.get());
+        f_identifier != nullptr
+    ) {
+        auto it = functions.find(f_identifier->name);
+        if (it != functions.end()) {
+            const auto& original_func = it->second;
+            // 克隆 body
+            std::unique_ptr<BlockStmt> cloned_body;
+            if (original_func->body) {
+                const auto stmt_ptr = original_func->body->clone_expr().release();
+                cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
+            }
+            func = std::make_shared<LambdaDeclExpr>(
+                original_func->name, it->second->params, std::move(cloned_body));
         }
-    } catch (const RuntimeError&) {
-        // 如果不是变量，保持原名称
-        // std::cout << "DEBUG: Not a variable or parameter, using direct name: '" << actual_callee << "'" << std::endl;
+        function_name = f_identifier->name;
+    } else {
+        // 尝试计算left
+        auto left = eval(call->callee.get());
+        if (! left.is_lambda()) {
+            std::cerr << "Left type is not a callable object " << std::endl;
+            return {};
+        }
+        func = std::get<std::shared_ptr<LambdaDeclExpr>>(left.data);
     }
 
-    // Check builtin functions first
-    //   std::cout << "DEBUG: Looking for builtin function: '" << actual_callee << "'" << std::endl;
-    //   std::cout << "DEBUG: Available builtin functions:" << std::endl;
-    // for (const auto& pair : builtin_functions) {
-    //     std::cout << "  - '" << pair.first << "'" << std::endl;
-    // }
+    // Prepare parameter
+    std::vector<Value> args{};
 
-    auto builtin_it = builtin_functions.find(actual_callee);
+    // Calculate parameter
+    for (const auto& arg: call->args) {
+        if (!arg) {}
+        args.push_back(eval(arg.get()));
+    }
+
+    // If lambda function
+    const auto data = get_variable(function_name).data;
+    if (std::holds_alternative<std::shared_ptr<LambdaDeclExpr>>(data)) {
+        func = std::get<std::shared_ptr<LambdaDeclExpr>>(data);
+    }
+
+    if (func) {
+        if (call->args.size() != func->params.size()) {
+            std::cerr << "function " << func->name << " required " <<
+                func->params.size() << " , got "  << call->args.size() << std::endl;
+            return {};
+        }
+        // User function
+        return call_function(func.get(), args);
+    }
+
+    // Else if builtins
+    auto builtin_it = builtin_functions.find(function_name);
     if (builtin_it != builtin_functions.end()) {
         //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
 
-        // 检查是否是模块函数
-        bool is_module_func = actual_callee.find(".") != std::string::npos;
-        if (is_module_func) {
-            //       std::cout << "DEBUG: This is a module function with dot notation" << std::endl;
-        }
-
         // Handle builtin call with stack frame and unified error handling
-        push_frame(actual_callee, "<builtin>", 0);
-
-        std::vector<Value> args;
-        for (const auto& arg: call->args) {
-            if (!arg) {
-                pop_frame();
-                RuntimeError err("Null argument in call to builtin function '" + actual_callee + "'");
-                err.stack_trace = get_stack_trace();
-                throw err;
-            }
-            args.push_back(eval(arg.get()));
-        }
+        push_frame(function_name, "<builtin function "+function_name+" >", 0);
 
         Value result;
-        try {
-            result = builtin_it->second(args);
-        } catch (...) {
+        try { result = builtin_it->second(args); }
+        catch (...) {
             pop_frame();
             throw;
         }
-
         pop_frame();
         return result;
     }
 
-    // Check user-defined functions
-    auto it = functions.find(actual_callee);
-    if (it != functions.end()) {
-        FuncDefStmt* func = it->second;
-        if (!func) {
-            std::cerr << "Error: Function object for '" << actual_callee << "' is null" << std::endl;
-            return Value("<func error>");
-        }
+    if (! func) {
+        std::cerr << "Type is not a callable object " << std::endl;
+        return {};
+    }
+    return {};
+}
 
-        // Check recursion depth
-        if (recursion_depth >= max_recursion_depth) {
-            RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
-            error.stack_trace = get_stack_trace();
-            throw error;
-        }
+Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) {
+    if (func == nullptr) {
+        std::cerr << "Error: Function at '" << func << "' is null" << std::endl;
+        return Value("<func error>");
+    }
 
-        recursion_depth++;
-        push_frame(actual_callee, "<script>", 0);   // Add to call stack
+    // Check recursion depth
+    if (recursion_depth >= max_recursion_depth) {
+        RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
+        error.stack_trace = get_stack_trace();
+        throw error;
+    }
+    recursion_depth++;
+    push_frame(func->name, "<script>", 0);   // Add to call stack
 
-        // Check parameter count
-        if (call->args.size() > func->params.size()) {
-            Interpreter::print_warning("Too many arguments provided to function '" + actual_callee +
-                                               "'. Expected " + std::to_string(func->params.size()) +
-                                               ", got " + std::to_string(call->args.size()),
-                                       true);
-        }
-
-        // Calculate arguments
-        std::vector<Value> arg_values(func->params.size());
-        for (size_t j = 0; j < func->params.size(); ++j) {
-            if (j < call->args.size()) {
-                if (call->args[j]) {
-                    arg_values[j] = eval(call->args[j].get());
+    push_scope();// Create scope here
+    // Pass arguments
+    for (size_t j = 0; j < func->params.size(); ++j) {
+        set_variable(func->params[j], args[j]);
+    }
+    // Execute function body, capture return
+    try {
+        for (const auto& stmt: func->body->statements) {
+            try {
+                execute(stmt);
+            } catch (const ReturnException& re) {
+                // Normal return handling
+                pop_frame();
+                pop_scope();
+                recursion_depth--;
+                return re.value;
+            } catch (const RuntimeError& re) {
+                // If the error doesn't have a stack trace yet, capture current state
+                RuntimeError enriched(re.message);
+                if (re.stack_trace.empty()) {
+                    enriched.stack_trace = get_stack_trace();
                 } else {
-                    Interpreter::print_error("Null argument " + std::to_string(j + 1) + " in call to function '" + actual_callee + "'", true);
-                    arg_values[j] = Value("<null arg>");
+                    enriched.stack_trace = re.stack_trace;  // Preserve existing trace
                 }
-            } else {
-                Interpreter::print_warning("Missing argument '" + func->params[j] + "' in call to function '" + actual_callee + "'", true);
-                arg_values[j] = Value("<undefined>");
+                pop_frame();
+                pop_scope();
+                recursion_depth--;
+                throw enriched;
+            } catch (const std::exception& e) {
+                // Wrap standard exception as RuntimeError
+                RuntimeError enriched("In function '" + func->name + "': " + std::string(e.what()));
+                enriched.stack_trace = get_stack_trace();   // Get stack trace before cleanup
+                pop_frame();
+                pop_scope();
+                recursion_depth--;
+                throw enriched;
             }
         }
-
-        push_scope();// Create scope here
-
-        // Pass arguments
-        for (size_t j = 0; j < func->params.size(); ++j) {
-            set_variable(func->params[j], arg_values[j]);
-        }
-
-        // Execute function body, capture return
-        try {
-            for (const auto& stmt: func->body->statements) {
-                try {
-                    execute(stmt);
-                } catch (const ReturnException& re) {
-                    // Normal return handling
-                    pop_frame();
-                    pop_scope();
-                    recursion_depth--;
-                    return re.value;
-                } catch (const RuntimeError& re) {
-                    // If the error doesn't have a stack trace yet, capture current state
-                    RuntimeError enriched(re.message);
-                    if (re.stack_trace.empty()) {
-                        enriched.stack_trace = get_stack_trace();
-                    } else {
-                        enriched.stack_trace = re.stack_trace;  // Preserve existing trace
-                    }
-                    pop_frame();
-                    pop_scope();
-                    recursion_depth--;
-                    throw enriched;
-                } catch (const std::exception& e) {
-                    // Wrap standard exception as RuntimeError
-                    RuntimeError enriched("In function '" + actual_callee + "': " + std::string(e.what()));
-                    enriched.stack_trace = get_stack_trace();   // Get stack trace before cleanup
-                    pop_frame();
-                    pop_scope();
-                    recursion_depth--;
-                    throw enriched;
-                }
-            }
-        } catch (const ReturnException& re) {
-            // Ensure cleanup in any case
-            pop_frame();
-            pop_scope();
-            recursion_depth--;
-            return re.value;
-        }
-
+    } catch (const ReturnException& re) {
+        // Ensure cleanup in any case
         pop_frame();
         pop_scope();
         recursion_depth--;
-        return Value(); // Default value when no return
+        return re.value;
     }
-
-
-    std::cerr << "Error: Call to undefined function '" << actual_callee << "'" << std::endl;
-    return Value("<undefined function>");
-}
-
-Value call_function(LambdaDeclExpr& func, const std::vector<Value>& args) {
-    // ToDo: ...
+    pop_frame();
+    pop_scope();
+    recursion_depth--;
+    return Value(); // Default value when no return
 }
 
 Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {

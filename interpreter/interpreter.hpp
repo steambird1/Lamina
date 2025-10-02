@@ -95,7 +95,7 @@ public:
     Value eval_UnaryExpr(const UnaryExpr* unary);
     Value eval_BinaryExpr(const BinaryExpr* bin);
     Value eval_CallExpr(const CallExpr* call);
-    Value call_function(LambdaDeclExpr& func, const std::vector<Value>& args);
+    Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
 
     // Print all variables in current scope
     void print_variables() const;
@@ -137,7 +137,7 @@ public:
 
 private:
     // Store function definitions
-    std::unordered_map<std::string, FuncDefStmt*> functions;
+    std::unordered_map<std::string, std::unique_ptr<LambdaDeclExpr>> functions;
     // List of loaded modules to prevent circular imports
     std::set<std::string> loaded_modules;
     // Store loaded module ASTs to keep function pointers valid

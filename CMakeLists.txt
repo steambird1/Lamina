@@ -83,7 +83,6 @@ add_library(lamina_core SHARED
         # interpreter/parser.old.hpp
         interpreter/eval.cpp
         interpreter/rational.hpp
-        interpreter/trackback.hpp
         interpreter/value.hpp
         interpreter/lamina.hpp
         interpreter/symbolic.hpp
