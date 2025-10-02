@@ -582,29 +582,29 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     if (bin->op == "==" || bin->op == "!=" || bin->op == "<" ||
         bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
         // Handle different type combinations
+		if (l.is_infinity() && r.is_infinity()) {
+			int lt = std::get<int>(l.data), rt = std::get<int>(r.data);
+			if (bin->op == "==") return lt == rt;
+			else if (bin->op == "!=") return lt != rt;
+			else if (bin->op == "<") return lt < rt;
+			else if (bin->op == "<=") return lt <= rt;
+			else if (bin->op == ">") return lt > rt;
+			else if (bin->op == ">=") return lt >= rt;
+			else return false;
+		}
+		if (l.is_infinity()) {
+			if (bin->op == "==") return false;
+			if (bin->op == "!=") return true;
+			if (bin->op == ">" || bin->op == ">=") return (std::get<int>(l.data) > 0);
+			else return !(std::get<int>(l.data) > 0);
+		}
+		if (r.is_infinity()) {
+			if (bin->op == "==") return false;
+			if (bin->op == "!=") return true;
+			if (bin->op == "<" || bin->op == "<=") return (std::get<int>(r.data) > 0);
+			else return !(std::get<int>(r.data) > 0);
+		}
         if (l.is_numeric() && r.is_numeric()) {
-			if (l.is_infinity() && r.is_infinity()) {
-				int lt = std::get<int>(l.data), rt = std::get<int>(r.data);
-				if (bin->op == "==") return lt == rt;
-				else if (bin->op == "!=") return lt != rt;
-				else if (bin->op == "<") return lt < rt;
-				else if (bin->op == "<=") return lt <= rt;
-				else if (bin->op == ">") return lt > rt;
-				else if (bin->op == ">=") return lt >= rt;
-				else return false;
-			}
-			if (l.is_infinity()) {
-				if (bin->op == "==") return false;
-				if (bin->op == "!=") return true;
-				if (bin->op == ">" || bin->op == ">=") return (std::get<int>(l.data) > 0);
-				else return !(std::get<int>(l.data) > 0);
-			}
-			if (r.is_infinity()) {
-				if (bin->op == "==") return false;
-				if (bin->op == "!=") return true;
-				if (bin->op == "<" || bin->op == "<=") return (std::get<int>(r.data) > 0);
-				else return !(std::get<int>(r.data) > 0);
-			}
             // BigInt 比较优先
             if (l.is_bigint() || r.is_bigint()) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
