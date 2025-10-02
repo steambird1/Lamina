@@ -10,20 +10,11 @@
 	(or no comparison is available).
 */
 
-#define RANGE_TEST 0
 #define PRE_FLAGS 0
 
 #define PRE_FLAGS_PRE_SORT 1
-/*	
-#if RANGE_TEST & 2
-using Value = int;
-#endif 
-*/
-#if RANGE_TEST
-using RangeValue = int;
-#else
-using RangeValue = ::SymbolicExpr;
-#endif
+
+using RangeValue = std::shared_ptr<SymbolicExpr>;
 
 // Return if a > b.
 bool is_greater(const RangeValue& a, const RangeValue& b);
@@ -47,7 +38,7 @@ struct Range {
 	struct BasicRange {
 		
 		BasicRange()
-			: l(*SymbolicExpr::number(0)), r(*SymbolicExpr::number(0)) {}
+			: l(SymbolicExpr::number(0)), r(SymbolicExpr::number(0)) {}
 		BasicRange(RangeValue l, RangeValue r, bool l_incl = true, bool r_incl = true) 
 			: l(l), r(r), l_incl(l_incl), r_incl(r_incl) {}
 		
@@ -72,9 +63,7 @@ struct Range {
 		
 	}
 
-#if !(RANGE_TEST & 2)
 	explicit Range(Value lamina_value);
-#endif
 
 	Value lamina();
 	
