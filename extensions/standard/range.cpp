@@ -1,5 +1,4 @@
 #include "range.hpp"
-#include "lstruct.hpp"
 
 // Return if a > b.
 bool is_greater(const RangeValue& a, const RangeValue& b) {
@@ -137,12 +136,12 @@ std::string Range::BasicRange::to_string() const {
 
 Range::Range(Value lamina_value) {
 	if (!lamina_value.is_lstruct()) return;
-	int sz = getaddr_raw(lamina_value, "size").as_number();
+	int sz = getattr_raw(lamina_value, "size").as_number();
 	for (int i = 1; i <= sz; i++) {
-		Value l = getaddr_raw(lamina_value, "l_" + std::to_string(i));
-		Value r = getaddr_raw(lamina_value, "r_" + std::to_string(i));
-		Value l_incl = getaddr_raw(lamina_value, "l_inc_" + std::to_string(i));
-		Value r_incl = getaddr_raw(lamina_value, "r_inc_" + std::to_string(i));
+		Value l = getattr_raw(lamina_value, "l_" + std::to_string(i));
+		Value r = getattr_raw(lamina_value, "r_" + std::to_string(i));
+		Value l_incl = getattr_raw(lamina_value, "l_inc_" + std::to_string(i));
+		Value r_incl = getattr_raw(lamina_value, "r_inc_" + std::to_string(i));
 		
 		segments.push_back(BasicRange(from_lamina(l), from_lamina(r), l_incl.as_bool(), r_incl.as_bool()));
 	}
@@ -151,19 +150,20 @@ Range::Range(Value lamina_value) {
 
 Value Range::lamina() const {
 	auto ls = std::make_shared<lStruct>();
-	ls->insert("size", segments.size());
+	Value tmp = Value((int)segments.size());
+	ls->insert("size", tmp);
 	int it = 1;
-	for (const auto i : segments) {
-		ls->insert("l_" + std::to_string(it), to_lamina(i.l));
-		ls->insert("r_" + std::to_string(it), to_lamina(i.r));
-		ls->insert("l_inc_" + std::to_string(it), to_lamina(i.l_incl));
-		ls->insert("r_inc_" + std::to_string(it), to_lamina(i.r_incl));
+	for (const auto& i : segments) {
+		tmp = to_lamina(i.l), ls->insert("l_" + std::to_string(it), tmp);
+		tmp = to_lamina(i.r), ls->insert("r_" + std::to_string(it), tmp);
+		tmp = Value(i.l_incl), ls->insert("l_inc_" + std::to_string(it), tmp);
+		tmp = Value(i.r_incl), ls->insert("r_inc_" + std::to_string(it), tmp);
 		it++;
 	}
 }
 	
 bool Range::in_range(const RangeValue& val) const {
-	for (const auto i : segments) {
+	for (const auto& i : segments) {
 		if (is_greater(val, i.r)) continue;
 		if (i.in_range(val)) return true;
 		if (is_less(val, i.l)) break;
@@ -174,7 +174,7 @@ bool Range::in_range(const RangeValue& val) const {
 std::string Range::to_string() const {
 	if (!segments.size()) return std::string("<empty range>");
 	std::string result;
-	for (const auto i : segments) {
+	for (const auto& i : segments) {
 		result += i.to_string();
 		result.push_back('u');	// Union symbol
 	}
@@ -265,8 +265,8 @@ Value lamina_neginf(const std::vector<Value> &args) {
  */
 Value lamina_range(const std::vector<Value> &args) {
 	Range tmp;
-	auto s0 = SymbolicExpr::number(args[0]);
-	auto s1 = SymbolicExpr::number(args[1]);
+	auto s0 = args[0].as_symbolic();
+	auto s1 = args[1].as_symbolic();
 	tmp.segments.push_back(Range::BasicRange(mini(s0, s1), maxi(s0, s1)));
 	return tmp.lamina();
 }
@@ -277,8 +277,8 @@ Value lamina_range(const std::vector<Value> &args) {
  */
 Value lamina_rangex(const std::vector<Value> &args) {
 	Range tmp;
-	auto s0 = SymbolicExpr::number(args[0]);
-	auto s1 = SymbolicExpr::number(args[1]);
+	auto s0 = args[0].as_symbolic();
+	auto s1 = args[1].as_symbolic();
 	tmp.segments.push_back(Range::BasicRange(mini(s0, s1), maxi(s0, s1), args[2].as_bool(), args[3].as_bool()));
 	return tmp.lamina();
 }
