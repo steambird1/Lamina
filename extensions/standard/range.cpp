@@ -1,4 +1,5 @@
 #include "range.hpp"
+#include "lstruct.hpp"
 
 // Return if a > b.
 bool is_greater(const RangeValue& a, const RangeValue& b) {
@@ -143,7 +144,7 @@ Range::Range(Value lamina_value) {
 		Value l_incl = getaddr_raw(lamina_value, "l_inc_" + std::to_string(i));
 		Value r_incl = getaddr_raw(lamina_value, "r_inc_" + std::to_string(i));
 		
-		segments.push_back(BasicRange(from_lamina(l), from_lamina(r), from_lamina(l_incl), from_lamina(r_incl)));
+		segments.push_back(BasicRange(from_lamina(l), from_lamina(r), l_incl.as_bool(), r_incl.as_bool()));
 	}
 	if (PRE_FLAGS & PRE_FLAGS_PRE_SORT) sort(segments.begin(), segments.end());
 }

@@ -65,11 +65,11 @@ struct Range {
 
 	explicit Range(Value lamina_value);
 
-	Value lamina();
+	Value lamina() const;
 	
-	bool in_range(const RangeValue& val);
+	bool in_range(const RangeValue& val) const;
 	
-	std::string to_string();
+	std::string to_string() const;
 	
 	std::vector<BasicRange> segments;
 };
