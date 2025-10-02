@@ -69,6 +69,7 @@ private:
     }
 
 public:
+	lStruct();
     explicit lStruct(const std::vector<std::pair<std::string, Value>>& vec);
     ~lStruct();
     Value insert(const std::string& key, Value& val);

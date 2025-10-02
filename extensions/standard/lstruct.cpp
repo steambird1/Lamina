@@ -2,6 +2,11 @@
 #include "lamina.hpp"
 #include <algorithm>
 
+lStruct::lStruct() {
+	size_t init_size = 16;
+	buckets_.resize(init_size, nullptr);
+}
+
 // 初始化lStruct
 lStruct::lStruct(const std::vector<std::pair<std::string, Value>>& vec) {
     // 初始化桶数组
