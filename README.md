@@ -47,7 +47,8 @@
 <li>repl直接打印表达式</li>
 <li>repl支持不带颜色的输出</li>
 <li>repl关键字高亮及自动补齐</li>
-<li>数学相关扩展</li>
+<li>数学范围相关扩展</li>
+<li>Decimal类型</li>
 </ul>
 
 <b>延迟到下一个版本的特性</b>
