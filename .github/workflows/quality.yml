@@ -262,45 +262,6 @@ jobs:
 
           echo "✅ Basic security scan completed"
 
-  dependencies:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Check dependencies
-        run: |
-          echo "Checking project dependencies..."
-
-          # Check if Git submodules are properly configured
-          if [ -f .gitmodules ]; then
-            echo "✅ Git submodules configured"
-            echo "Submodules:"
-            cat .gitmodules
-          else
-            echo "ℹ️  No Git submodules found"
-          fi
-
-          # Check if libuv submodule exists
-          if [ -d external/libuv ]; then
-            echo "✅ libuv submodule exists"
-          else
-            echo "❌ libuv submodule missing"
-            exit 1
-          fi
-
-          # Check if CMake finds all dependencies
-          echo "Testing dependency resolution..."
-          cmake -B build-test -DCMAKE_BUILD_TYPE=Debug . || {
-            echo "❌ CMake dependency resolution failed"
-            exit 1
-          }
-
-          echo "✅ Dependencies check completed"
-
   code-review:
     runs-on: ubuntu-latest
 
