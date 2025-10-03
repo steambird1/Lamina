@@ -1,5 +1,5 @@
 #include "interpreter.hpp"
-#include "lamina.hpp"
+#include "lamina_api/lamina.hpp"
 Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
     if (node->type == Value::Type::Int) {
         // Check if it contains scientific notation (e or E) or decimal point
@@ -30,35 +30,6 @@ Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
 }
 
 Value Interpreter::eval_CallExpr(const CallExpr* call) {
-    std::shared_ptr<LambdaDeclExpr> func ;
-    std::string function_name;   // 如果能找到函数名才填
-    if (
-        auto f_identifier = dynamic_cast<IdentifierExpr*>(call->callee.get());
-        f_identifier != nullptr
-    ) {
-        auto it = functions.find(f_identifier->name);
-        if (it != functions.end()) {
-            const auto& original_func = it->second;
-            // 克隆 body
-            std::unique_ptr<BlockStmt> cloned_body;
-            if (original_func->body) {
-                const auto stmt_ptr = original_func->body->clone_expr().release();
-                cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
-            }
-            func = std::make_shared<LambdaDeclExpr>(
-                original_func->name, it->second->params, std::move(cloned_body));
-        }
-        function_name = f_identifier->name;
-    } else {
-        // 尝试计算left
-        auto left = eval(call->callee.get());
-        if (! left.is_lambda()) {
-            std::cerr << "Left type is not a callable object " << std::endl;
-            return {};
-        }
-        func = std::get<std::shared_ptr<LambdaDeclExpr>>(left.data);
-    }
-
     // Prepare parameter
     std::vector<Value> args{};
 
@@ -68,23 +39,13 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         args.push_back(eval(arg.get()));
     }
 
-    // If lambda function
-    const auto data = get_variable(function_name).data;
-    if (std::holds_alternative<std::shared_ptr<LambdaDeclExpr>>(data)) {
-        func = std::get<std::shared_ptr<LambdaDeclExpr>>(data);
-    }
+    // 先找builtins
+    std::string function_name;   // 如果能找到函数名才填
+    if (auto f_identifier = dynamic_cast<IdentifierExpr*>(call->callee.get());
+        f_identifier != nullptr
+    ) function_name = f_identifier->name;
 
-    if (func) {
-        if (call->args.size() != func->params.size()) {
-            std::cerr << "function " << func->name << " required " <<
-                func->params.size() << " , got "  << call->args.size() << std::endl;
-            return {};
-        }
-        // User function
-        return call_function(func.get(), args);
-    }
-
-    // Else if builtins
+    // if builtins
     auto builtin_it = builtin_functions.find(function_name);
     if (builtin_it != builtin_functions.end()) {
         //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
@@ -100,6 +61,24 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         }
         pop_frame();
         return result;
+    }
+    // =====================在builtins中找不到==============================
+
+    std::shared_ptr<LambdaDeclExpr> func ;
+    auto left = eval(call->callee.get());
+    if (! left.is_lambda()) {
+        std::cerr << "Left type is not a callable object " << std::endl;
+    }
+    func = std::get<std::shared_ptr<LambdaDeclExpr>>(left.data);
+
+    if (func) {
+        if (call->args.size() != func->params.size()) {
+            std::cerr << "function " << func->name << " required " <<
+                func->params.size() << " , got "  << call->args.size() << std::endl;
+            return {};
+        }
+        // User function
+        return call_function(func.get(), args);
     }
 
     if (! func) {

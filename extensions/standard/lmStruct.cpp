@@ -1,5 +1,5 @@
-#include "lamina.hpp"
 #include "lmStruct.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
 #include <algorithm>
 
 // 初始化lStruct

@@ -1,6 +1,6 @@
 #ifndef TIMES_HPP
 #define TIMES_HPP
-#include "lamina.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
 
 Value get_time(const std::vector<Value>& args);
 Value get_date(const std::vector<Value>& args);

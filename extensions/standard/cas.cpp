@@ -5,7 +5,7 @@
 
 #include "cas.hpp"
 #include "../../interpreter/interpreter.hpp"
-#include "../../interpreter/value.hpp"
+#include "../../interpreter/lamina_api/value.hpp"
 #include <cstring>
 #include <iostream>
 #include <sstream>

@@ -1,6 +1,6 @@
 #ifndef ARRAY_HPP
 #define ARRAY_HPP
-#include "lamina.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
 
 Value range(const std::vector<Value>& args);
 Value visit_array_by_int(const std::vector<Value>& args);

@@ -1,18 +1,17 @@
 #pragma once
 #include "bigint.hpp"
+#include "lexer.hpp"
 #include "rational.hpp"
+#include <cmath>
 #include <memory>
 #include <string>
 #include <variant>
-#include <cmath>
-#include "bigint.hpp"
-#include "rational.hpp"
 
 
 // 符号表达式系统
 // 支持精确的数学表达式，不进行数值近似
 
-class SymbolicExpr {
+class LAMINA_API SymbolicExpr {
 public:
     enum class Type {
         Number,      // 数字 (BigInt, Rational, int)

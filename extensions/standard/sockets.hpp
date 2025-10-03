@@ -1,7 +1,7 @@
 #ifndef SOCKETS_HPP
 #define SOCKETS_HPP
 
-#include "lamina.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
 #include <atomic>
 #include <iostream>
 #include <string>

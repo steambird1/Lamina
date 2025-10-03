@@ -7,12 +7,12 @@
 #endif
 #endif
 
-#include "interpreter.hpp"
+#include "../interpreter.hpp"
 #include "value.hpp"
 #include <cstdlib>
 #include <iostream>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 // Lamina 版本号
 #include "version.hpp"
@@ -95,25 +95,20 @@ constexpr bool always_false = false;
         };                                                                                              \
     }
 
-#define LAMINA_GET_VAR(interpreter, var) \
-    interpreter.get_variable(#var)
+#define LAMINA_CALL_FUNC(interpreter, function, args)                  \
+    interpreter.call_function(function, args);
 
-#define LAMINA_GLOBAL_VAR(name, value)                                   \
-    void global_var_##name##_entry(Interpreter& interpreter) {           \
-        interpreter.set_global_variable(#name, Value(value));            \
-    }                                                                    \
-    namespace {                                                          \
-        struct global_var_##name##_registrar {                           \
-            global_var_##name##_registrar() {                            \
-                Interpreter::register_entry(&global_var_##name##_entry); \
-            }                                                            \
-        } global_var_##name##_instance;                                  \
-    }
+#define LAMINA_GET_LOCALS(interpreter) \
+    interpreter.get_variable()
+#define LAMINA_GET_GLOBALS(interpreter) \
+    interpreter.get_globals()
 
-/*#define LAMINA_EXEC_FUNC(func, argv)*/
+// subitems必须是 std::unordered_map<std::string, Value>类型
+#define LAMINA_MODULE(interpreter, name, id,  subitems) \
+    interpreter.entry_module(std::make_unique<LmModule>(name, id, subitems))
 
-
-/*#define LAMINA_MODULE(name, funcs, explicit_include) */
+#define LAMINA_ENTRY_FUNC(interpreter, name,function) \
+    interpreter.entry_function(name, function)
 
 
 inline void L_ERR(const std::string& msg){

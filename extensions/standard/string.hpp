@@ -1,6 +1,6 @@
 #ifndef STRING_HPP
 #define STRING_HPP
-#include "lamina.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
 
 /**
  * 拼接多个字符串，并返回一个新字符串

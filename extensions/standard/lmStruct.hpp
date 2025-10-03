@@ -1,6 +1,6 @@
 #pragma once
-#include "lamina.hpp"
-#include "value.hpp"
+#include "../../interpreter/lamina_api/lamina.hpp"
+#include "../../interpreter/lamina_api/value.hpp"
 
 #include <memory>
 #include <string>

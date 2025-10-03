@@ -1,0 +1,3 @@
+include "C:\Users\zheng\Desktop\Lamina\examples\be_included.lm";
+print(test_be_included::the_pi);
+test_be_included::add(10,30);

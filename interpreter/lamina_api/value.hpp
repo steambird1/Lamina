@@ -10,6 +10,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -26,10 +27,10 @@ class Value;
 
 struct LmModule {
     std::string module_name;
-    int id;
+    std::string id;
     std::unordered_map<std::string, Value> sub_item;
-    LmModule(std::string module_name, int id)
-        : module_name(std::move(module_name)), id(id) {}
+    LmModule(std::string module_name, std::string id, std::unordered_map<std::string, Value> sub_item)
+        : module_name(std::move(module_name)), id(std::move(id)), sub_item(std::move(sub_item)) {}
 };
 
 struct LmCppFunction {
@@ -49,8 +50,9 @@ public:
         lmModule, lmCppFunction,
         Null, Bool,
         Int, Float, BigInt,
+        lmInt, lmDecimal, // 预留
         Rational, Irrational,
-        String, Array, Set, Matrix,};
+        String, Array, Set, Matrix,}; // ToDO: 完善set相关函数
     Type type;
     std::variant<
             std::nullptr_t,
@@ -270,6 +272,12 @@ public:
                     text += i.to_string() + ", ";
                 }
                 return text + "}";
+            }
+            case Type::lmModule: {
+                const auto* module_ptr = std::get<std::shared_ptr<LmModule>>(data).get();
+                std::stringstream ss;
+                ss << std::hex << module_ptr;// 以十六进制格式输出指针地址
+                return "<Lamina module at " + ss.str() + " >";
             }
             default:
                 return "<unknown>";

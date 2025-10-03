@@ -1,8 +1,8 @@
+#include "../../interpreter/lamina_api/lamina.hpp"
 #include "interpreter.hpp"
-#include "lamina.hpp"
 // #include "latex.hpp"
-#include "symbolic.hpp"
-#include "value.hpp"
+#include "../../interpreter/lamina_api/symbolic.hpp"
+#include "../../interpreter/lamina_api/value.hpp"
 
 /**
  * @brief 计算数值的平方根

@@ -10,6 +10,9 @@ std::string Parser::get_module_name() const {
     return module_name_;
 }
 
+std::string Parser::get_module_version() const {
+    return module_version_;
+}
 
 Token Parser::skip_token(const std::string& want_skip) {
     if (curr_tok_idx_ < tokens_.size()) {
@@ -110,7 +113,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
     if (tok.type == TokenType::Include) {
         skip_token("include");
-        const auto path = curr_token().text;
+        const auto path = skip_token().text;
         skip_end_of_ln();
         return std::make_unique<IncludeStmt>(path);
     }
@@ -126,6 +129,13 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
             module_name_ = string_val->value;
             return nullptr;
         }
+        if (const auto string_val = dynamic_cast<LiteralExpr*>(value.get());
+            name == "module_version" and string_val->type == Value::Type::String
+        ) {
+            module_version_ = string_val->value;
+            return nullptr;
+        }
+
         return std::make_unique<DefineStmt>(name, std::move(value));
     }
     if (tok.type == TokenType::Bigint) {

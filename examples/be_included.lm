@@ -1,0 +1,6 @@
+define module_name = "test_be_included";
+print("hello");
+var the_pi = 3.14159
+func add(a,b) {
+    return a+b;
+}

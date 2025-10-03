@@ -1,8 +1,8 @@
 #include <fstream>
 
+#include "../../interpreter/lamina_api/lamina.hpp"
+#include "../../interpreter/lamina_api/value.hpp"
 #include "interpreter.hpp"
-#include "lamina.hpp"
-#include "value.hpp"
 
 inline Value input(const std::vector<Value>& args) {
     std::string input_line;

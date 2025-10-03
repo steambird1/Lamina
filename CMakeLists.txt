@@ -66,27 +66,16 @@ include_directories(
 include_directories(interpreter)
 # Create lamina_core shared library
 add_library(lamina_core SHARED
-        interpreter/ast.hpp
-        interpreter/bigint.hpp
-        interpreter/interpreter.cpp
-        interpreter/interpreter.hpp
-        interpreter/irrational.hpp
-        interpreter/lexer.cpp
-        interpreter/lexer.hpp
-        interpreter/parser.cpp
-        interpreter/parser.hpp
-        interpreter/parse_expr.cpp
-        interpreter/parse_factor.cpp
-        interpreter/parse_stmt.cpp
-        interpreter/utils/color_style.hpp
-        # interpreter/parser.old.cpp
-        # interpreter/parser.old.hpp
-        interpreter/eval.cpp
-        interpreter/rational.hpp
-        interpreter/value.hpp
-        interpreter/lamina.hpp
-        interpreter/symbolic.hpp
-        interpreter/symbolic.cpp
+        interpreter/lamina_api/ast.hpp
+        interpreter/lamina_api/bigint.hpp
+        interpreter/lamina_api/irrational.hpp
+        interpreter/lamina_api/rational.hpp
+        interpreter/lamina_api/value.hpp
+        interpreter/lamina_api/lamina.hpp
+        interpreter/lamina_api/symbolic.hpp
+        # Include symbolic.cpp for symbolic expression support
+        interpreter/lamina_api/symbolic.cpp
+
         extensions/standard/math.cpp
         extensions/standard/basic.cpp
         extensions/standard/random.cpp
@@ -96,14 +85,27 @@ add_library(lamina_core SHARED
         extensions/standard/array.cpp
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp
-      #  extensions/standard/latex.hpp
         extensions/standard/string.hpp
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
         extensions/standard/cas.cpp
         extensions/standard/lmStruct.hpp
         extensions/standard/lmStruct.cpp
+
         interpreter/eval.cpp
+        interpreter/interpreter.cpp
+        interpreter/interpreter.hpp
+        interpreter/lexer.cpp
+        interpreter/lexer.hpp
+        interpreter/parser.cpp
+        interpreter/parser.hpp
+        interpreter/parse_expr.cpp
+        interpreter/parse_factor.cpp
+        interpreter/parse_stmt.cpp
+        interpreter/cpp_module_loader.hpp
+
+        interpreter/utils/src_manger.cpp
+        interpreter/utils/src_manger.hpp
 )
 
 # Add version header
@@ -162,15 +164,11 @@ target_include_directories(lamina_core PUBLIC
 
 # Create main executable
 add_executable(Lamina interpreter/main.cpp
-        # Include symbolic.cpp for symbolic expression support
-        interpreter/symbolic.cpp
         interpreter/utils/repl_input.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp
-        interpreter/error_reporter.hpp
-        interpreter/utils/src_manger.cpp
-        interpreter/utils/src_manger.hpp
         interpreter/utils/color_style.cpp
+        interpreter/utils/error_reporter.hpp
 )
 
 # Add version header

@@ -8,8 +8,8 @@
 #else
 #define LAMINA_API
 #endif
-#include "ast.hpp"
-#include "value.hpp"
+#include "lamina_api/ast.hpp"
+#include "lamina_api/value.hpp"
 #include <functional>
 #include <memory>
 #include <set>
@@ -136,12 +136,6 @@ public:
     std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
 
 private:
-    // Store function definitions
-    std::unordered_map<std::string, std::unique_ptr<LambdaDeclExpr>> functions;
-    // List of loaded modules to prevent circular imports
-    std::set<std::string> loaded_modules;
-    // Store loaded module ASTs to keep function pointers valid
-    std::map<std::string, std::unique_ptr<ASTNode>> loaded_module_asts;
     // Store REPL ASTs to keep function pointers valid in interactive mode
     std::vector<std::unique_ptr<ASTNode>> repl_asts;
 
@@ -154,7 +148,9 @@ private:
     void push_scope();
     void pop_scope();
     // Load and execute module
-    bool load_module(const std::string& module_name);
+    bool load_module(const std::string& module_path);
+    bool load_cpp_module(const std::string& module_path);
+
     // Register builtin functions
     void register_builtin_functions();
     // 将Number转为Symbolic(如果可能)

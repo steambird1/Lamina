@@ -1,6 +1,6 @@
 #include "console_ui.hpp"
 #include "interpreter.hpp"
-#include "lamina.hpp"
+#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "utils/repl_input.hpp"
@@ -64,7 +64,7 @@ int run_file(const std::string& path) {
     std::string source = buffer.str();
     auto tokens = Lexer::tokenize(source);
     auto parser = std::make_shared<Parser>(tokens);
-    auto ast = parser->parse_stmt();
+    auto ast = parser->parse_program();
 
     // 注释掉自动加载minimal模块，改为按需加载
     // std::cout << "Loading minimal module..." << std::endl;
@@ -89,17 +89,17 @@ int run_file(const std::string& path) {
     //     std::cerr << "Exception during module loading: " << e.what() << std::endl;
     // }
 
-    if (!ast) {
+    if (ast.empty()) {
         // print_traceback(path, 1);
         // return 2;
         std::cout << "[Nothing to execute]" << std::endl;
     }
 
     // 只支持 BlockStmt
-    auto block = dynamic_cast<BlockStmt*>(ast.get());
+    auto block = std::make_unique<BlockStmt>(std::move(ast));
     if (!block) return 1;
 
-    exec_block(block);
+    exec_block(block.get());
     std::cout << "\nProgram execution completed." << std::endl;
     return 0;
 }

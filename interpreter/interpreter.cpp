@@ -1,9 +1,10 @@
 #include "interpreter.hpp"
 #include "../extensions/standard/lmStruct.hpp"
-#include "bigint.hpp"
-#include "lamina.hpp"
+#include "lamina_api/bigint.hpp"
+#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "utils/src_manger.hpp"
 
 #include <cmath>
 #include <cstdlib>// For std::exit
@@ -41,11 +42,6 @@ void Interpreter::push_scope() {
     variable_stack.emplace_back();
 }
 
-void Interpreter::add_function(const std::string& name, FuncDefStmt* func) {
-    functions[func->name] = std::make_unique<LambdaDeclExpr>(
-            name, func->params, std::move(func->body));
-}
-
 void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
     repl_asts.push_back(std::move(ast));
 }
@@ -60,26 +56,6 @@ Value Interpreter::get_variable(const std::string& name) const {
         if (found != it.end()) return found->second;
     }
 
-    // 如果变量找不到，检查是否是函数名
-    const auto func_it = functions.find(name);
-    if (func_it != functions.end()) {
-        const auto& original_func = func_it->second;
-
-        // 克隆 body
-        std::unique_ptr<BlockStmt> cloned_body;
-        if (original_func->body) {
-            const auto stmt_ptr = original_func->body->clone_expr().release();
-            cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
-        }
-        // Make LambdaDeclExpr
-        auto func = std::make_shared<LambdaDeclExpr>(
-            name,
-            original_func->params,
-            std::move(cloned_body) // 转移克隆后的 body 所有权
-        );
-
-        return {func};
-    }
     // 如果是函数名找不到，查找builtins function
     const auto builtins_it = builtin_functions.find(name);
     if (builtins_it != builtin_functions.end()) {
@@ -151,6 +127,12 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
     } else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
         if (!a->expr) {
             error_and_exit("Null expression in assignment to '" + a->name + "'");
+        }
+        try {
+            get_variable(a->name);
+        } catch (const RuntimeError&){
+            std::cerr << "Warning :" << a->name << " is undefined"<< std::endl;
+            std::cerr << "But now it is defined"<< std::endl;
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
@@ -228,8 +210,8 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
             throw error;
         }
     } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
-        functions[func->name] = std::make_unique<LambdaDeclExpr>(
-            func->name, func->params, std::move(func->body));
+        set_variable(func->name, Value(std::make_shared<LambdaDeclExpr>(
+            func->name, func->params, std::move(func->body))));
     } else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
         for (auto& stmt: block->statements) execute(stmt);
     } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
@@ -397,8 +379,63 @@ Value Interpreter::eval(const ASTNode* node) {
 }
 
 // Load and execute module
-bool Interpreter::load_module(const std::string& module_name) {
-    // ToDo: ...
+bool Interpreter::load_module(const std::string& module_path) {
+    const auto file_content = open_lm_file(module_path);
+    auto tokens = Lexer::tokenize(file_content);
+    const auto parser = std::make_shared<Parser>(tokens);
+    auto asts = parser->parse_program();
+
+
+    // Check if AST generation succeeded
+    if (asts.empty()) {
+        // print_traceback("<stdin>", lineno);
+        // return 1;
+        std::cout << "[Nothing to execute]" << std::endl;
+        return false;
+    }
+
+    // Only support AST of type BlockStmt (block statement)
+    const auto block = std::make_unique<BlockStmt>(std::move(asts));
+    push_frame(module_path, module_path, 0);   // Add to call stack
+    push_scope();                              // Create scope here
+    for (auto& stmt: block->statements) {
+        try {
+            execute(stmt);
+        } catch (const std::exception& e) {
+            std::cerr << "Error when import other file: " << e.what() << std::endl;
+        } catch (...) { // 捕获非标准异常
+            std::cerr << "Error: Unknown exception occurred while loading module" << std::endl;
+            if (!call_stack.empty()) pop_frame();
+            if (!variable_stack.empty()) pop_scope();
+            return false;
+        }
+    }
+
+    auto module_var_table = variable_stack.back();
+    pop_scope();
+    pop_frame();
+    const auto module_name = parser->get_module_name();
+    if (module_name.empty()) {
+        std::cerr << "Error: Module name is empty - " << module_path << std::endl;
+        return false;
+    }
+
+    std::cout << "\nProgram execution completed." << std::endl;
+    set_variable(module_name,
+        Value(
+            std::make_shared<LmModule>(
+                module_name,
+                parser->get_module_version(),
+                module_var_table
+               )
+            )
+    );
+    return true;
+}
+
+bool Interpreter::load_cpp_module(const std::string& module_path) {
+    const auto file_content = open_lm_file(module_path);
+    return true;
 }
 
 // 使用函数内的静态变量来避免DLL导出/导入问题
@@ -473,15 +510,6 @@ void Interpreter::print_variables() const {
     if (!hasVars) {
         std::cout << "No variables defined." << std::endl;
     }
-
-    // 打印函数列表
-    if (!functions.empty()) {
-        std::cout << "\nDefined functions:" << std::endl;
-        std::cout << "------------------" << std::endl;
-        for (const auto& [name, _]: functions) {
-            std::cout << name << "()" << std::endl;
-        }
-    }
 }
 
 // Stack trace management functions
@@ -554,7 +582,7 @@ bool Interpreter::supports_colors() {
     return true;
 }
 
-void Interpreter::print_error(const std::string& message, bool use_colors) {
+void Interpreter::print_error(const std::string& message, const bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
 
     if (colors_enabled) {

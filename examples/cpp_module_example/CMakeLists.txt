@@ -6,7 +6,7 @@ set(MODULE_NAME minimal)
 
 # 创建共享库 - 使用超级极简版源文件
 add_library(${MODULE_NAME} SHARED
-    ultra_minimal.cpp
+        ultra_minimal.cpp
 )
 
 # 设置输出目录

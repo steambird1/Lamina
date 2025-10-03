@@ -1,5 +1,5 @@
 #pragma once
-#include "ast.hpp"
+#include "lamina_api/ast.hpp"
 #include "lexer.hpp"
 
 
@@ -10,6 +10,7 @@ class LAMINA_API Parser {
     const std::vector<Token> tokens_;
     long long unsigned int curr_tok_idx_ = 0;
     std::string module_name_;
+    std::string module_version_;
 
 public:
     explicit Parser(const std::vector<Token>& tokens);
@@ -20,6 +21,7 @@ public:
     void must_token(const std::string& text, const std::string& waring) const;
     std::vector<std::unique_ptr<Statement>> parse_program();
     [[nodiscard]] std::string get_module_name() const;
+    [[nodiscard]] std::string get_module_version() const;
     std::unique_ptr<Statement> parse_stmt();
 
     std::unique_ptr<Expression> parse_expression();
