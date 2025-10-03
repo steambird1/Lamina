@@ -140,7 +140,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
     if (tok.type == TokenType::Bigint) {
         skip_token("bigint");
-        const auto name = curr_token().text;
+        const auto name = skip_token().text;
         skip_token("=");
         auto value = parse_expression();
         skip_end_of_ln();
