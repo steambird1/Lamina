@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.7.0 alpha 0
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.7.0
 
 <img src="./assets/logo.svg" width="100%">
 
