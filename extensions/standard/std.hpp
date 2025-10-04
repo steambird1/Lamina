@@ -3,45 +3,42 @@
 #include "lamina_api/value.hpp"
 
 // 拼接多个字符串，并返回一个新字符串
-Value concat(const std::vector<Value>& args);
+Value cat(const std::vector<Value>& args);
 
-//获取字符串指定位置的字符，以Int类型返回
+// 获取字符串指定位置的字符，以Int类型返回
 Value char_at(const std::vector<Value>& args);
 
-//获取字符串长度
-Value length(const std::vector<Value>& args);
+// 从指定位置开始查找子字符串，若查找成功，返回第一个符合结果的子字符串索引；失败返回-1（或指定标识）
+Value str_find(const std::vector<Value>& args);
 
-// 从指定位置开始查找子字符串，若查找成功，返回第一个符合结果的子字符串索引，
-Value find(const std::vector<Value>& args);
-
-// 截取子字符串
+// 截取子字符串：需3个参数（原字符串、起始索引、截取长度），返回截取后的子串
 Value sub_string(const std::vector<Value>& args);
 
-// 从指定位置开始替换原字符串，并返回一个新字符串
+// 从指定位置开始替换原字符串：需3个参数（原字符串、起始索引、替换内容），返回替换后的新字符串
 Value replace_by_index(const std::vector<Value>& args);
 
-// 平方根：需1个数值参数（如数字、向量/矩阵的每个元素）
+// 平方根：需1个数值参数（如数字、向量/矩阵的每个元素），返回平方根结果
 Value sqrt(const std::vector<Value>& args);
 
-// 圆周率π：需0个参数，直接返回π的数值
+// 圆周率π：需0个参数，直接返回π的数值（如3.1415926535...）
 Value pi(const std::vector<Value>& args);
 
-// 自然常数e：需0个参数，直接返回e的数值
+// 自然常数e：需0个参数，直接返回e的数值（如2.7182818284...）
 Value e(const std::vector<Value>& args);
 
-// 绝对值：需1个数值参数（处理数字、向量/矩阵元素的正负）
+// 绝对值：需1个数值参数（处理数字、向量/矩阵元素的正负），返回非负值
 Value abs(const std::vector<Value>& args);
 
-// 正弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素）
+// 正弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回正弦值
 Value sin(const std::vector<Value>& args);
 
-// 余弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素）
+// 余弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回余弦值
 Value cos(const std::vector<Value>& args);
 
-// 正切函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素）
+// 正切函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回正切值
 Value tan(const std::vector<Value>& args);
 
-// 自然对数（ln）：需1个正数值参数（处理数字、向量/矩阵元素）
+// 自然对数（ln）：需1个正数值参数（处理数字、向量/矩阵元素），返回对数结果
 Value log(const std::vector<Value>& args);
 
 // 四舍五入：需1个数值参数，返回最接近的整数
@@ -88,6 +85,105 @@ Value gcd(const std::vector<Value>& args);
 
 // 最小公倍数：需2个正整数参数，返回二者的最小公倍数
 Value lcm(const std::vector<Value>& args);
+
+// 生成随机浮点数：需0个或2个参数（无参返回[0,1)随机数；有参返回[min,max)随机数）
+Value rand(const std::vector<Value>& args);
+
+// 生成随机整数：需2个参数（最小值、最大值），返回[min,max]范围内的随机整数
+Value randint(const std::vector<Value>& args);
+
+// 生成随机字符串：需1个参数（字符串长度），返回指定长度的随机字符组合（如字母+数字）
+Value randstr(const std::vector<Value>& args);
+
+// 获取当前时间：需0个参数，返回当前时间（如"HH:MM:SS"格式字符串或时间戳）
+Value get_time(const std::vector<Value>& args);
+
+// 获取当前日期：需0个参数，返回当前日期（如"YYYY-MM-DD"格式字符串）
+Value get_date(const std::vector<Value>& args);
+
+// 获取格式化日期时间：需1个参数（格式字符串，如"%Y-%m-%d %H:%M:%S"），返回对应格式的日期时间字符串
+Value get_format_date(const std::vector<Value>& args);
+
+// 生成数值范围：需2个或3个参数（start, end 生成[start,end)步长1的序列；start, end, step 生成指定步长序列）
+Value range(const std::vector<Value>& args);
+
+// 获取数组指定索引元素：需2个参数（数组、索引），返回该索引对应的元素
+Value arr_at(const std::vector<Value>& args);
+
+// 设置数组指定索引元素：需3个参数（数组、索引、新值），更新索引位置元素并返回更新后的数组
+Value arr_set(const std::vector<Value>& args);
+
+// 查找元素在数组中的索引：需2个参数（数组、目标元素），返回第一个匹配元素的索引；无匹配返回-1
+Value arr_index_of(const std::vector<Value>& args);
+
+// 输入函数：需1个参数（输入提示信息），返回用户输入的内容
+Value input(const std::vector<Value>& args);
+
+// 打印函数：支持任意数量参数（待打印的变量/值），将内容输出到控制台
+Value print(const std::vector<Value>& args);
+
+// 执行系统命令：需1个参数（系统命令字符串），返回命令执行结果或退出状态
+Value system(const std::vector<Value>& args);
+
+// 检查存在性：需1个参数（如文件路径、变量名、数组元素），返回布尔值表示是否存在
+Value exist(const std::vector<Value>& args);
+
+// 断言函数：需1个或2个参数（断言条件；可选断言失败提示信息），条件为假则触发断言失败
+Value assert(const std::vector<Value>& args);
+
+// 类型判断：需1个参数（待判断类型的变量/值），返回其类型标识（如"int"、"string"、"array"）
+Value typeof_(const std::vector<Value>& args);
+
+// 获取对象属性：需2个参数（对象、属性名），返回该对象的指定属性值
+Value getattr(const std::vector<Value>& args);
+
+// 设置对象属性：需3个参数（对象、属性名、属性值），为对象设置或更新指定属性
+Value setattr(const std::vector<Value>& args);
+
+// 更新容器/对象：需2个参数（原容器/对象、待更新的键值对/属性），合并内容并返回更新后的结果
+Value update(const std::vector<Value>& args);
+
+// 复制对象/容器：需1个参数（待复制的对象/数组/字符串），返回其深拷贝或浅拷贝结果
+Value copy(const std::vector<Value>& args);
+
+// 遍历容器：需2个参数（容器、遍历执行的函数），对容器每个元素执行函数并返回执行结果集
+Value foreach(const std::vector<Value>& args);
+
+// 查找符合条件的元素：需2个参数（容器、判断函数），返回第一个满足条件的元素；无则返回空
+Value find(const std::vector<Value>& args);
+
+// 映射转换：需2个参数（容器、转换函数），对容器每个元素执行函数，返回转换后的新容器
+Value map(const std::vector<Value>& args);
+
+// 替换内容：需3个参数（原字符串/容器、目标值、替换值），替换所有匹配的目标值并返回新结果
+Value replace(const std::vector<Value>& args);
+
+// CAS表达式解析：需1个参数（待解析的数学表达式字符串），返回解析后的CAS表达式对象
+Value cas_parse(const std::vector<Value>& args);
+
+// CAS表达式化简：需1个参数（已解析的CAS表达式），返回化简后的表达式
+Value cas_simplify(const std::vector<Value>& args);
+
+// CAS表达式求导：需2个参数（待求导的CAS表达式、求导变量），返回导函数表达式
+Value cas_differentiate(const std::vector<Value>& args);
+
+// CAS表达式求值：需1个参数（已解析的CAS表达式），返回计算后的数值或简化结果
+Value cas_evaluate(const std::vector<Value>& args);
+
+// CAS表达式存储：需2个参数（存储键名、待存储的CAS表达式），将表达式存入指定键
+Value cas_store(const std::vector<Value>& args);
+
+// CAS表达式加载：需1个参数（存储键名），返回该键对应的CAS表达式
+Value cas_load(const std::vector<Value>& args);
+
+// CAS表达式定点求值：需2个参数（CAS表达式、变量的指定值），返回表达式在该值下的结果
+Value cas_evaluate_at(const std::vector<Value>& args);
+
+// 线性方程求解：需1个参数（线性方程组的CAS表达式形式），返回方程的解集合
+Value cas_solve_linear(const std::vector<Value>& args);
+
+// CAS数值导数计算：需3个参数（CAS表达式、求导变量、计算点），返回该点的数值导数
+Value cas_numerical_derivative(const std::vector<Value>& args);
 
 inline std::unordered_map<std::string, Value> register_builtins() {
     return {
