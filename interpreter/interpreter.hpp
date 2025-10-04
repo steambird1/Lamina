@@ -77,6 +77,7 @@ class LAMINA_API Interpreter {
 
 public:
     Interpreter();
+    ~Interpreter();
     Value execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
 
@@ -84,7 +85,7 @@ public:
     Value eval_UnaryExpr(const UnaryExpr* unary);
     Value eval_BinaryExpr(const BinaryExpr* bin);
     Value eval_CallExpr(const CallExpr* call);
-    Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
+    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
 
     // Print all variables in current scope
     void print_variables() const;
@@ -116,7 +117,7 @@ public:
     Value get_variable(const std::string& name) const;
 
     // Variable scope stack, top is the current scope
-    std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
+    static std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
 
 private:
     // Store REPL ASTs to keep function pointers valid in interactive mode
