@@ -164,6 +164,7 @@ target_include_directories(lamina_core PUBLIC
 
 # Create main executable
 add_executable(Lamina interpreter/main.cpp
+        interpreter/utils/repl_input.hpp
         interpreter/utils/repl_input.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp

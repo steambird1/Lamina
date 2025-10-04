@@ -219,12 +219,12 @@ int repl() {
             // Set prompt style based on whether the terminal supports color
             std::string prompt;
             if (brace_level > 0) {
-                prompt = ConClr::GREEN + ". " + ConClr::RESET ;    // 多行输入下等待输入的提示符
+                prompt = ConClr::MAGENTA + "... " + ConClr::RESET ;    // 多行输入下等待输入的提示符
             } else {
-                prompt = ConClr::GREEN + "> " + ConClr::RESET ;   // 带绿色高亮的提示符
+                prompt = ConClr::MAGENTA + ">>> " + ConClr::RESET ;   // 带绿色高亮的提示符
             }
 
-            std::string line = repl_readline(prompt);
+            std::string line = repl_readline(prompt,"");
 
             if (line == "\x03") {   // Ctrl+C interrupt
                 if (brace_level > 0) {

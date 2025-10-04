@@ -9,8 +9,9 @@ void ConClr::init(const bool use_color) {
     GREEN = use_color ? "\033[32m" : "";
     YELLOW = use_color ? "\033[33m" : "";
     BLUE = use_color ? "\033[34m" : "";
-    MAGENTA = use_color ? "\033[35m" : "";
+    MAGENTA = use_color ? "\033[35m" : "";  // 紫色
     CYAN = use_color ? "\033[36m" : "";
+    WHITE = use_color ? "\033[37m" : "";
     WHITE = use_color ? "\033[37m" : "";
     LIGHT_BLACK = use_color ? "\033[90m" : "";
     LIGHT_RED = use_color ? "\033[91m" : "";
