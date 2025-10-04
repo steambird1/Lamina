@@ -17,15 +17,13 @@
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
----
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
 [快速开始](#快速开始) • [语法指南](#基础语法) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://github.com/lamina-dev/Lamina/wiki) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md)
 
----
 
-<h2>🎉What's news in lamina 1.7.0</h2>
+<h1>🎉What's news in lamina 1.7.0</h1>
 <details>
 <summary><strong>点击展开详情</strong></b>
 </summary>
@@ -68,5 +66,6 @@
 <li>多语言支持</li>
 </ul>
 </details>
----
+
+
 感谢所有参与开发的工作者和用户
