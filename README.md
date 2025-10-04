@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.3.0 alpha 0
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.7.0
 
 <img src="./assets/logo.svg" width="100%">
 
@@ -17,9 +17,12 @@
 [![Math](https://img.shields.io/badge/math-precise-green.svg)](#精确数学特性)
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
+---
+
+<br/>
+<h2>🎊更新了什么</h2>
 <details>
-<summary><strong>主要更新</strong></b>
- - 点击展开详情
+<summary><strong>点击展开详情</strong></b>
 </summary>
 
 <ul>
@@ -37,11 +40,15 @@
 <li>重构 Parser, ast</li>
 <li>将部分内置函数移到内置库</li>
 <li>cmodule loader更新</li>
-<li>新增函数 typeof、find、replace、foreach、copy、map、exit</li>
+<li>c++扩展格式更新</li>
+<li>新增函数 typeof、find、replace、foreach、copy、map、exit、tostring</li>
 <li>新增函数 vars、locals、funcs</li>
+<li>loop语句</li>
 <li>repl直接打印表达式</li>
 <li>repl支持不带颜色的输出</li>
 <li>repl关键字高亮及自动补齐</li>
+<li>数学范围相关扩展</li>
+<li>Decimal类型</li>
 </ul>
 
 <b>延迟到下一个版本的特性</b>
@@ -55,6 +62,8 @@
 <li>虚数功能</li>
 </ul>
 </details>
+
+---
 
 ## 一种专注于精确数学计算的面向过程编程语言
 
