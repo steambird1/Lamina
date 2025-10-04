@@ -140,9 +140,6 @@ std::string find_completion(const std::string& prefix) {
  * @brief 渲染输入行（含prompt、高亮、补全候选），并移动光标到正确位置
  */
 void render_line(const std::string& prompt, const std::string& buf, size_t cursor_pos, const std::string& completion) {
-    // 清除当前行并移动到行首（ANSI控制码：\033[2K清除行，\r回车到行首）
-    std::cout << "\033[2K\r" << prompt;
-
     // 解析缓冲区，按“普通文本/字符串/关键字”应用高亮
     bool in_string = false; // 是否处于双引号内（字符串高亮）
     size_t buf_len = buf.size();
@@ -192,11 +189,11 @@ void render_line(const std::string& prompt, const std::string& buf, size_t curso
     }
 
     // 移动光标
-    size_t cursor_offset = prompt.size() + cursor_pos;
+    size_t cursor_offset = cursor_pos;
     if (!completion.empty()) {
         cursor_offset -= completion.size(); // 补全部分不占光标位置
     }
-    std::cout << "\033[" << cursor_offset << "G"; // ANSI：移动光标到第N列
+    std::cout << "\033[" << cursor_offset << "C"; // ANSI：移动光标到第N列
 
     std::cout.flush(); // 强制刷新输出
 }
@@ -204,7 +201,7 @@ void render_line(const std::string& prompt, const std::string& buf, size_t curso
 // 核心函数
 std::string repl_readline(const std::string& prompt, const std::string& placeholder) {
     std::cout << prompt;
-    std::string buf = placeholder;       // 输入缓冲区
+    std::string buf = placeholder;          // 输入缓冲区
     size_t cursor_pos;                      // 光标初始位置
     std::vector<size_t> char_indices;       // 记录每个UTF-8字符的起始字节位置
     std::string current_completion;         // 当前补全候选（如输入whi时，completion是"le"）
