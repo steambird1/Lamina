@@ -46,6 +46,7 @@ Interpreter::Interpreter() {
 
 Interpreter::~Interpreter() {
     Interpreter::variable_stack = {{}};
+    Interpreter::call_stack = {};
 }
 
 // Scope stack operations
@@ -556,12 +557,12 @@ void Interpreter::print_variables() const {
 
 // Stack trace management functions
 void Interpreter::push_frame(const std::string& function_name, const std::string& file_name, int line_number) {
-    call_stack.emplace_back(function_name, file_name, line_number);
+    Interpreter::call_stack.emplace_back(function_name, file_name, line_number);
 }
 
 void Interpreter::pop_frame() {
-    if (!call_stack.empty()) {
-        call_stack.pop_back();
+    if (!Interpreter::call_stack.empty()) {
+        Interpreter::call_stack.pop_back();
     }
 }
 
