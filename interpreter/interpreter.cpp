@@ -43,9 +43,14 @@
 Interpreter::Interpreter() {
     builtins = register_builtins();
 }
+
+Interpreter::~Interpreter() {
+    Interpreter::variable_stack = {{}};
+}
+
 // Scope stack operations
 void Interpreter::push_scope() {
-    variable_stack.emplace_back();
+    Interpreter::variable_stack.emplace_back();
 }
 
 void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
@@ -53,11 +58,11 @@ void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
 }
 
 void Interpreter::pop_scope() {
-    if (variable_stack.size() > 1) variable_stack.pop_back();
+    if (Interpreter::variable_stack.size() > 1) Interpreter::variable_stack.pop_back();
 }
 
 Value Interpreter::get_variable(const std::string& name) const {
-    for (const auto & it : std::ranges::reverse_view(variable_stack)) {
+    for (const auto & it : std::ranges::reverse_view(Interpreter::variable_stack)) {
         auto found = it.find(name);
         if (found != it.end()) return found->second;
     }
@@ -74,14 +79,14 @@ Value Interpreter::get_variable(const std::string& name) const {
 }
 
 void Interpreter::set_variable(const std::string& name, const Value& val) {
-    if (!variable_stack.empty()) {
-        (*variable_stack.rbegin())[name] = val;
+    if (!Interpreter::variable_stack.empty()) {
+        (*Interpreter::variable_stack.rbegin())[name] = val;
     }
 }
 
 void Interpreter::set_global_variable(const std::string& name, const Value& val) {
-    if (!variable_stack.empty()) {
-        variable_stack.front()[name] = val;
+    if (!Interpreter::variable_stack.empty()) {
+        Interpreter::variable_stack.front()[name] = val;
     }
 }
 
