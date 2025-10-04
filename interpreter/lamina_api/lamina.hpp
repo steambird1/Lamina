@@ -110,13 +110,9 @@ constexpr bool always_false = false;
 // #define LAMINA_ENTRY_FUNC(interpreter, name,function) \
 //     interpreter.entry_function(name, function)
 
-#define LAMINA_BUILTINS_FUNC(name, func)                                     \
-    {name, Value(                                                            \
-        std::make_shared<LmCppFunction>(func)                                \
-    )}
+#define LAMINA_BUILTINS_FUNC(name, func) {name, Value(  std::make_shared<LmCppFunction>( std::move(func) )) }
 
-#define LAMINA_BUILTINS_MODULE(name, version, subitems)                      \
-    {name, Value(std::make_shared<LmModule>(name, version, subitems) )}       \
+#define LAMINA_BUILTINS_MODULE(name, version, subitems)  {name, Value(  std::make_shared<LmModule>(std::move(name), std::move(version), std::move(subitems)) )}
 
 
 // L_ERR

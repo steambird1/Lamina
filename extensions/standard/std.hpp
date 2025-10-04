@@ -46,12 +46,13 @@ Value replace_by_index(const std::vector<Value>& args);
 inline std::unordered_map<std::string, Value> register_builtins() {
     return {
         LAMINA_BUILTINS_MODULE("string", "1.0.0", {
-            LAMINA_BUILTINS_FUNC("concat", concat),
-            LAMINA_BUILTINS_FUNC("char_at", char_at),
-            LAMINA_BUILTINS_FUNC("length", length),
-            LAMINA_BUILTINS_FUNC("find", find),
-            LAMINA_BUILTINS_FUNC("sub_string", sub_string),
-            LAMINA_BUILTINS_FUNC("replace_by_index", replace_by_index)
+            {"concat", Value(std::make_shared<LmCppFunction>(std::move(concat)))}
         })
     };
-}// namespace Lamina
+}
+
+// LAMINA_BUILTINS_FUNC("char_at", char_at),
+// LAMINA_BUILTINS_FUNC("length", length),
+// LAMINA_BUILTINS_FUNC("find", find),
+// LAMINA_BUILTINS_FUNC("sub_string", sub_string),
+// LAMINA_BUILTINS_FUNC("replace_by_index", replace_by_index),
