@@ -78,7 +78,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
             return {};
         }
         // User function
-        return call_function(func.get(), args);
+        return Interpreter::call_function(func.get(), args);
     }
 
     if (! func) {
@@ -88,22 +88,15 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
     return {};
 }
 
-Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) {
+static Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) {
     if (func == nullptr) {
         std::cerr << "Error: Function at '" << func << "' is null" << std::endl;
         return Value("<func error>");
     }
 
-    // Check recursion depth
-    if (recursion_depth >= max_recursion_depth) {
-        RuntimeError error("Maximum recursion depth exceeded (" + std::to_string(max_recursion_depth) + ")");
-        error.stack_trace = get_stack_trace();
-        throw error;
-    }
-    recursion_depth++;
-    push_frame(func->name, "<script>", 0);   // Add to call stack
+    Interpreter::push_frame(func->name, "<script>", 0);   // Add to call stack
 
-    push_scope();// Create scope here
+    Interpreter::push_scope();// Create scope here
     // Pass arguments
     for (size_t j = 0; j < func->params.size(); ++j) {
         set_variable(func->params[j], args[j]);
@@ -112,12 +105,11 @@ Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<V
     try {
         for (const auto& stmt: func->body->statements) {
             try {
-                execute(stmt);
+                Interpreter::execute(stmt);
             } catch (const ReturnException& re) {
                 // Normal return handling
-                pop_frame();
-                pop_scope();
-                recursion_depth--;
+                Interpreter::pop_frame();
+                Interpreter::pop_scope();
                 return re.value;
             } catch (const RuntimeError& re) {
                 // If the error doesn't have a stack trace yet, capture current state
@@ -127,30 +119,26 @@ Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<V
                 } else {
                     enriched.stack_trace = re.stack_trace;  // Preserve existing trace
                 }
-                pop_frame();
-                pop_scope();
-                recursion_depth--;
+                Interpreter::top_frame();
+                Interpreter::pop_scope();
                 throw enriched;
             } catch (const std::exception& e) {
                 // Wrap standard exception as RuntimeError
                 RuntimeError enriched("In function '" + func->name + "': " + std::string(e.what()));
                 enriched.stack_trace = get_stack_trace();   // Get stack trace before cleanup
-                pop_frame();
-                pop_scope();
-                recursion_depth--;
+                Interpreter::pop_frame();
+                Interpreter::pop_scope();
                 throw enriched;
             }
         }
     } catch (const ReturnException& re) {
         // Ensure cleanup in any case
-        pop_frame();
-        pop_scope();
-        recursion_depth--;
+        Interpreter::pop_frame();
+        Interpreter::pop_scope();
         return re.value;
     }
-    pop_frame();
-    pop_scope();
-    recursion_depth--;
+    Interpreter::pop_frame();
+    Interpreter::pop_scope();
     return Value(); // Default value when no return
 }
 
