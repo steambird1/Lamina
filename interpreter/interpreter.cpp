@@ -222,8 +222,23 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
     } else if ([[maybe_unused]] auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
         throw ContinueException();
     } else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
-        if (!load_module(includeStmt->module)) {
-            error_and_exit("Failed to include module '" + includeStmt->module + "'");
+        const auto& path = includeStmt->module;
+        bool ok_to_load = false;
+        if (path.ends_with(".lm")){
+            ok_to_load = load_module(path);
+        }
+        else if ( path.ends_with(".dll")
+         or path.ends_with(".so")
+         or path.ends_with(".dylib")
+         or path.ends_with(".a")
+        ){
+            ok_to_load = load_cpp_module(path);
+        }
+        else {
+            error_and_exit("Failed to include module '" + path + "'");
+        }
+        if (!ok_to_load) {
+            error_and_exit("Failed to include module '" + path + "'");
         }
     } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
         if (exprstmt->expr) {
@@ -416,8 +431,10 @@ bool Interpreter::load_module(const std::string& module_path) {
     pop_frame();
     const auto module_name = parser->get_module_name();
     if (module_name.empty()) {
-        std::cerr << "Error: Module name is empty - " << module_path << std::endl;
-        return false;
+        namespace fs = std::filesystem;
+        fs::path path(module_path);
+        module_name = path.stem().string();
+        std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     }
 
     std::cout << "\nProgram execution completed." << std::endl;
@@ -434,7 +451,28 @@ bool Interpreter::load_module(const std::string& module_path) {
 }
 
 bool Interpreter::load_cpp_module(const std::string& module_path) {
-    const auto file_content = open_lm_file(module_path);
+    const auto& module = load_cppmodule(module_path);
+    namespace fs = std::filesystem;
+    fs::path path(module_path);
+    std::string module_name = path.stem().string();
+    std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
+    
+    const auto& module_name = "ToDo";
+    for (const auto [key, value] : module) {
+        if (key == "lamina_init_module") {
+            std::get<std::shared_ptr<LmCppModule>>(value.data)(); // 初始化函数
+        }
+        std::cerr << "Debug: checking c++ function " << key << std::endl;
+    }
+    set_variable(module_name,
+        Value(
+            std::make_shared<LmModule>(
+                module_name,
+                "todo",
+                module
+               )
+            )
+    );
     return true;
 }
 
