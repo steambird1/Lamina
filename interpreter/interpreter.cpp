@@ -457,18 +457,28 @@ bool Interpreter::load_cpp_module(const std::string& module_path) {
     std::string module_name = path.stem().string();
     std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     
-    const auto& module_name = "ToDo";
     for (const auto [key, value] : module) {
         if (key == "lamina_init_module") {
             std::get<std::shared_ptr<LmCppModule>>(value.data)(); // 初始化函数
         }
         std::cerr << "Debug: checking c++ function " << key << std::endl;
     }
+    
+    // 拼接properties文件名
+    size_t last_dot_pos = module_path.find_last_of('.');
+    std::string properties_file_path;
+    if (last_dot_pos != std::string::npos) {
+        properties_file_path = module_path.substr(0, last_dot_pos + 1) + new_suffix; // +1 保留 '.'
+    } else {
+        properties_file_path = module_path + "." + new_suffix;
+    }
+
+    const auto& version = parse_properties(properties_file_path).at("version");
     set_variable(module_name,
         Value(
             std::make_shared<LmModule>(
                 module_name,
-                "todo",
+                version ? version : "0.0.0" ,
                 module
                )
             )
