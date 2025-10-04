@@ -294,6 +294,8 @@ int repl() {
                     std::cout << "  :help - Show this help message\n";
                     std::cout << "  :vars - Show all variables\n";
                     std::cout << "  :clear - Clear screen\n";
+                    std::cout << "  :nouse_color - no use the color for output\n";
+                    std::cout << "  :use_color - use color for output(default option)\n";
                     ++lineno;
                     continue;
                 }
@@ -302,17 +304,18 @@ int repl() {
                     ++lineno;
                     continue;
                 }
+                if (trimmed_line == ":nouse_color"){
+                    ConClr::init(false); // 设置不使用颜色
+                }
+                if (trimmed_line == ":use_color"){
+                    ConClr::init(true); // 设置使用颜色
+                }
                 if (trimmed_line == ":clear") {
 #ifdef _WIN32
-                    auto result = system("cls");    // Windows下使用cls命令
+                    [[maybe_unused]] auto result = system("cls");    // Windows下使用cls命令
 #else
-                    auto result = system("clear");  // Linux/macOS下使用clear命令
+                    [[maybe_unused]] auto result = system("clear");  // Linux/macOS下使用clear命令
 #endif
-                    (void) result;  // 显式忽略system函数的返回值，避免编译器警告
-                    ++lineno;
-                    continue;
-                }
-                if (trimmed_line == ":fns") {
                     ++lineno;
                     continue;
                 }
