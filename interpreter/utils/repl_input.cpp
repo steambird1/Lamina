@@ -235,6 +235,23 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
             std::cout.flush();
             return buf;
         }
+        if (ch == 32) { // 空格键ASCII码=32
+            buf.insert(cursor_pos, 1, ' ');
+            // 更新光标位置（后移1字节）
+            cursor_pos += 1;
+            char_indices.clear();
+            size_t byte_pos = 0;
+            while (byte_pos < buf.size()) {
+                char_indices.push_back(byte_pos);
+                const auto c = static_cast<unsigned char>(buf[byte_pos]);
+                byte_pos += utf8_char_len(c);
+            }
+            char_indices.push_back(byte_pos);
+            current_completion.clear();
+
+            render_line(prompt, buf, cursor_pos, current_completion);
+            continue;
+        }
 
         // 退格键
         if (ch == 8 || ch == 127 || ch == 0x7F) { // 8=Backspace，127=Del（兼容不同终端）
