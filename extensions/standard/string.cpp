@@ -1,4 +1,5 @@
-#include "string.hpp"
+#include "lamina_api/lamina.hpp"
+#include "std.hpp"
 
 /**
  * 拼接多个字符串，并返回一个新字符串

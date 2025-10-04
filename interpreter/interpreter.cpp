@@ -1,9 +1,12 @@
 #include "interpreter.hpp"
+
 #include "../extensions/standard/lmStruct.hpp"
+#include "cpp_module_loader.hpp"
 #include "lamina_api/bigint.hpp"
 #include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "utils/properties_parser.hpp"
 #include "utils/src_manger.hpp"
 
 #include <cmath>
@@ -37,6 +40,9 @@
 
 // 这些异常类已经移到了 interpreter.hpp
 
+Interpreter::Interpreter() {
+    builtins = register_builtins();
+}
 // Scope stack operations
 void Interpreter::push_scope() {
     variable_stack.emplace_back();
@@ -56,10 +62,10 @@ Value Interpreter::get_variable(const std::string& name) const {
         if (found != it.end()) return found->second;
     }
 
-    // 如果是函数名找不到，查找builtins function
-    const auto builtins_it = builtin_functions.find(name);
-    if (builtins_it != builtin_functions.end()) {
-        return {"<builtins function "+builtins_it->first+">"};
+    // 如果是函数名找不到，查找builtins
+    const auto builtins_it = builtins.find(name);
+    if (builtins_it != builtins.end()) {
+        return builtins_it->second;
     }
 
     RuntimeError error("Undefined variable '" + name + "'");
@@ -429,10 +435,10 @@ bool Interpreter::load_module(const std::string& module_path) {
     auto module_var_table = variable_stack.back();
     pop_scope();
     pop_frame();
-    const auto module_name = parser->get_module_name();
+    auto module_name = parser->get_module_name();
     if (module_name.empty()) {
         namespace fs = std::filesystem;
-        fs::path path(module_path);
+        const fs::path path(module_path);
         module_name = path.stem().string();
         std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     }
@@ -453,24 +459,24 @@ bool Interpreter::load_module(const std::string& module_path) {
 bool Interpreter::load_cpp_module(const std::string& module_path) {
     const auto& module = load_cppmodule(module_path);
     namespace fs = std::filesystem;
-    fs::path path(module_path);
+    const fs::path path(module_path);
     std::string module_name = path.stem().string();
     std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     
-    for (const auto [key, value] : module) {
+    for (const auto& [key, value] : module) {
         if (key == "lamina_init_module") {
-            std::get<std::shared_ptr<LmCppModule>>(value.data)(); // 初始化函数
+            [[maybe_unused]] auto _ = std::get<std::shared_ptr<LmCppFunction>>(value.data).get()(); // 初始化函数
         }
         std::cerr << "Debug: checking c++ function " << key << std::endl;
     }
     
     // 拼接properties文件名
-    size_t last_dot_pos = module_path.find_last_of('.');
+    const size_t last_dot_pos = module_path.find_last_of('.');
     std::string properties_file_path;
     if (last_dot_pos != std::string::npos) {
-        properties_file_path = module_path.substr(0, last_dot_pos + 1) + new_suffix; // +1 保留 '.'
+        properties_file_path = module_path.substr(0, last_dot_pos + 1) + "properties"; // +1 保留 '.'
     } else {
-        properties_file_path = module_path + "." + new_suffix;
+        properties_file_path = module_path + "." + "properties";
     }
 
     const auto& version = parse_properties(properties_file_path).at("version");
@@ -484,23 +490,6 @@ bool Interpreter::load_cpp_module(const std::string& module_path) {
             )
     );
     return true;
-}
-
-// 使用函数内的静态变量来避免DLL导出/导入问题
-static std::vector<Interpreter::EntryFunction>& get_entry_functions() {
-    static std::vector<Interpreter::EntryFunction> entry_functions;
-    return entry_functions;
-}
-
-void Interpreter::register_entry(EntryFunction func) {
-    get_entry_functions().push_back(func);
-}
-
-// Register builtin mathematical functions
-void Interpreter::register_builtin_functions() {
-    for (auto entry: get_entry_functions()) {
-        entry(*this);
-    }
 }
 
 // 将Number转为Symbolic(如果可能)

@@ -8,6 +8,7 @@
 #else
 #define LAMINA_API
 #endif
+#include "../extensions/standard/std.hpp"
 #include "lamina_api/ast.hpp"
 #include "lamina_api/value.hpp"
 #include <functional>
@@ -45,16 +46,6 @@ public:
     }
 };
 
-// L_ERR
-class StdLibException : public std::exception {
-public:
-    std::string message;
-    StdLibException(const std::string& msg) : message(msg) {}
-    const char* what() const noexcept override {
-        return message.c_str();
-    }
-};
-
 // Exception for return statements
 class ReturnException : public std::exception {
 public:
@@ -85,9 +76,7 @@ class LAMINA_API Interpreter {
     Interpreter& operator=(Interpreter&&) = default;
 
 public:
-    Interpreter() {
-        register_builtin_functions();
-    }
+    Interpreter();
     Value execute(const std::unique_ptr<Statement>& node);
     Value eval(const ASTNode* node);
 
@@ -99,7 +88,6 @@ public:
 
     // Print all variables in current scope
     void print_variables() const;
-    void add_function(const std::string& name, FuncDefStmt* func);
 
     // Save AST in REPL mode to keep function pointers valid
     void save_repl_ast(std::unique_ptr<ASTNode> ast);
@@ -115,13 +103,8 @@ public:
     static void print_error(const std::string& message, bool use_colors = true);
     static void print_warning(const std::string& message, bool use_colors = true);
 
-    // Builtin function type
-    using BuiltinFunction = std::function<Value(const std::vector<Value>&)>;
-
-    // Store builtin functions
-    std::unordered_map<std::string, BuiltinFunction> builtin_functions;
-    using EntryFunction = void (*)(Interpreter&);
-    static void register_entry(EntryFunction func);
+    // Store builtins
+    std::unordered_map<std::string, Value> builtins;
 
     // Variable assignment
     void set_variable(const std::string& name, const Value& val);
@@ -151,8 +134,6 @@ private:
     bool load_module(const std::string& module_path);
     bool load_cpp_module(const std::string& module_path);
 
-    // Register builtin functions
-    void register_builtin_functions();
     // 将Number转为Symbolic(如果可能)
     std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
     // 移除静态成员变量声明，改用函数内静态变量

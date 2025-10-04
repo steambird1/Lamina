@@ -1,12 +1,13 @@
-#include <iostream>
+#include <algorithm>
+#include <cctype>// 鐢ㄤ簬 isspace
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <cctype> // 用于 isspace
 
 // 解析 Properties 文件
-std::unordered_map<std::string, std::string> parse_properties(const std::string& file_path) {
+inline std::unordered_map<std::string, std::string> parse_properties(const std::string& file_path) {
     std::unordered_map<std::string, std::string> prop_map;
     std::ifstream file(file_path); // 打开文件
 
@@ -21,7 +22,7 @@ std::unordered_map<std::string, std::string> parse_properties(const std::string&
         // 修剪行首尾的空白字符（空格、制表符等）
         auto trim = [](std::string& s) {
             // 去掉开头空白
-            s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            s.erase(s.begin(), std::ranges::find_if(s, [](unsigned char ch) {
                 return !std::isspace(ch);
             }));
             // 去掉结尾空白

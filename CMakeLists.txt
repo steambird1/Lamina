@@ -85,7 +85,6 @@ add_library(lamina_core SHARED
         extensions/standard/array.cpp
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp
-        extensions/standard/string.hpp
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
         extensions/standard/cas.cpp
@@ -107,6 +106,7 @@ add_library(lamina_core SHARED
         interpreter/utils/src_manger.cpp
         interpreter/utils/properties_parser.hpp
         interpreter/utils/src_manger.hpp
+        extensions/standard/std.hpp
 )
 
 # Add version header

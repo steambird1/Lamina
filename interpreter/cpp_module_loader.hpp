@@ -37,7 +37,7 @@ using ModuleFunc = Value (*)(const std::vector<Value>&);
 
 #ifdef _WIN32
 // Windows：获取动态库的所有导出符号名
-std::vector<std::string> get_win_dylib_symbols(DYLIB_HANDLE hModule) {
+inline std::vector<std::string> get_win_dylib_symbols(DYLIB_HANDLE hModule) {
     std::vector<std::string> symbols;
     if (!hModule) return symbols;
 
@@ -46,16 +46,16 @@ std::vector<std::string> get_win_dylib_symbols(DYLIB_HANDLE hModule) {
     GetModuleFileNameA(hModule, module_path, MAX_PATH);
 
     // 初始化符号解析器
-    LOADED_IMAGE loaded_img = {0};
+    LOADED_IMAGE loaded_img = {nullptr};
     if (!MapAndLoad(module_path, nullptr, &loaded_img, FALSE, TRUE)) {
         std::cerr << "Failed to map module: " << GetLastError() << std::endl;
         return symbols;
     }
 
     // 获取导出表（PE 文件结构：IMAGE_EXPORT_DIRECTORY）
-    PIMAGE_NT_HEADERS nt_headers = ImageNtHeader(loaded_img.MappedAddress);
-    PIMAGE_EXPORT_DIRECTORY export_dir = 
-        reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
+    const PIMAGE_NT_HEADERS nt_headers = ImageNtHeader(loaded_img.MappedAddress);
+    const auto export_dir =
+        static_cast<PIMAGE_EXPORT_DIRECTORY>(
             ImageRvaToVa(nt_headers, loaded_img.MappedAddress, 
                         nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress, 
                         nullptr)
@@ -67,11 +67,11 @@ std::vector<std::string> get_win_dylib_symbols(DYLIB_HANDLE hModule) {
     }
 
     // 遍历导出符号名（AddressOfNames 是符号名的 RVA 数组）
-    DWORD* name_rvas = reinterpret_cast<DWORD*>(
+    const auto* name_rvas = static_cast<DWORD*>(
         ImageRvaToVa(nt_headers, loaded_img.MappedAddress, export_dir->AddressOfNames, nullptr)
     );
     for (DWORD i = 0; i < export_dir->NumberOfNames; ++i) {
-        const char* sym_name = reinterpret_cast<const char*>(
+        auto sym_name = static_cast<const char*>(
             ImageRvaToVa(nt_headers, loaded_img.MappedAddress, name_rvas[i], nullptr)
         );
         if (sym_name && *sym_name != '\0') {
@@ -147,7 +147,7 @@ std::vector<std::string> get_elf_dylib_symbols(const std::string& so_path) {
 #endif
 
 
-std::unordered_map<std::string, Value> load_cppmodule(const std::string& path) {
+inline std::unordered_map<std::string, Value> load_cppmodule(const std::string& path) {
     std::unordered_map<std::string, Value> result;
     DYLIB_HANDLE handle = nullptr;
     std::vector<std::string> all_symbols;
@@ -177,9 +177,9 @@ std::unordered_map<std::string, Value> load_cppmodule(const std::string& path) {
         void* sym_addr = DYLIB_GETSYM(handle, sym_name.c_str());
         if (!sym_addr) continue;
 
-        Value* var_ptr = reinterpret_cast<Value*>(sym_addr);
+        const auto* var_ptr = static_cast<Value*>(sym_addr);
         // Value 的 type 必须是合法值
-        bool is_valid_value_var = (!var_ptr->type.is_cpp_function());
+        bool is_valid_value_var = (!var_ptr->is_lmCppFunction());
         if (is_valid_value_var) {
             result[sym_name] = *var_ptr;
             std::cout << "Found Value var: " << sym_name << std::endl;
@@ -187,7 +187,7 @@ std::unordered_map<std::string, Value> load_cppmodule(const std::string& path) {
         }
 
         // 尝试解析为 "ModuleFunc 类型函数"（符号地址是函数指针）
-        ModuleFunc func_ptr = reinterpret_cast<ModuleFunc>(sym_addr);
+        auto func_ptr = reinterpret_cast<ModuleFunc>(sym_addr);
         if (func_ptr != nullptr) {
             result[sym_name] = Value(std::make_shared<LmCppFunction>(func_ptr));
             std::cout << "Found ModuleFunc: " << sym_name << std::endl;

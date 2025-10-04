@@ -1,6 +1,6 @@
-#ifndef STRING_HPP
-#define STRING_HPP
-#include "../../interpreter/lamina_api/lamina.hpp"
+#pragma once
+#include "lamina_api/lamina.hpp"
+#include "lamina_api/value.hpp"
 
 /**
  * 拼接多个字符串，并返回一个新字符串
@@ -43,13 +43,15 @@ Value sub_string(const std::vector<Value>& args);
  */
 Value replace_by_index(const std::vector<Value>& args);
 
-namespace Lamina {
-    LAMINA_FUNC_WIT_ANY_ARGS("string_concat", concat);
-    LAMINA_FUNC_MULTI_ARGS("string_char_at", char_at, 2);
-    LAMINA_FUNC_MULTI_ARGS("string_length", length, 1);
-    LAMINA_FUNC_MULTI_ARGS("string_find", find, 3);
-    LAMINA_FUNC_MULTI_ARGS("string_sub_string", sub_string, 3);
-    LAMINA_FUNC_MULTI_ARGS("string_replace_by_index", replace_by_index, 3);
+inline std::unordered_map<std::string, Value> register_builtins() {
+    return {
+        LAMINA_BUILTINS_MODULE("string", "1.0.0", {
+            LAMINA_BUILTINS_FUNC("concat", concat),
+            LAMINA_BUILTINS_FUNC("char_at", char_at),
+            LAMINA_BUILTINS_FUNC("length", length),
+            LAMINA_BUILTINS_FUNC("find", find),
+            LAMINA_BUILTINS_FUNC("sub_string", sub_string),
+            LAMINA_BUILTINS_FUNC("replace_by_index", replace_by_index)
+        })
+    };
 }// namespace Lamina
-
-#endif
