@@ -105,6 +105,7 @@ add_library(lamina_core SHARED
         interpreter/cpp_module_loader.hpp
 
         interpreter/utils/src_manger.cpp
+        interpreter/utils/properties_parser.hpp
         interpreter/utils/src_manger.hpp
 )
 
