@@ -18,7 +18,6 @@
 [![QQ](https://img.shields.io/badge/QQ-%E4%BA%A4%E6%B5%81%E7%BE%A4-red?logo=qq&logoColor=white)](https://qm.qq.com/q/QwPXCgsJea)
 
 ---
-
 <br/>
 <h2>🎊更新了什么</h2>
 <details>
@@ -32,9 +31,9 @@
 <li>匿名结构体声明</li>
 <li>匿名函数声明</li>
 <li>include语句更新+模块系统</li>
+<li>builtins系统更新</li>
 <li>.运算符：结构体访问成员运算符</li>
 <li>::运算符：命名空间访问成员运算符</li>
-<li>...运算符：结构体展开运算符</li>
 <li>\ 续行功能</li>
 <li>结构体深拷贝</li>
 <li>重构 Parser, ast</li>
@@ -47,19 +46,20 @@
 <li>repl直接打印表达式</li>
 <li>repl支持不带颜色的输出</li>
 <li>repl关键字高亮及自动补齐</li>
-<li>数学范围相关扩展</li>
-<li>Decimal类型</li>
+<li>数学区间相关扩展</li>
 </ul>
 
 <b>延迟到下一个版本的特性</b>
 <ul>
-<li>array[index] = item 语法</li>
-<li>struct.item = value 语法</li>
 <li>set 集合类型</li>
+<li>取消int类型,取消bigint语句,Bigint更名为lmInt,成为唯一整数类型并优化它的性能,然后在有理数/无理数/虚数/小数的数字部分都使用lmInt </li>
+<li>Decimal类型</li>
+<li>虚数功能</li>
+<li>array[index] = item setitem语法</li>
+<li>struct.item = value setmember语法</li>
 <li>线程库(debug)</li>
 <li>带上下文的报错系统</li>
 <li>多语言支持</li>
-<li>虚数功能</li>
 </ul>
 </details>
 
