@@ -94,9 +94,9 @@ public:
     void save_repl_ast(std::unique_ptr<ASTNode> ast);
 
     // Stack trace management
-    void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
-    void pop_frame();
-    std::vector<StackFrame> get_stack_trace() const;
+    static void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
+    static void pop_frame();
+    static std::vector<StackFrame> get_stack_trace() const;
     void print_stack_trace(const RuntimeError& error, bool use_colors = true) const;
 
     // Utility functions for error display
@@ -124,13 +124,10 @@ private:
     std::vector<std::unique_ptr<ASTNode>> repl_asts;
 
     // Stack trace for function calls
-    std::vector<StackFrame> call_stack;
-    // Recursion depth tracking
-    int recursion_depth = 0;
-    int max_recursion_depth = 100;// 可变的递归深度限制
+    static std::vector<StackFrame> call_stack;
     // Enter/exit scope
-    void push_scope();
-    void pop_scope();
+    static void push_scope();
+    static void pop_scope();
     // Load and execute module
     bool load_module(const std::string& module_path);
     bool load_cpp_module(const std::string& module_path);
