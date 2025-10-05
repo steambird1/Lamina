@@ -38,8 +38,8 @@ inline std::string get_slice(const std::string& src_path, const int& src_line_st
 
         // 线程安全地获取文件内容
         std::lock_guard<std::mutex> lock(cache_mutex);
-        auto it = opened_files.find(key);
-        if (it == opened_files.end()) {
+        auto it = src_manager::opened_files.find(key);
+        if (it == src_manager::opened_files.end()) {
             return "";  // 文件未在缓存中
         }
         const std::string& content = it->second;
@@ -83,8 +83,8 @@ std::string get_file_at_path(const std::string& path) {
     std::lock_guard<std::mutex> lock(cache_mutex);
 
     // 查找缓存
-    const auto it = opened_files.find(key);
-    if (it == opened_files.end()) {
+    const auto it = src_manager::opened_files.find(key);
+    if (it == src_manager::opened_files.end()) {
         std::cout << ConClr::RED << "file not in opened_files map: " << key << ConClr::RESET << std::endl;
     }
 
@@ -103,8 +103,8 @@ std::string open_lm_file(const std::string& path) {
     // 先检查缓存，避免重复读取
     {
         std::lock_guard<std::mutex> lock(cache_mutex);
-        auto it = opened_files.find(key);
-        if (it != opened_files.end()) {
+        auto it = src_manager::opened_files.find(key);
+        if (it != src_manager::opened_files.end()) {
             return it->second;
         }
     }
@@ -126,7 +126,7 @@ std::string open_lm_file(const std::string& path) {
 
     // 写入缓存
     std::lock_guard<std::mutex> lock(cache_mutex);
-    opened_files.emplace(key, std::move(content));  // 使用移动语义减少拷贝
+    src_manager::opened_files.emplace(key, std::move(content));  // 使用移动语义减少拷贝
 
     return opened_files[key];
 }
