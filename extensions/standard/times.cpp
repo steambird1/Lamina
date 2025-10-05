@@ -1,6 +1,7 @@
 #include "times.hpp"
 #include <chrono>
 #include <sstream>
+#include "std.hpp"
 
 Value get_time(const std::vector<Value>& /* args */) {
     auto now = std::chrono::system_clock::now();
