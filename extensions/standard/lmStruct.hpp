@@ -91,37 +91,3 @@ public:
         this->elem_count_ = other.elem_count_;
     }
 };
-
-Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
-/* function: new_lstruct
- * args[0] =>  source vector: vec<pair<str, Value>
- */
-Value getattr(const std::vector<Value>& args);
-/* function: getattr
- * args[0] => struct: lstruct
- * args[1] => name: str
- */
-Value setattr(const std::vector<Value>& args);
-/* function: setattr
- * args[0] => struct: lstruct
- * args[1] => name: str
- * args[2] => val: Value
- */
-Value update(const std::vector<Value>& args);
-/* function: update
- * args[0] => source struct: lstruct
- * args[1] =>  other struct: lstruct
- */
-
-Value copy_struct(const std::vector<Value>& args);
-/* function: copy_struct
- * arg[0] => source struct: lstruct
- */
-
-
-namespace Lamina {
-    LAMINA_FUNC_MULTI_ARGS("getattr", getattr, 2);
-    LAMINA_FUNC_MULTI_ARGS("setattr", setattr, 3);
-    LAMINA_FUNC_MULTI_ARGS("update", update, 2);
-    LAMINA_FUNC_MULTI_ARGS("copy_struct", copy_struct, 1);
-} // namespace Lamina
