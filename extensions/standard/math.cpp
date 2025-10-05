@@ -1,5 +1,6 @@
 #include "interpreter.hpp"
 #include "lamina.hpp"
+#include <optional>
 // #include "latex.hpp"
 #include "symbolic.hpp"
 #include "value.hpp"
@@ -142,6 +143,193 @@ inline Value sin(const std::vector<Value>& args) {
         std::cerr << "Error: sin() requires numeric argument" << std::endl;
         return Value();
     }
+    // Try to produce exact results for simple rational multiples of π
+    // e.g. pi/6, pi/4, pi/3 -> return symbolic exact values
+    // helper removed: build_rational not needed
+
+    auto build_half_sqrt = [&](int radicand, int sign)->Value {
+        // return (sign)*sqrt(radicand)/2 as Symbolic
+        auto sqrt_expr = SymbolicExpr::sqrt(SymbolicExpr::number(radicand));
+        auto half = SymbolicExpr::number(::Rational(::BigInt(sign), ::BigInt(2)));
+        auto res = SymbolicExpr::multiply(half, sqrt_expr)->simplify();
+        return Value(res);
+    };
+
+    // Helper: try to extract rational coefficient k such that arg == k * π
+    auto try_extract_coeff_times_pi = [&](const Value &v, ::Rational &out) -> bool {
+        // If it's an Irrational of PI type (Irrational::pi(coeff))
+        if (v.is_irrational()) {
+            ::Irrational ir = std::get<::Irrational>(v.data);
+            if (ir.get_type() == ::Irrational::Type::PI) {
+                double coeff = ir.to_double() / M_PI; // numeric coefficient
+                // Try to match small denominators exactly
+                const int dens[] = {1,2,3,4,6,8,12};
+                for (int d: dens) {
+                    double n_d = coeff * d;
+                    int n = static_cast<int>(std::round(n_d));
+                    if (std::abs(n_d - n) < 1e-12) {
+                        out = ::Rational(::BigInt(n), ::BigInt(d));
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return false;
+        }
+
+        if (!v.is_symbolic()) return false;
+        auto expr = std::get<std::shared_ptr<SymbolicExpr>>(v.data);
+        // If the expression is a power with exponent 1 (e.g. ((1/3)*π)^1), descend into base
+        if (expr->type == SymbolicExpr::Type::Power && expr->operands.size() == 2 && expr->operands[1]->is_number()) {
+            try {
+                ::Rational ex = expr->operands[1]->convert_rational();
+                if (ex == ::Rational(::BigInt(1))) {
+                    expr = expr->operands[0];
+                }
+            } catch (...) {
+                // ignore conversion issues
+            }
+        }
+
+        // Recursive walker: accumulate numeric factor and count occurrences of π
+        std::function<bool(const std::shared_ptr<SymbolicExpr>&, ::Rational&, int&)> walker;
+        walker = [&](const std::shared_ptr<SymbolicExpr>& node, ::Rational& accum, int& pi_count) -> bool {
+            if (!node) return false;
+            if (node->is_number()) {
+                accum = accum * node->convert_rational();
+                return true;
+            }
+            if (node->type == SymbolicExpr::Type::Variable) {
+                if (node->identifier == "π" || node->identifier == "pi") {
+                    pi_count += 1;
+                    return true;
+                }
+                // other variables not supported
+                return false;
+            }
+            if (node->type == SymbolicExpr::Type::Multiply) {
+                for (auto &op : node->operands) {
+                    if (!walker(op, accum, pi_count)) return false;
+                }
+                return true;
+            }
+            if (node->type == SymbolicExpr::Type::Power && node->operands.size() == 2) {
+                auto base = node->operands[0];
+                auto exp = node->operands[1];
+                // handle (n)^(-1) -> 1/n
+                if (base->is_number() && exp->is_number()) {
+                    auto exp_r = exp->convert_rational();
+                    if (exp_r == ::Rational(::BigInt(-1))) {
+                        auto base_r = base->convert_rational();
+                        ::BigInt bnum = base_r.get_numerator();
+                        ::BigInt bden = base_r.get_denominator();
+                        if (bden == ::BigInt(1)) {
+                            accum = accum * ::Rational(::BigInt(1), bnum);
+                            return true;
+                        }
+                    }
+                }
+                // handle π^1
+                if (base->type == SymbolicExpr::Type::Variable && (base->identifier == "π" || base->identifier == "pi") && exp->is_number()) {
+                    auto exp_r = exp->convert_rational();
+                    // only accept exponent == 1
+                    if (exp_r.get_denominator() == ::BigInt(1) && exp_r.get_numerator() == ::BigInt(1)) {
+                        pi_count += 1;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // other types unsupported
+            return false;
+        };
+
+        ::Rational accum = ::Rational(::BigInt(1));
+        int pi_count = 0;
+        if (!walker(expr, accum, pi_count)) return false;
+        if (pi_count == 1) {
+            out = accum;
+            return true;
+        }
+        return false;
+    };
+
+    // Try a stronger detection: for Irrational π and Symbolic forms, map common rational multiples to exact values
+    auto map_sin_from_pq = [&](long long p_ll, long long q_ll) -> std::optional<Value> {
+        if (q_ll <= 0) return std::nullopt;
+        ::BigInt p = ::BigInt(p_ll);
+        ::BigInt q = ::BigInt(q_ll);
+        ::BigInt modbase = q * ::BigInt(2);
+        ::BigInt pmod = (p % modbase + modbase) % modbase;
+        long long n = pmod.to_int();
+        long long d = q.to_int();
+        // d in {1,2,3,4,6} -> map
+        if (d == 1) {
+            n = n % 2; return Value(0);
+        }
+        if (d == 2) {
+            n = n % 4; if (n==0) return Value(0); if (n==1) return Value(1); if (n==2) return Value(0); if (n==3) return Value(-1);
+        }
+        if (d == 3) {
+            n = n % 6; if (n==0) return Value(0); if (n==1||n==2) return build_half_sqrt(3,1); if (n==3) return Value(0); if (n==4||n==5) return build_half_sqrt(3,-1);
+        }
+        if (d == 4) {
+            n = n % 8; if (n==0) return Value(0); if (n==1) return build_half_sqrt(2,1); if (n==2) return Value(1); if (n==3) return build_half_sqrt(2,1); if (n==4) return Value(0); if (n==5) return build_half_sqrt(2,-1); if (n==6) return Value(-1); if (n==7) return build_half_sqrt(2,-1);
+        }
+        if (d == 6) {
+            n = n % 12;
+            switch(n) {
+                case 0: return Value(0);
+                case 1: return Value(::Rational(::BigInt(1), ::BigInt(2)));
+                case 2: return build_half_sqrt(3,1);
+                case 3: return Value(1);
+                case 4: return build_half_sqrt(3,1);
+                case 5: return Value(::Rational(::BigInt(1), ::BigInt(2)));
+                case 6: return Value(0);
+                case 7: return Value(::Rational(::BigInt(-1), ::BigInt(2)));
+                case 8: return build_half_sqrt(3,-1);
+                case 9: return Value(-1);
+                case 10: return build_half_sqrt(3,-1);
+                case 11: return Value(::Rational(::BigInt(-1), ::BigInt(2)));
+            }
+        }
+        return std::nullopt;
+    };
+
+    // 1) If it's an Irrational PI, approximate coefficient with denominators up to 24
+    if (args[0].is_irrational()) {
+        ::Irrational ir = std::get<::Irrational>(args[0].data);
+        if (ir.get_type() == ::Irrational::Type::PI) {
+            double coeff = ir.to_double() / M_PI;
+            for (int d = 1; d <= 24; ++d) {
+                long long n = static_cast<long long>(std::llround(coeff * d));
+                if (std::abs(coeff - static_cast<double>(n)/d) < 1e-10) {
+                    auto mapped = map_sin_from_pq(n, d);
+                    if (mapped.has_value()) return mapped.value();
+                    break;
+                }
+            }
+        }
+    }
+    // 2) If it's Symbolic, try to extract rational coefficient (we have try_extract_coeff_times_pi)
+    if (args[0].is_symbolic()) {
+        ::Rational coeff;
+        bool ok = try_extract_coeff_times_pi(args[0], coeff);
+        std::cerr << "[DBG sin] try_extract_coeff_times_pi -> " << (ok?"true":"false") << ", coeff=" << coeff.to_string() << std::endl;
+        if (ok) {
+            long long p_ll = coeff.get_numerator().to_int();
+            long long q_ll = coeff.get_denominator().to_int();
+            std::cerr << "[DBG sin] extracted p/q = " << p_ll << "/" << q_ll << std::endl;
+            auto mapped = map_sin_from_pq(p_ll, q_ll);
+            if (mapped.has_value()) {
+                std::cerr << "[DBG sin] mapped exact value: " << mapped.value().to_string() << std::endl;
+                return mapped.value();
+            } else {
+                std::cerr << "[DBG sin] mapping returned nullopt for p/q" << std::endl;
+            }
+        }
+    }
+
     return Value(std::sin(args[0].as_number()));
 }
 
@@ -156,6 +344,129 @@ inline Value cos(const std::vector<Value>& args) {
         std::cerr << "Error: cos() requires numeric argument" << std::endl;
         return Value();
     }
+    // Try to produce exact results for simple rational multiples of π
+    auto build_half_sqrt = [&](int radicand, int sign)->Value {
+        auto sqrt_expr = SymbolicExpr::sqrt(SymbolicExpr::number(radicand));
+        auto half = SymbolicExpr::number(::Rational(::BigInt(sign), ::BigInt(2)));
+        auto res = SymbolicExpr::multiply(half, sqrt_expr)->simplify();
+        return Value(res);
+    };
+
+    auto try_extract_coeff_times_pi = [&](const Value &v, ::Rational &out) -> bool {
+        if (v.is_irrational()) {
+            ::Irrational ir = std::get<::Irrational>(v.data);
+            if (ir.get_type() == ::Irrational::Type::PI) {
+                double coeff = ir.to_double() / M_PI;
+                const int dens[] = {1,2,3,4,6};
+                for (int d: dens) {
+                    double n_d = coeff * d;
+                    int n = static_cast<int>(std::round(n_d));
+                    if (std::abs(n_d - n) < 1e-12) {
+                        out = ::Rational(::BigInt(n), ::BigInt(d));
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return false;
+        }
+        if (!v.is_symbolic()) return false;
+        auto expr = std::get<std::shared_ptr<SymbolicExpr>>(v.data);
+        // If top-level is power with exponent 1, descend into base (e.g. ((1/3)*π)^1)
+        if (expr->type == SymbolicExpr::Type::Power && expr->operands.size() == 2 && expr->operands[1]->is_number()) {
+            try {
+                ::Rational ex = expr->operands[1]->convert_rational();
+                if (ex == ::Rational(::BigInt(1))) {
+                    expr = expr->operands[0];
+                }
+            } catch (...) {
+                // ignore
+            }
+        }
+        if (expr->type == SymbolicExpr::Type::Variable && (expr->identifier == "π" || expr->identifier == "pi")) {
+            out = ::Rational(::BigInt(1));
+            return true;
+        }
+        if (expr->type == SymbolicExpr::Type::Multiply && expr->operands.size() >= 2) {
+            ::Rational accum = ::Rational(::BigInt(1));
+            bool found_pi = false;
+            for (auto &op : expr->operands) {
+                if (op->type == SymbolicExpr::Type::Variable && (op->identifier == "π" || op->identifier == "pi")) {
+                    found_pi = true; continue;
+                }
+                if (op->is_number()) { accum = accum * op->convert_rational(); continue; }
+                if (op->type == SymbolicExpr::Type::Power && op->operands.size() == 2) {
+                    auto base = op->operands[0];
+                    auto exp = op->operands[1];
+                    if (base->is_number() && exp->is_number()) {
+                        auto base_r = base->convert_rational();
+                        auto exp_r = exp->convert_rational();
+                        if (exp_r == ::Rational(::BigInt(-1))) {
+                            ::BigInt bnum = base_r.get_numerator();
+                            ::BigInt bden = base_r.get_denominator();
+                            if (bden == ::BigInt(1)) {
+                                accum = accum * ::Rational(::BigInt(1), bnum);
+                                continue;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            if (found_pi) { out = accum; return true; }
+        }
+        return false;
+    };
+
+    // Map p/q * pi to exact cos values for small denominators
+    auto map_cos_from_pq = [&](long long p_ll, long long q_ll) -> std::optional<Value> {
+        if (q_ll <= 0) return std::nullopt;
+        ::BigInt p = ::BigInt(p_ll);
+        ::BigInt q = ::BigInt(q_ll);
+        ::BigInt modbase = q * ::BigInt(2);
+        ::BigInt pmod = (p % modbase + modbase) % modbase;
+        long long n = pmod.to_int();
+        long long d = q.to_int();
+        if (d == 1) { n = n % 2; return (n==0) ? Value(1) : Value(-1); }
+        if (d == 2) { n = n % 4; if (n==0) return Value(1); if (n==1) return Value(0); if (n==2) return Value(-1); if (n==3) return Value(0); }
+        if (d == 3) { n = n % 6; if (n==0) return Value(1); if (n==1) return Value(::Rational(::BigInt(1), ::BigInt(2))); if (n==2) return build_half_sqrt(3,1); if (n==3) return Value(-1); if (n==4) return build_half_sqrt(3,-1); if (n==5) return Value(::Rational(::BigInt(-1), ::BigInt(2))); }
+        if (d == 4) { n = n % 8; if (n==0) return Value(1); if (n==1) return build_half_sqrt(2,1); if (n==2) return Value(0); if (n==3) return build_half_sqrt(2,-1); if (n==4) return Value(-1); if (n==5) return build_half_sqrt(2,-1); if (n==6) return Value(0); if (n==7) return build_half_sqrt(2,1); }
+        if (d == 6) { n = n % 12; switch(n) { case 0: return Value(1); case 1: return build_half_sqrt(3,1); case 2: return Value(::Rational(::BigInt(1), ::BigInt(2))); case 3: return Value(0); case 4: return Value(::Rational(::BigInt(-1), ::BigInt(2))); case 5: return build_half_sqrt(3,-1); case 6: return Value(-1); case 7: return build_half_sqrt(3,-1); case 8: return Value(::Rational(::BigInt(-1), ::BigInt(2))); case 9: return Value(0); case 10: return Value(::Rational(::BigInt(1), ::BigInt(2))); case 11: return build_half_sqrt(3,1); } }
+        return std::nullopt;
+    };
+
+    if (args[0].is_irrational()) {
+        ::Irrational ir = std::get<::Irrational>(args[0].data);
+        if (ir.get_type() == ::Irrational::Type::PI) {
+            double coeff = ir.to_double() / M_PI;
+            for (int d = 1; d <= 24; ++d) {
+                long long n = static_cast<long long>(std::llround(coeff * d));
+                if (std::abs(coeff - static_cast<double>(n)/d) < 1e-10) {
+                    auto mapped = map_cos_from_pq(n, d);
+                    if (mapped.has_value()) return mapped.value();
+                    break;
+                }
+            }
+        }
+    }
+    if (args[0].is_symbolic()) {
+        ::Rational coeff;
+        bool ok = try_extract_coeff_times_pi(args[0], coeff);
+        std::cerr << "[DBG cos] try_extract_coeff_times_pi -> " << (ok?"true":"false") << ", coeff=" << coeff.to_string() << std::endl;
+        if (ok) {
+            long long p_ll = coeff.get_numerator().to_int();
+            long long q_ll = coeff.get_denominator().to_int();
+            std::cerr << "[DBG cos] extracted p/q = " << p_ll << "/" << q_ll << std::endl;
+            auto mapped = map_cos_from_pq(p_ll, q_ll);
+            if (mapped.has_value()) {
+                std::cerr << "[DBG cos] mapped exact value: " << mapped.value().to_string() << std::endl;
+                return mapped.value();
+            } else {
+                std::cerr << "[DBG cos] mapping returned nullopt for p/q" << std::endl;
+            }
+        }
+    }
+
     return Value(std::cos(args[0].as_number()));
 }
 

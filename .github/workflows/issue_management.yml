@@ -112,5 +112,5 @@ jobs:
           days-before-close: 7
           stale-issue-label: "stale"
           stale-pr-label: "stale"
-          exempt-issue-labels: "pinned,enhancement,priority:high"
-          exempt-pr-labels: "pinned,priority:high"
+          exempt-issue-labels: "pinned,enhancement,priority:high,ongoing,fatal"
+          exempt-pr-labels: "pinned,priority:high,ongoing,fatal"

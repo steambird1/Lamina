@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(Lamina VERSION 0.0.1 LANGUAGES CXX)# Lamina version is here
+project(Lamina VERSION 1.1.1 LANGUAGES CXX)# Lamina version is here
 
 # add sub directory
 add_subdirectory(interpreter)
@@ -39,28 +39,28 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Set libuv related variables
-set(LIBUV_LIBRARY uv_a)
-set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
+#set(LIBUV_LIBRARY uv_a)
+#set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
 
 
 # Check if libuv submodule exists
-if(NOT EXISTS ${LIBUV_ROOT}/CMakeLists.txt)
-    message(FATAL_ERROR "LibUV submodule not found. Please run 'git submodule update --init --recursive'")
-endif()
+#if(NOT EXISTS ${LIBUV_ROOT}/CMakeLists.txt)
+#    message(FATAL_ERROR "LibUV submodule not found. Please run 'git submodule update --init --recursive'")
+#endif()
 
 # Add libuv subdirectory
-add_subdirectory(${LIBUV_ROOT})
+#add_subdirectory(${LIBUV_ROOT})
 # Enable PIC only for libuv
-set_target_properties(uv uv_a PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#set_target_properties(uv uv_a PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Set libuv libraries and include directories
-set(LIBUV_LIBRARIES uv_a)
-set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
+#set(LIBUV_LIBRARIES uv_a)
+#set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
 include_directories(
-        ${LIBUV_INCLUDE_DIRS}
+#        ${LIBUV_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
         ${CMAKE_CURRENT_BINARY_DIR} # version.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 新增ExprTK头文件路径
+#        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 新增ExprTK头文件路径
 )
 
 include_directories(interpreter)
@@ -91,9 +91,10 @@ add_library(lamina_core SHARED
         extensions/standard/times.cpp
         extensions/standard/times.hpp
         extensions/standard/array.cpp
-        extensions/standard/sockets.hpp
-        extensions/standard/sockets.cpp
+      #  extensions/standard/sockets.hpp
+      #  extensions/standard/sockets.cpp
       #  extensions/standard/latex.hpp
+      #  extensions/standard/latex.cpp
         extensions/standard/string.hpp
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
@@ -119,10 +120,10 @@ set_target_properties(lamina_core PROPERTIES
 
 # Define export macros
 target_compile_definitions(lamina_core PRIVATE LAMINA_CORE_EXPORTS)
-target_compile_definitions(lamina_core PRIVATE USE_LIBUV)
+#target_compile_definitions(lamina_core PRIVATE USE_LIBUV)
 
 # Link libuv
-target_link_libraries(lamina_core PRIVATE ${LIBUV_LIBRARY} uv)
+#target_link_libraries(lamina_core PRIVATE ${LIBUV_LIBRARY} uv)
 
 # Add imagehlp library link for Windows
 if(WIN32)
@@ -154,10 +155,10 @@ else()
 endif()
 
 # Set lamina_core public header file directory
-target_include_directories(lamina_core PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 确保公共包含
-)
+#target_include_directories(lamina_core PUBLIC
+#        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
+##        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 确保公共包含
+#)
 
 # Create main executable
 add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
@@ -183,12 +184,12 @@ if(UNIX)
 endif()
 
 # Automatically copy dependent dynamic libraries
-add_custom_command(TARGET Lamina POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:uv>
-        $<TARGET_FILE_DIR:Lamina>
-    COMMENT "Copying libuv.dll to output directory"
-)
+#add_custom_command(TARGET Lamina POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#        $<TARGET_FILE:uv>
+#        $<TARGET_FILE_DIR:Lamina>
+#    COMMENT "Copying libuv.dll to output directory"
+#)
 
 # Copy lamina_core.dll on Windows
 if(WIN32)
@@ -217,7 +218,7 @@ function(build_extension EXTENSION_PATH)
         add_library(${EXTENSION_NAME} SHARED ${EXTENSION_SOURCE})
         
         # 链接到 lamina_core 和 libuv
-        target_link_libraries(${EXTENSION_NAME} PRIVATE lamina_core ${LIBUV_LIBRARY})
+#        target_link_libraries(${EXTENSION_NAME} PRIVATE lamina_core ${LIBUV_LIBRARY})
         
         # 设置包含目录
         target_include_directories(${EXTENSION_NAME} PRIVATE 

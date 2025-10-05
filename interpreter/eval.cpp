@@ -1,4 +1,6 @@
 #include "interpreter.hpp"
+#include "../extensions/standard/cas.hpp"
+#include <optional>
 #include "lamina.hpp"
 Value Interpreter::eval_LiteralExpr(const LiteralExpr* node) {
     if (node->type == Value::Type::Int) {
@@ -223,6 +225,153 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
 		}
         // String concatenation
         if (l.is_string() || r.is_string()) {
+            if (l.is_string() && r.is_string()) {
+                std::string ls = l.to_string();
+                std::string rs = r.to_string();
+                    try {
+                        // Try to parse both strings as CAS expressions and combine them symbolically
+                        LaminaCAS::Parser pl(ls);
+                        auto e1 = pl.parse();
+                        LaminaCAS::Parser pr(rs);
+                        auto e2 = pr.parse();
+                        // attempt structural merge: if e1 and e2 are Multiply(Number, Variable) or vice versa,
+                        // then combine coefficients
+                        auto try_extract_coeff_var = [](const LaminaCAS::Expr* ex) -> std::optional<std::pair<double,std::string>> {
+                            // Multiply(Number, Variable)
+                            if (auto mul = dynamic_cast<const LaminaCAS::Multiply*>(ex)) {
+                                const LaminaCAS::Expr* left = mul->clone().release();
+                                const LaminaCAS::Expr* right = nullptr; // will be set below
+                                // We can't easily access internals (unique_ptr ownership), so inspect via toString heuristic
+                                std::string s = mul->toString();
+                                // fallback to string parsing
+                                // very simple: look for pattern like "<num> * <var>"
+                                size_t star = s.find('*');
+                                if (star != std::string::npos) {
+                                    std::string a = s.substr(0, star);
+                                    std::string b = s.substr(star+1);
+                                    auto trim = [](std::string &str) {
+                                        while (!str.empty() && std::isspace((unsigned char)str.front())) str.erase(str.begin());
+                                        while (!str.empty() && std::isspace((unsigned char)str.back())) str.pop_back();
+                                    };
+                                    trim(a); trim(b);
+                                    try {
+                                        double va = std::stod(a);
+                                        // b is var
+                                        return std::make_pair(va, b);
+                                    } catch (...) {}
+                                    try {
+                                        double vb = std::stod(b);
+                                        return std::make_pair(vb, a);
+                                    } catch (...) {}
+                                }
+                            }
+                            // Number alone
+                            if (auto num = dynamic_cast<const LaminaCAS::Number*>(ex)) {
+                                return std::make_pair(num->getValue(), std::string());
+                            }
+                            // Variable alone
+                            if (auto var = dynamic_cast<const LaminaCAS::Variable*>(ex)) {
+                                return std::make_pair(1.0, var->toString());
+                            }
+                            return std::nullopt;
+                        };
+
+                        auto e1ptr = e1.get();
+                        auto e2ptr = e2.get();
+                        auto p1 = try_extract_coeff_var(e1ptr);
+                        auto p2 = try_extract_coeff_var(e2ptr);
+                        if (p1 && p2 && !p1->second.empty() && p1->second == p2->second) {
+                            double sum = p1->first + p2->first;
+                            std::string coeff = (std::floor(sum) == sum) ? std::to_string((int)sum) : std::to_string(sum);
+                            return Value(std::string("(" + coeff + " * " + p1->second + ")"));
+                        }
+
+                        auto combined = std::make_unique<LaminaCAS::Add>(std::move(e1), std::move(e2));
+                        auto simplified = combined->simplify();
+
+                        // Attempt a lightweight combine for simple like-terms of form a*x
+                        auto try_parse_coeff_var = [](const std::string &s) -> std::optional<std::pair<double,std::string>> {
+                            std::string t = s;
+                            // trim
+                            auto trim = [](std::string &str) {
+                                while (!str.empty() && std::isspace((unsigned char)str.front())) str.erase(str.begin());
+                                while (!str.empty() && std::isspace((unsigned char)str.back())) str.pop_back();
+                            };
+                            trim(t);
+                            // remove surrounding parentheses
+                            if (!t.empty() && t.front() == '(' && t.back() == ')') {
+                                t = t.substr(1, t.size()-2);
+                                trim(t);
+                            }
+                            // find '*'
+                            size_t star = t.find('*');
+                            if (star == std::string::npos) {
+                                // maybe it's just a variable or a number
+                                try {
+                                    double v = std::stod(t);
+                                    return std::make_pair(v, std::string());
+                                } catch (...) {
+                                    // not a number -> treat as var with coeff 1
+                                    if (!t.empty() && std::isalpha((unsigned char)t[0])) return std::make_pair(1.0, t);
+                                    return std::nullopt;
+                                }
+                            }
+                            std::string a = t.substr(0, star);
+                            std::string b = t.substr(star+1);
+                            trim(a); trim(b);
+                            // Try number*var or var*number
+                            try {
+                                double va = std::stod(a);
+                                // b should be variable
+                                if (!b.empty() && std::isalpha((unsigned char)b[0])) return std::make_pair(va, b);
+                            } catch (...) {}
+                            try {
+                                double vb = std::stod(b);
+                                if (!a.empty() && std::isalpha((unsigned char)a[0])) return std::make_pair(vb, a);
+                            } catch (...) {}
+                            return std::nullopt;
+                        };
+
+                        auto lhs = try_parse_coeff_var(simplified->toString());
+                        // Also try parsing original operands when combined simplifier didn't flatten
+                        if (!lhs) {
+                            // fallback: try parse e1 and e2 original strings
+                            auto p1 = try_parse_coeff_var(ls);
+                            auto p2 = try_parse_coeff_var(rs);
+                            if (p1 && p2 && !p1->second.empty() && p1->second == p2->second) {
+                                double sum = p1->first + p2->first;
+                                // format int if whole
+                                std::string coeff;
+                                if (std::floor(sum) == sum) coeff = std::to_string((int)sum);
+                                else coeff = std::to_string(sum);
+                                return Value(std::string("(" + coeff + " * " + p1->second + ")"));
+                            }
+                        } else {
+                            // lhs is present, but we need to ensure it is of form a and var
+                            // Try to decompose simplified string as a sum
+                            std::string sstr = simplified->toString();
+                            // if simplified is (a + b) attempt to extract parts
+                            size_t plus = sstr.find('+');
+                            if (plus != std::string::npos) {
+                                // try to parse left and right parts
+                                size_t pos = sstr.find('+');
+                                std::string leftpart = sstr.substr(0,pos);
+                                std::string rightpart = sstr.substr(pos+1);
+                                auto p1 = try_parse_coeff_var(leftpart);
+                                auto p2 = try_parse_coeff_var(rightpart);
+                                if (p1 && p2 && !p1->second.empty() && p1->second == p2->second) {
+                                    double sum = p1->first + p2->first;
+                                    std::string coeff = (std::floor(sum) == sum) ? std::to_string((int)sum) : std::to_string(sum);
+                                    return Value(std::string("(" + coeff + " * " + p1->second + ")"));
+                                }
+                            }
+                        }
+
+                        return Value(simplified->toString());
+                    } catch (...) {
+                        // parsing failed for one or both strings; fall back to normal concatenation
+                    }
+            }
             return Value(l.to_string() + r.to_string());
         }
         // Vector addition

@@ -1023,6 +1023,13 @@ std::string SymbolicExpr::to_string() const {
         case Type::Multiply:
             if (operands.size() < 2) return "*(?)";
 
+            if (operands[1]->type == Type::Variable && operands[1]->identifier == "e") {
+                // 当右操作数是 e 时，给左操作数加括号以明确优先级
+                if (operands[0]->type == Type::Add) {
+                    return "(" + operands[0]->to_string() + ")*" + operands[1]->to_string();
+                }
+            }
+            
             if (operands[0]->is_number() && operands[1]->type == Type::Sqrt) {
                 return operands[0]->to_string() + operands[1]->to_string();
             }
