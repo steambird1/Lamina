@@ -1,5 +1,6 @@
 #include "random.hpp"
 #include <random>
+#include "std.hpp"
 
 Value rand(const std::vector<Value>& args) {
     static std::random_device rd;
