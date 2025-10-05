@@ -1,7 +1,7 @@
 #include "array.hpp"
 
 #include "lmStruct.hpp"
-
+#include "std.hpp"
 #include <ranges>
 Interpreter interpreter;
 
@@ -24,7 +24,7 @@ Value range(const std::vector<Value>& args) {
     return vec;
 }
 
-Value visit_array_by_int(const std::vector<Value>& args) {
+Value array_at(const std::vector<Value>& args) {
     if (!args[0].is_array()) {
         L_ERR("First Arg Must Be A Array");
         return LAMINA_NULL;
@@ -57,7 +57,7 @@ Value visit_array_by_int(const std::vector<Value>& args) {
     return *current;
 }
 
-Value visit_array_by_str(const std::vector<Value>& args) {
+Value array_index_of(const std::vector<Value>& args) {
     if (!args[0].is_array() || !args[1].is_string()) {
         L_ERR("Invalid arguments (expected array and string)");
         return LAMINA_NULL;
