@@ -190,7 +190,7 @@ Value cas_numerical_derivative(const std::vector<Value>& args);
     { name, Value(std::make_shared<LmCppFunction>(fn_ptr)) }
 
 #define LAMINA_MODULE(name, version, subitems) \
-    { name, Value(std::make_shared<LmModule>(name, version, subitems)) }
+    { name, Value(std::make_shared<LmModule>(name, version, (subitems))) }
 
 inline std::unordered_map<std::string, Value> register_builtins() {
     return {
