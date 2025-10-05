@@ -254,6 +254,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if (right->is_number())
 		std::swap(left, right);	// 尽可能保证左侧操作数为 number
 	
+	// 如果右侧只有 variable，认为化简完成
+	// TODO: 确定如果有 power 项目，要不要同样判断
+	
+	std::function<bool(std::shared_ptr<SymbolicExpr>)> check_simp_1;
+	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj) -> bool {
+		return obj->type == SymbolicExpr::Type::Variable || (
+			obj->type == SymbolicExpr::Type::Multiply && check_simp_1(obj->operands[0]) && check_simp_1(obj->operands[1]);
+			)
+	};
+	if (check_simp_1(right)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
+	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
 		
