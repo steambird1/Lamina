@@ -3,6 +3,7 @@
 #include "../../interpreter/lamina_api/lamina.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
 #include "interpreter.hpp"
+#include "std.hpp"
 
 inline Value input(const std::vector<Value>& args) {
     std::string input_line;
