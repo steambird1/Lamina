@@ -1,9 +1,6 @@
-#include "array.hpp"
-
 #include "lmStruct.hpp"
 #include "std.hpp"
 #include <ranges>
-Interpreter interpreter;
 
 Value range(const std::vector<Value>& args) {
     if (args.empty()) return LAMINA_NULL;

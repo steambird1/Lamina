@@ -17,7 +17,7 @@
 
 #define DYLIB_HANDLE HMODULE
 #define DYLIB_LOAD(path) LoadLibraryA(path.c_str())
-#define DYLIB_GETSYM(handle, name) GetProcAddress(handle, name)
+#define DYLIB_GETSYM(handle, name) reinterpret_cast<void*>(GetProcAddress(handle, name))
 #define DYLIB_UNLOAD(handle) FreeLibrary(handle)
 #define DYLIB_ERROR() GetLastError()
 #else

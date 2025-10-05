@@ -1,4 +1,3 @@
-#include "random.hpp"
 #include <random>
 #include "std.hpp"
 
@@ -10,22 +9,18 @@ Value rand(const std::vector<Value>& args) {
 }
 
 Value randint(const std::vector<Value>& args) {
-    int min;
-    int max;
-
     static std::random_device rd;
     static std::mt19937 gen(rd());
 
     if (args[0].is_numeric() && args[1].is_numeric()) {
-        min = std::stoi((args[0].to_string()));
-        max = std::stoi((args[1].to_string()));
+        const int min = std::stoi((args[0].to_string()));
+        const int max = std::stoi((args[1].to_string()));
         std::uniform_int_distribution<> dis(min, max);
-        int randomNumber = dis(gen);
+        const int randomNumber = dis(gen);
         return LAMINA_INT(randomNumber);
-    } else {
-        L_ERR("randint() requires two numeric arguments");
-        return LAMINA_NULL;
     }
+    L_ERR("randint() requires two numeric arguments");
+    return LAMINA_NULL;
 }
 
 Value randstr(const std::vector<Value>& args) {

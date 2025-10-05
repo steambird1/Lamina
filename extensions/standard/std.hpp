@@ -18,7 +18,7 @@ Value sub_string(const std::vector<Value>& args);
 Value replace_by_index(const std::vector<Value>& args);
 
 // 平方根：需1个数值参数（如数字、向量/矩阵的每个元素），返回平方根结果
-Value sqrt(const std::vector<Value>& args);
+Value sqrt_(const std::vector<Value>& args);
 
 // 圆周率π：需0个参数，直接返回π的数值（如3.1415926535...）
 Value pi(const std::vector<Value>& args);
@@ -27,28 +27,28 @@ Value pi(const std::vector<Value>& args);
 Value e(const std::vector<Value>& args);
 
 // 绝对值：需1个数值参数（处理数字、向量/矩阵元素的正负），返回非负值
-Value abs(const std::vector<Value>& args);
+Value abs_(const std::vector<Value>& args);
 
 // 正弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回正弦值
-Value sin(const std::vector<Value>& args);
+Value sin_(const std::vector<Value>& args);
 
 // 余弦函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回余弦值
-Value cos(const std::vector<Value>& args);
+Value cos_(const std::vector<Value>& args);
 
 // 正切函数：需1个参数（弧度值，可处理单个数字或向量/矩阵元素），返回正切值
-Value tan(const std::vector<Value>& args);
+Value tan_(const std::vector<Value>& args);
 
 // 自然对数（ln）：需1个正数值参数（处理数字、向量/矩阵元素），返回对数结果
-Value log(const std::vector<Value>& args);
+Value log_(const std::vector<Value>& args);
 
 // 四舍五入：需1个数值参数，返回最接近的整数
-Value round(const std::vector<Value>& args);
+Value round_(const std::vector<Value>& args);
 
 // 向下取整（地板函数）：需1个数值参数，返回不大于该值的最大整数
-Value floor(const std::vector<Value>& args);
+Value floor_(const std::vector<Value>& args);
 
 // 向上取整（天花板函数）：需1个数值参数，返回不小于该值的最小整数
-Value ceil(const std::vector<Value>& args);
+Value ceil_(const std::vector<Value>& args);
 
 // 点积：需2个同维度向量参数，返回标量结果
 Value dot(const std::vector<Value>& args);
@@ -78,7 +78,7 @@ Value fraction(const std::vector<Value>& args);
 Value decimal(const std::vector<Value>& args);
 
 // 幂运算（base^exponent）：需2个参数（底数、指数），返回幂运算结果
-Value pow(const std::vector<Value>& args);
+Value pow_(const std::vector<Value>& args);
 
 // 最大公约数：需2个正整数参数，返回二者的最大公约数
 Value gcd(const std::vector<Value>& args);
@@ -87,7 +87,7 @@ Value gcd(const std::vector<Value>& args);
 Value lcm(const std::vector<Value>& args);
 
 // 生成随机浮点数：需0个或2个参数（无参返回[0,1)随机数；有参返回[min,max)随机数）
-Value rand(const std::vector<Value>& args);
+Value rand_(const std::vector<Value>& args);
 
 // 生成随机整数：需2个参数（最小值、最大值），返回[min,max]范围内的随机整数
 Value randint(const std::vector<Value>& args);
@@ -123,7 +123,7 @@ Value input(const std::vector<Value>& args);
 Value print(const std::vector<Value>& args);
 
 // 执行系统命令：需1个参数（系统命令字符串），返回命令执行结果或退出状态
-Value system(const std::vector<Value>& args);
+Value system_(const std::vector<Value>& args);
 
 // 检查存在性：需1个参数（如文件路径、变量名、数组元素），返回布尔值表示是否存在
 Value exist(const std::vector<Value>& args);
@@ -185,12 +185,6 @@ Value cas_solve_linear(const std::vector<Value>& args);
 // CAS数值导数计算：需3个参数（CAS表达式、求导变量、计算点），返回该点的数值导数
 Value cas_numerical_derivative(const std::vector<Value>& args);
 
-// 确保宏定义正确
-#define LAMINA_FUNC(name, fn_ptr) \
-    { name, Value(std::make_shared<LmCppFunction>(fn_ptr)) }
-
-#define LAMINA_MODULE(name, version, subitems) \
-    { name, Value(std::make_shared<LmModule>(name, version, (subitems))) }
 
 inline std::unordered_map<std::string, Value> register_builtins() {
     return {
@@ -204,17 +198,17 @@ inline std::unordered_map<std::string, Value> register_builtins() {
         }),
 
         // 数学计算模块：一级函数
-        LAMINA_FUNC("sqrt", sqrt),
+        LAMINA_FUNC("sqrt", sqrt_),
         LAMINA_FUNC("pi", pi),
         LAMINA_FUNC("e", e),
-        LAMINA_FUNC("abs", abs),
-        LAMINA_FUNC("sin", sin),
-        LAMINA_FUNC("cos", cos),
-        LAMINA_FUNC("tan", tan),
-        LAMINA_FUNC("log", log),
-        LAMINA_FUNC("round", round),
-        LAMINA_FUNC("floor", floor),
-        LAMINA_FUNC("ceil", ceil),
+        LAMINA_FUNC("abs", abs_),
+        LAMINA_FUNC("sin", sin_),
+        LAMINA_FUNC("cos", cos_),
+        LAMINA_FUNC("tan", tan_),
+        LAMINA_FUNC("log", log_),
+        LAMINA_FUNC("round", round_),
+        LAMINA_FUNC("floor", floor_),
+        LAMINA_FUNC("ceil", ceil_),
         LAMINA_FUNC("dot", dot),
         LAMINA_FUNC("cross", cross),
         LAMINA_FUNC("norm", norm),
@@ -224,14 +218,14 @@ inline std::unordered_map<std::string, Value> register_builtins() {
         LAMINA_FUNC("idiv", idiv),
         LAMINA_FUNC("fraction", fraction),
         LAMINA_FUNC("decimal", decimal),
-        LAMINA_FUNC("pow", pow),
+        LAMINA_FUNC("pow", pow_),
         LAMINA_FUNC("gcd", gcd),
         LAMINA_FUNC("lcm", lcm),
         LAMINA_FUNC("range", range),
 
         // 随机模块：封装随机浮点数、整数、字符串生成功能
         LAMINA_MODULE("random", "1.0.0", {
-            LAMINA_FUNC("rand", rand),
+            LAMINA_FUNC("rand", rand_),
             LAMINA_FUNC("randint", randint),
             LAMINA_FUNC("randstr", randstr)
         }),
@@ -253,12 +247,12 @@ inline std::unordered_map<std::string, Value> register_builtins() {
         // IO与系统模块：一级函数
         LAMINA_FUNC("input", input),
         LAMINA_FUNC("print", print),
-        LAMINA_FUNC("system", system),
+        LAMINA_FUNC("system", system_),
         LAMINA_FUNC("exist", exist),
         LAMINA_FUNC("assert", assert),
 
         // 操作模块：一级函数
-        LAMINA_FUNC("typeof", typeof_),  // 外部调用键为"typeof"，对应函数指针typeof_
+        LAMINA_FUNC("typeof", typeof_),
         LAMINA_FUNC("getattr", getattr),
         LAMINA_FUNC("setattr", setattr),
         LAMINA_FUNC("update", update),

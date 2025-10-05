@@ -577,29 +577,3 @@ inline Value lcm(const std::vector<Value>& args) {
     LAMINA_FUNC("calculate", calculate, 1);
 
 }// namespace latex**/
-
-namespace lamina {
-    LAMINA_FUNC("sqrt", sqrt, 1);
-    LAMINA_FUNC("pi", pi, 0);
-    LAMINA_FUNC("e", e, 0);
-    LAMINA_FUNC("abs", abs, 1);
-    LAMINA_FUNC("sin", sin, 1);
-    LAMINA_FUNC("cos", cos, 1);
-    LAMINA_FUNC("tan", tan, 1);
-    LAMINA_FUNC("log", log, 1);
-    LAMINA_FUNC("round", round, 1);
-    LAMINA_FUNC("floor", floor, 1);
-    LAMINA_FUNC("ceil", ceil, 1);
-    LAMINA_FUNC("dot", dot, 2);
-    LAMINA_FUNC("cross", cross, 2);
-    LAMINA_FUNC("norm", norm, 1);
-    LAMINA_FUNC("normalize", normalize, 1);
-    LAMINA_FUNC("det", det, 1);
-    LAMINA_FUNC("size", size, 1);
-    LAMINA_FUNC("idiv", idiv, 2);
-    LAMINA_FUNC("fraction", fraction, 1);
-    LAMINA_FUNC("decimal", decimal, 1);
-    LAMINA_FUNC("pow", pow, 2);
-    LAMINA_FUNC("gcd", gcd, 2);
-    LAMINA_FUNC("lcm", lcm, 2);
-}// namespace lamina

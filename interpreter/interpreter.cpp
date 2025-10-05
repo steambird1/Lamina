@@ -37,10 +37,10 @@
 #include <unistd.h>// For isatty
 #endif
 
-
-// 这些异常类已经移到了 interpreter.hpp
+Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
 
 Interpreter::Interpreter() {
+    Interpreter::variable_stack = {{}};
     builtins = register_builtins();
 }
 
@@ -62,7 +62,7 @@ void Interpreter::pop_scope() {
     if (Interpreter::variable_stack.size() > 1) Interpreter::variable_stack.pop_back();
 }
 
-Value Interpreter::get_variable(const std::string& name) const {
+Value Interpreter::get_variable(const std::string& name) {
     for (const auto & it : std::ranges::reverse_view(Interpreter::variable_stack)) {
         auto found = it.find(name);
         if (found != it.end()) return found->second;
@@ -286,10 +286,10 @@ Value Interpreter::eval(const ASTNode* node) {
         return eval_LiteralExpr(lit);
     }
     if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
-        return get_variable(id->name);
+        return Interpreter::get_variable(id->name);
     }
     if (auto* var = dynamic_cast<const VarExpr*>(node)) {
-        return get_variable(var->name);
+        return Interpreter::get_variable(var->name);
     }
     if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         return eval_BinaryExpr(bin);
@@ -471,7 +471,7 @@ bool Interpreter::load_cpp_module(const std::string& module_path) {
     
     for (const auto& [key, value] : module) {
         if (key == "lamina_init_module") {
-            [[maybe_unused]] auto _ = std::get<std::shared_ptr<LmCppFunction>>(value.data).get()(); // 初始化函数
+            [[maybe_unused]] auto _ = std::get<std::shared_ptr<LmCppFunction>>(value.data)->function({}); // 初始化函数
         }
         std::cerr << "Debug: checking c++ function " << key << std::endl;
     }
@@ -490,7 +490,7 @@ bool Interpreter::load_cpp_module(const std::string& module_path) {
         Value(
             std::make_shared<LmModule>(
                 module_name,
-                version ? version : "0.0.0" ,
+                version.empty() ? version : "0.0.0" ,
                 module
                )
             )
@@ -531,7 +531,7 @@ LAMINA_EXPORT void error_and_exit(const std::string& msg) {
 // }
 
 // 打印当前所有变量
-void Interpreter::print_variables() const {
+void Interpreter::print_variables() {
     if (variable_stack.empty()) {
         std::cout << "No variables defined." << std::endl;
         return;
@@ -566,11 +566,11 @@ void Interpreter::pop_frame() {
     }
 }
 
-std::vector<StackFrame> Interpreter::get_stack_trace() const {
+std::vector<StackFrame> Interpreter::get_stack_trace() {
     return call_stack;
 }
 
-void Interpreter::print_stack_trace(const RuntimeError& error, const bool use_colors) const {
+void Interpreter::print_stack_trace(const RuntimeError& error, const bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
 
     // Use stack trace from error if available, otherwise use current call stack

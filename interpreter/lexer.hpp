@@ -13,7 +13,7 @@
 #define LAMINA_API
 #endif
 
-enum class TokenType {
+enum class LAMINA_API TokenType {
     Var,
     Func,
     If,

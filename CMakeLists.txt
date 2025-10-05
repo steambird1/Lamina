@@ -79,9 +79,7 @@ add_library(lamina_core SHARED
         extensions/standard/math.cpp
         extensions/standard/basic.cpp
         extensions/standard/random.cpp
-        extensions/standard/random.hpp
         extensions/standard/times.cpp
-        extensions/standard/times.hpp
         extensions/standard/array.cpp
         extensions/standard/sockets.hpp
         extensions/standard/sockets.cpp

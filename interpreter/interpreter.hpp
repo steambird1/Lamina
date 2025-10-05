@@ -78,26 +78,26 @@ class LAMINA_API Interpreter {
 public:
     Interpreter();
     ~Interpreter();
-    Value execute(const std::unique_ptr<Statement>& node);
-    Value eval(const ASTNode* node);
+    static Value execute(const std::unique_ptr<Statement>& node);
+    static Value eval(const ASTNode* node);
 
     static Value eval_LiteralExpr(const LiteralExpr* node);
-    Value eval_UnaryExpr(const UnaryExpr* unary);
-    Value eval_BinaryExpr(const BinaryExpr* bin);
-    Value eval_CallExpr(const CallExpr* call);
+    static Value eval_UnaryExpr(const UnaryExpr* unary);
+    static Value eval_BinaryExpr(const BinaryExpr* bin);
+    static Value eval_CallExpr(const CallExpr* call);
     static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
 
     // Print all variables in current scope
-    void print_variables() const;
+    static void print_variables();
 
     // Save AST in REPL mode to keep function pointers valid
-    void save_repl_ast(std::unique_ptr<ASTNode> ast);
+    static void save_repl_ast(std::unique_ptr<ASTNode> ast);
 
     // Stack trace management
     static void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
     static void pop_frame();
-    static std::vector<StackFrame> get_stack_trace() const;
-    void print_stack_trace(const RuntimeError& error, bool use_colors = true) const;
+    static std::vector<StackFrame> get_stack_trace();
+    static void print_stack_trace(const RuntimeError& error, bool use_colors = true);
 
     // Utility functions for error display
     static bool supports_colors();
@@ -105,23 +105,23 @@ public:
     static void print_warning(const std::string& message, bool use_colors = true);
 
     // Store builtins
-    std::unordered_map<std::string, Value> builtins;
+    static std::unordered_map<std::string, Value> builtins;
 
     // Variable assignment
-    void set_variable(const std::string& name, const Value& val);
+    static void set_variable(const std::string& name, const Value& val);
 
     // built global variable in interpreter
-    void set_global_variable(const std::string& name, const Value& val);
+    static void set_global_variable(const std::string& name, const Value& val);
 
     // Variable lookup
-    Value get_variable(const std::string& name) const;
+    static Value get_variable(const std::string& name);
 
     // Variable scope stack, top is the current scope
-    static std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
+    static std::vector<std::unordered_map<std::string, Value>> variable_stack;
 
 private:
     // Store REPL ASTs to keep function pointers valid in interactive mode
-    std::vector<std::unique_ptr<ASTNode>> repl_asts;
+    static std::vector<std::unique_ptr<ASTNode>> repl_asts;
 
     // Stack trace for function calls
     static std::vector<StackFrame> call_stack;
@@ -129,11 +129,11 @@ private:
     static void push_scope();
     static void pop_scope();
     // Load and execute module
-    bool load_module(const std::string& module_path);
-    bool load_cpp_module(const std::string& module_path);
+    static bool load_module(const std::string& module_path);
+    static bool load_cpp_module(const std::string& module_path);
 
     // 将Number转为Symbolic(如果可能)
-    std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
+    static std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
     // 移除静态成员变量声明，改用函数内静态变量
     // static std::vector<EntryFunction> entry_functions;
 };

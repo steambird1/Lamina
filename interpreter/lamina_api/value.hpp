@@ -43,7 +43,7 @@ struct LambdaDeclExpr;
 class lmStruct;
 LAMINA_API std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct);
 
-class LAMINA_API Value {
+class LAMINA_API Value final {
 public:
     enum class Type {
         Lambda, lmStruct, Symbolic,

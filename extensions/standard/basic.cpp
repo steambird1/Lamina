@@ -216,16 +216,3 @@ inline Value typeof_(const std::vector<Value>& args) {
     }
 
 }
-
-
-namespace lamina {
-    LAMINA_FUNC_MULTI_ARGS("input", input, 1);
-    LAMINA_FUNC_WIT_ANY_ARGS("print", print);
-    LAMINA_FUNC("file_put_content", file_put_content, 2);
-    LAMINA_FUNC("file_get_content", file_get_content, 1);
-    LAMINA_FUNC("exec", exec, 1);
-    LAMINA_FUNC("exist", exist, 1);
-    LAMINA_FUNC("touch_file", touch_file, 1);
-    LAMINA_FUNC_WIT_ANY_ARGS("assert", assert);
-    LAMINA_FUNC("typeof", typeof_, 1);
-}// namespace lamina

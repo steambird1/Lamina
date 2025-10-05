@@ -109,17 +109,17 @@ namespace lamina::net {
     Value socket_bind(const std::vector<Value>& args);
     Value socket_listen(const std::vector<Value>& args);
     Value socket_accept(const std::vector<Value>& args);
-    LAMINA_FUNC("socket_create", runnable, 4);
-    LAMINA_FUNC("socket_send", socket_send, 2);
-    LAMINA_FUNC("socket_recv", socket_recv, 1);
-    LAMINA_FUNC("socket_get_state", socket_get_state, 1);
-    LAMINA_FUNC("socket_get_error", socket_get_error, 1);
-    LAMINA_FUNC("socket_register_callback", socket_register_receive_callback, 2);
-    LAMINA_FUNC("socket_close", socket_close, 1);
-    LAMINA_FUNC("socket_connect", socket_connect, 2);
-    LAMINA_FUNC("socket_bind", socket_bind, 2);
-    LAMINA_FUNC("socket_listen", socket_listen, 2);
-    LAMINA_FUNC("socket_accept", socket_accept, 1);
+    // LAMINA_FUNC("socket_create", runnable, 4);
+    // LAMINA_FUNC("socket_send", socket_send, 2);
+    // LAMINA_FUNC("socket_recv", socket_recv, 1);
+    // LAMINA_FUNC("socket_get_state", socket_get_state, 1);
+    // LAMINA_FUNC("socket_get_error", socket_get_error, 1);
+    // LAMINA_FUNC("socket_register_callback", socket_register_receive_callback, 2);
+    // LAMINA_FUNC("socket_close", socket_close, 1);
+    // LAMINA_FUNC("socket_connect", socket_connect, 2);
+    // LAMINA_FUNC("socket_bind", socket_bind, 2);
+    // LAMINA_FUNC("socket_listen", socket_listen, 2);
+    // LAMINA_FUNC("socket_accept", socket_accept, 1);
 }// namespace lamina::net
 #endif
 

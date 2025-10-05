@@ -478,38 +478,38 @@ namespace lamina::net {
     }
 
     // Lamina 函数注册
-    void register_socket_functions(Interpreter& interpreter) {
-        interpreter.builtin_functions["socket_create"] = [](const std::vector<Value>& args) -> Value {
-            return socket_create(args);
-        };
-        interpreter.builtin_functions["socket_connect"] = [](const std::vector<Value>& args) -> Value {
-            return socket_connect(args);
-        };
-        interpreter.builtin_functions["socket_listen"] = [](const std::vector<Value>& args) -> Value {
-            return socket_listen(args);
-        };
-        interpreter.builtin_functions["socket_accept"] = [](const std::vector<Value>& args) -> Value {
-            return socket_accept(args);
-        };
-        interpreter.builtin_functions["socket_send"] = [](const std::vector<Value>& args) -> Value {
-            return socket_send(args);
-        };
-        interpreter.builtin_functions["socket_recv"] = [](const std::vector<Value>& args) -> Value {
-            return socket_recv(args);
-        };
-        interpreter.builtin_functions["socket_close"] = [](const std::vector<Value>& args) -> Value {
-            return socket_close(args);
-        };
-        interpreter.builtin_functions["socket_get_state"] = [](const std::vector<Value>& args) -> Value {
-            return socket_get_state(args);
-        };
-        interpreter.builtin_functions["socket_get_error"] = [](const std::vector<Value>& args) -> Value {
-            return socket_get_error(args);
-        };
-        interpreter.builtin_functions["socket_register_callback"] = [](const std::vector<Value>& args) -> Value {
-            return socket_register_receive_callback(args);
-        };
-    }
+    // void register_socket_functions(Interpreter& interpreter) {
+    //     interpreter.builtin_functions["socket_create"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_create(args);
+    //     };
+    //     interpreter.builtin_functions["socket_connect"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_connect(args);
+    //     };
+    //     interpreter.builtin_functions["socket_listen"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_listen(args);
+    //     };
+    //     interpreter.builtin_functions["socket_accept"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_accept(args);
+    //     };
+    //     interpreter.builtin_functions["socket_send"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_send(args);
+    //     };
+    //     interpreter.builtin_functions["socket_recv"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_recv(args);
+    //     };
+    //     interpreter.builtin_functions["socket_close"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_close(args);
+    //     };
+    //     interpreter.builtin_functions["socket_get_state"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_get_state(args);
+    //     };
+    //     interpreter.builtin_functions["socket_get_error"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_get_error(args);
+    //     };
+    //     interpreter.builtin_functions["socket_register_callback"] = [](const std::vector<Value>& args) -> Value {
+    //         return socket_register_receive_callback(args);
+    //     };
+    // }
 }// namespace lamina::net
 // namespace lamina::net
 

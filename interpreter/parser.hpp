@@ -1,10 +1,6 @@
 #pragma once
-#include "lamina_api/ast.hpp"
 #include "lexer.hpp"
-
-
-enum class TokenType;
-struct Token;
+#include "lamina_api/ast.hpp"
 
 class LAMINA_API Parser {
     const std::vector<Token> tokens_;

@@ -271,22 +271,3 @@ Value cas_numerical_derivative(const std::vector<Value>& args) {
         return Value();
     }
 }
-
-// 注册CAS函数
-void register_cas_functions(Interpreter& interpreter) {
-    interpreter.builtin_functions["cas_parse"] = cas_parse;
-    interpreter.builtin_functions["cas_simplify"] = cas_simplify;
-    interpreter.builtin_functions["cas_differentiate"] = cas_differentiate;
-    interpreter.builtin_functions["cas_evaluate"] = cas_evaluate;
-    interpreter.builtin_functions["cas_store"] = cas_store;
-    interpreter.builtin_functions["cas_load"] = cas_load;
-    interpreter.builtin_functions["cas_evaluate_at"] = cas_evaluate_at;
-    interpreter.builtin_functions["cas_solve_linear"] = cas_solve_linear;
-    interpreter.builtin_functions["cas_numerical_derivative"] = cas_numerical_derivative;
-}
-
-// 注册入口点
-static bool cas_registered = []() {
-    Interpreter::register_entry(register_cas_functions);
-    return true;
-}();

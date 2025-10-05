@@ -39,39 +39,18 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         args.push_back(eval(arg.get()));
     }
 
-    // 先找builtins
-    std::string function_name;   // 如果能找到函数名才填
-    if (auto f_identifier = dynamic_cast<IdentifierExpr*>(call->callee.get());
-        f_identifier != nullptr
-    ) function_name = f_identifier->name;
 
-    // if builtins
-    auto builtin_it = builtin_functions.find(function_name);
-    if (builtin_it != builtin_functions.end()) {
-        //     std::cout << "DEBUG: Found builtin function: '" << actual_callee << "'" << std::endl;
-
-        // Handle builtin call with stack frame and unified error handling
-        push_frame(function_name, "<builtin function "+function_name+" >", 0);
-
-        Value result;
-        try { result = builtin_it->second(args); }
-        catch (...) {
-            pop_frame();
-            throw;
-        }
-        pop_frame();
-        return result;
-    }
-    // =====================在builtins中找不到==============================
-
-    std::shared_ptr<LambdaDeclExpr> func ;
-    auto left = eval(call->callee.get());
-    if (! left.is_lambda()) {
+    const auto left = eval(call->callee.get());
+    if (!left.is_lambda() or !left.is_lmCppFunction()) {
         std::cerr << "Left type is not a callable object " << std::endl;
     }
-    func = std::get<std::shared_ptr<LambdaDeclExpr>>(left.data);
 
-    if (func) {
+    if (std::holds_alternative<std::shared_ptr<LambdaDeclExpr>>(left.data)) {
+        // get function
+        std::shared_ptr<LambdaDeclExpr> func;
+        func = std::get<std::shared_ptr<LambdaDeclExpr>>(left.data);
+
+        // get arguments
         if (call->args.size() != func->params.size()) {
             std::cerr << "function " << func->name << " required " <<
                 func->params.size() << " , got "  << call->args.size() << std::endl;
@@ -81,14 +60,26 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         return Interpreter::call_function(func.get(), args);
     }
 
-    if (! func) {
-        std::cerr << "Type is not a callable object " << std::endl;
-        return {};
+    if (std::holds_alternative<std::shared_ptr<LmCppFunction>>(left.data)) {
+        push_frame("<cpp function>", 0);
+
+        Value result;
+        std::shared_ptr<LmCppFunction> func;
+        func = std::get<std::shared_ptr<LmCppFunction>>(left.data);
+        try { result = func->function(args); }
+        catch (...) {
+            pop_frame();
+            throw;
+        }
+        pop_frame();
+        return result;
     }
+
+    std::cerr << "Type is not a callable object " << std::endl;
     return {};
 }
 
-static Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) {
+Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) {
     if (func == nullptr) {
         std::cerr << "Error: Function at '" << func << "' is null" << std::endl;
         return Value("<func error>");
@@ -119,7 +110,7 @@ static Value Interpreter::call_function(const LambdaDeclExpr* func, const std::v
                 } else {
                     enriched.stack_trace = re.stack_trace;  // Preserve existing trace
                 }
-                Interpreter::top_frame();
+                Interpreter::pop_frame();
                 Interpreter::pop_scope();
                 throw enriched;
             } catch (const std::exception& e) {

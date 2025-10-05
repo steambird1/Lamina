@@ -11,16 +11,24 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 // Lamina 版本号
 #include "version.hpp"
 // Lamina 帮助文本
 #include "help_text.hpp"
+#include "value.hpp"
+
+#include <functional>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 /*
     对LAMINA核心资源操作的头文件
  */
 
+class Value;
 // 声明错误处理函数
 LAMINA_EXPORT void error_and_exit(const std::string& msg);
 
@@ -40,82 +48,66 @@ constexpr bool always_false = false;
 #define LAMINA_MATRIX(value) Value(value)
 #define LAMINA_NULL Value()
 
-// #define LAMINA_FUNC_WIT_ANY_ARGS(func_name, func)                                                \
-//     void func##_any_args_entry(Interpreter& interpreter);                                        \
-//     namespace {                                                                                  \
-//         struct func##_any_args_registrar {                                                       \
-//             func##_any_args_registrar() {                                                        \
-//                 Interpreter::register_entry(&func##_any_args_entry);                             \
-//             }                                                                                    \
-//         } func##_any_args_instance;                                                              \
-//     }                                                                                            \
-//     inline void func##_any_args_entry(Interpreter& interpreter) {                                \
-//         interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value { \
-//             return func(args);                                                                   \
-//         };                                                                                       \
-//     }
-//
-// #define LAMINA_FUNC(func_name, func, arg_count)                                                       \
-//     LAMINA_EXPORT void func##_entry(Interpreter& interpreter);                                        \
-//     namespace {                                                                                       \
-//         struct func##_registrar {                                                                     \
-//             func##_registrar() {                                                                      \
-//                 Interpreter::register_entry(&func##_entry);                                           \
-//             }                                                                                         \
-//         } func##_instance;                                                                            \
-//     }                                                                                                 \
-//     inline void func##_entry(Interpreter& interpreter) {                                              \
-//         interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value {      \
-//             if (args.size() != arg_count) {                                                           \
-//                 std::cerr << "Error: " << func_name << "() requires " << arg_count << " arguments\n"; \
-//                 return Value();                                                                       \
-//             }                                                                                         \
-//             return func(args);                                                                        \
-//         };                                                                                            \
-//     }
-//
-// #define LAMINA_FUNC_MULTI_ARGS(func_name, func, arg_count)                                              \
-//     void func##_entry(Interpreter& interpreter);                                                        \
-//     namespace {                                                                                         \
-//         struct func##_registrar {                                                                       \
-//             func##_registrar() {                                                                        \
-//                 Interpreter::register_entry(&func##_entry);                                             \
-//             }                                                                                           \
-//         } func##_instance;                                                                              \
-//     }                                                                                                   \
-//     inline void func##_entry(Interpreter& interpreter) {                                                \
-//         interpreter.builtin_functions[func_name] = [](const std::vector<Value>& args) -> Value {        \
-//             if (args.size() > arg_count) {                                                              \
-//                 std::cerr << "Error: " << func_name << "() takes 0 to " << arg_count << " arguments\n"; \
-//                 return Value();                                                                         \
-//             }                                                                                           \
-//             return func(args);                                                                          \
-//         };                                                                                              \
-//     }
-//
-//
-//
-// #define LAMINA_CALL_FUNC(interpreter, function, args)                  \
-//     interpreter.call_function(function, args);
-//
-// #define LAMINA_GET_LOCALS(interpreter) \
-//     interpreter.get_variable()
-// #define LAMINA_GET_GLOBALS(interpreter) \
-//     interpreter.get_globals()
-//
-// // subitems必须是 std::unordered_map<std::string, Value>类型
-// #define LAMINA_MODULE(interpreter, name, id,  subitems) \
-//     interpreter.entry_module(std::make_unique<LmModule>(name, id, subitems))
-//
-// #define LAMINA_ENTRY_FUNC(interpreter, name,function) \
-//     interpreter.entry_function(name, function)
 
-// L_ERR
-class StdLibException : public std::exception {
+inline std::pair<std::string, Value> LAMINA_FUNC(
+    const std::string& name,
+    const std::function<Value(std::vector<Value>)>& fn_ptr
+) {
+    return {
+        name, Value(std::make_shared<LmCppFunction>(fn_ptr))
+    };
+}
+
+inline std::pair<std::string, Value> LAMINA_MODULE(
+    const std::string& name,
+    const std::string& version,
+    const std::unordered_map<std::string, Value>& subitems
+) {
+    return {
+        name, Value(std::make_shared<LmModule>( name, version, subitems ))
+    };
+}
+
+class StdLibException final : public std::exception {
 public:
     std::string message;
-    StdLibException(const std::string& msg) : message(msg) {}
-    const char* what() const noexcept override {
+    explicit StdLibException(std::string  msg) : message(std::move(msg)) {}
+    [[nodiscard]] const char* what() const noexcept override {
         return message.c_str();
     }
 };
+
+inline void L_ERR(const std::string& str) {
+    throw StdLibException(str);
+}
+
+inline bool check_cpp_function_argv(const std::vector<Value>& argv, const size_t argc) {
+    if (argv.size() == argc) {
+        const std::string msg = "function need " + std::to_string(argc) + ", but got " + std::to_string(argv.size());
+        throw StdLibException(msg);
+    }
+    return false;
+}
+
+inline bool check_cpp_function_argv(
+    const std::vector<Value>& argv,
+    const std::vector<Value::Type>& except_type_vec
+) {
+
+    if (argv.size() != except_type_vec.size()) {
+        const std::string msg = "function need " + std::to_string(except_type_vec.size()) + ", but got " + std::to_string(argv.size());
+        throw StdLibException(msg);
+        return false;
+    }
+
+    size_t cnt = 0;
+    for (const auto& arg: argv) {
+        if (arg.type != except_type_vec[cnt]) {
+            const std::string msg =  "callee use illegal type";
+            throw StdLibException(msg);
+            return false;
+        }
+        ++cnt;
+    }
+    return true;
+}
