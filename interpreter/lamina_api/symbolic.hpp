@@ -1,6 +1,5 @@
 #pragma once
 #include "bigint.hpp"
-#include "lexer.hpp"
 #include "rational.hpp"
 #include <cmath>
 #include <memory>
