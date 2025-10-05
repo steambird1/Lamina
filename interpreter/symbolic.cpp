@@ -258,14 +258,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// TODO: 确定如果有 power 项目，要不要同样判断
 	
 	std::function<bool(std::shared_ptr<SymbolicExpr>,bool)> check_simp_1;
-	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj, bool allow_num = false) -> bool {
+	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj, bool allow_num) -> bool {
 		return (obj->type == SymbolicExpr::Type::Number && allow_num) || obj->type == SymbolicExpr::Type::Variable || (
 			(obj->type == SymbolicExpr::Type::Multiply || obj->type == SymbolicExpr::Type::Power) && check_simp_1(obj->operands[0], allow_num) && check_simp_1(obj->operands[1], true)
 			) || (
 			obj->type == SymbolicExpr::Type::Sqrt && check_simp_1(obj->operands[0], allow_num)
 			);
 	};
-	if (check_simp_1(right)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
+	if (check_simp_1(right, false)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
 	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
