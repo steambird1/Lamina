@@ -7,7 +7,7 @@
 
 namespace fs = std::filesystem;
 
-namespace {
+namespace src_manager{
     std::unordered_map<std::string, std::string> opened_files;  // path: content
 }
 
