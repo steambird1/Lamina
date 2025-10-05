@@ -1,6 +1,7 @@
 #include "lmStruct.hpp"
 #include "../../interpreter/lamina_api/lamina.hpp"
 #include <algorithm>
+#include "std.hpp"
 
 // 初始化lStruct
 lmStruct::lmStruct(const std::vector<std::pair<std::string, Value>>& vec) {
