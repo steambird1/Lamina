@@ -3,6 +3,7 @@
 // #include "latex.hpp"
 #include "../../interpreter/lamina_api/symbolic.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
+#include "std.hpp"
 
 /**
  * @brief 计算数值的平方根
