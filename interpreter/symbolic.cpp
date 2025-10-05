@@ -235,7 +235,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	}
 	
     // 如果两个操作数都是数字，直接相乘
-	// TODO: 有些计算时会出问题
     if (left->is_number() && right->is_number()) {
 		std::cerr << "[Debug output] numeric calling in multiplier: ";
         auto left_num = left->get_number();
@@ -251,6 +250,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			return SymbolicExpr::number(result);
 		}
     }
+	
+	if (right->is_number())
+		std::swap(left, right);	// 尽可能保证左侧操作数为 number
 	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
@@ -435,7 +437,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
 		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
 		|| (!is_for_auxiliary(left)) || (!is_for_auxiliary(right))) {
-		
+
 		if (is_power_compatible(left) && is_power_compatible(right)) {
 			if (left->type != SymbolicExpr::Type::Power)
 				std::swap(left, right);
@@ -460,6 +462,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				else
 					return false;
 			};
+			
 			// TODO: Debug output:
 			std::cerr << "[Debug output] [1] preparing to merge exponents" << std::endl;
 			
@@ -485,7 +488,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						
 						if (lcom->operands[0]->type == SymbolicExpr::Type::Variable || rcom->operands[0]->type == SymbolicExpr::Type::Variable) {
 							std::cerr << "[Debug output] [1a] Entering special reservation\n";
-							return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify()), SymbolicExpr::number(lcr)); // 不要化简整体！
+							auto mt = SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify());
+							if (lcr == ::Rational(1)) return mt;
+							else return SymbolicExpr::power(mt, SymbolicExpr::number(lcr)); // 不要化简整体！
 						} else {
 							std::cerr << "[Debug output] [1a] No variable, normalizing\n";
 							auto tmp = SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
