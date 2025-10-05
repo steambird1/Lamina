@@ -128,5 +128,5 @@ std::string open_lm_file(const std::string& path) {
     std::lock_guard<std::mutex> lock(cache_mutex);
     src_manager::opened_files.emplace(key, std::move(content));  // 使用移动语义减少拷贝
 
-    return opened_files[key];
+    return src_manager::opened_files[key];
 }
