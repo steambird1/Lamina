@@ -3,7 +3,7 @@
 #include <optional>
 #include "lamina.hpp"
 
-// Please handle the f**king value type at once, OK?
+// Please handle the *fword value type at once, OK?
 // Hahhhhh, I will push these specially prepared shits.
 enum VALUE_TYPE {
     VALUE_IS_STRING,
