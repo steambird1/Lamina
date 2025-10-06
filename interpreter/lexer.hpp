@@ -27,7 +27,7 @@ enum class LAMINA_API TokenType {
     Struct,  // 新增
     Define,  // define
     Bigint,  // bigint
-    Loop,     // loop
+    Loop,    // loop
     True,    // true
     False,   // false
     Null,    // null
