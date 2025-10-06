@@ -1137,6 +1137,9 @@ double SymbolicExpr::to_double() const {
                 return 3.14159265358979323846;
                 #endif
             }
+			if (identifier == "e") {
+				return 2.718281828459045;
+			}
             // 其他变量仍抛异常
             throw std::runtime_error("Symbolic variable cannot be converted to double");
 
