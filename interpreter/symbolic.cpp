@@ -720,13 +720,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					std::shared_ptr<SymbolicExpr> auxiliary = nullptr;
 					for (auto &i : result) {
 						switch (i->type) {
-							case SymbolicExpr::Number:
-								number_collection = number_collection * i->number_value;
+							case SymbolicExpr::Type::Number:
+								number_collection = number_collection * i->convert_rational();
 								break;
-							case SymbolicExpr::Sqrt:
+							case SymbolicExpr::Type::Sqrt:
 								sqrt_collection = SymbolicExpr::multiply(sqrt_collection, i);
 								break;
-							case SymbolicExpr::Power:
+							case SymbolicExpr::Type::Power:
 								if (i->operands[1]->is_number()) {
 									bool failed = true;
 									::Rational eval_res;
@@ -735,13 +735,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 									auto idem = icrt.get_denominator();
 									if (idem == ::BigInt(1)) {
 										switch (i->operands[0]->type) {
-											case SymbolicExpr::Number:
+											case SymbolicExpr::Type::Number:
 												// 尝试计算
 												eval_res = i->operands[0]->convert_rational().power(inum);
 												number_collection = number_collection * eval_res;
 												failed = false;
 												break;
-											case SymbolicExpr::Sqrt:
+											case SymbolicExpr::Type::Sqrt:
 												// 理论上不应该这样，先不处理
 												err_stream << "[Debug output] unreachable sqrt processor!\n";
 											default:
@@ -764,7 +764,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 							: SymbolicExpr::multiply(SymbolicExpr::number(number_collection), large_numbers);
 					std::shared_ptr<SymbolicExpr> ralt;
 					if (sqrt_collection->is_number()) {
-						number_collection = number_collection * sqrt_collection->number_value;
+						number_collection = number_collection * sqrt_collection->convert_rational();
 						ralt = auxiliary;
 					} else {
 						ralt = SymbolicExpr::multiply(sqrt_collection, auxiliary);
