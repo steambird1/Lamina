@@ -907,7 +907,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 						target /= i;
 					}
 					if (exphere) {
-						ediv = __gcd(ediv, exphere);
+						ediv = std::__gcd(ediv, exphere);
 					}
 				}
 				if (ediv <= 1) return 0;
@@ -941,7 +941,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			
 			int simp1 = 1, simp2 = 1;
 			if ((simp1 = simplify_inner(bs_n, es_d)) >= 1 && (simp2 = simplify_inner(bs_d, es_d)) >= 1) {
-				int simps = __gcd(simp1, simp2);
+				int simps = std::__gcd(simp1, simp2);
 				if (simps >= 1) {
 					// 化简成功
 					// TODO: Debug output:
