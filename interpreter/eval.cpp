@@ -230,6 +230,9 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             return l.vector_add(r);
         }
         // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
+		// TODO: Debug output:
+		std::cerr << "Adding: l type " << l->type << "; r type " << r->type << std::endl;
+		
         if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
             std::shared_ptr<SymbolicExpr> leftExpr;
             std::shared_ptr<SymbolicExpr> rightExpr;
