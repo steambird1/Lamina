@@ -760,7 +760,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 								else auxiliary = SymbolicExpr::multiply(auxiliary, i);
 						}
 					}
-					sqrt_collection->simplify();
+					sqrt_collection = SymbolicExpr::sqrt(sqrt_collection)->simplify();
 					err_stream << "[Debug output] end of Sqrt-collection simplifier\n";
 					err_stream << "[Debug output] number collection: " << number_collection.to_string() << std::endl;
 					err_stream << "[Debug output] sqrt collection: " << sqrt_collection->to_string() << std::endl;
