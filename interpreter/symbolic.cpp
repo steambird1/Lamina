@@ -771,6 +771,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					} else {
 						ralt = SymbolicExpr::multiply(sqrt_collection, auxiliary);
 					}
+					err_stream << "[Debug output] determined: &lalt = " << (unsigned long long)(lalt) << "; &ralt = " << (unsigned long long)(ralt) << std::endl;
+					err_stream << "[Debug output] lalt = " << (lalt == nullptr ? std::string("null") : lalt->to_string()) << "; ralt = " << (ralt == nullptr ? std::string("null") : ralt->to_string()) << std::endl;
 					if (lalt == nullptr && ralt == nullptr) return SymbolicExpr::number(1);
 					else if (lalt == nullptr) return ralt;
 					else if (ralt == nullptr) return lalt;
