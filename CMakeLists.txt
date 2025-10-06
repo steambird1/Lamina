@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(Lamina VERSION 1.1.1 LANGUAGES CXX)# Lamina version is here
+project(lamina VERSION 1.1.1 LANGUAGES CXX)# lamina version is here
+
+include(GNUInstallDirs)
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/lamina)# 安装模式选择
 
 # add sub directory
 add_subdirectory(interpreter)
@@ -33,10 +36,10 @@ if(WIN32)
     endif()
 endif()
 
-# Set output directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+# Set output directories;
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 
 # Set libuv related variables
 #set(LIBUV_LIBRARY uv_a)
@@ -159,7 +162,7 @@ endif()
 #)
 
 # Create main executable
-add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
+add_executable(lamina interpreter/main.cpp interpreter/repl_input.cpp
                # Directly include module_loader.cpp to resolve MinGW linking issues
                interpreter/module_loader.cpp
                # Include symbolic.cpp for symbolic expression support
@@ -171,30 +174,30 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
 )
 
 # Add version header
-target_sources(Lamina PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
+target_sources(lamina PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
 
 # Link to lamina_core
-target_link_libraries(Lamina PRIVATE lamina_core)
+target_link_libraries(lamina PRIVATE lamina_core)
 
 # Platform specific link libraries
 if(UNIX)
-    target_link_libraries(Lamina PRIVATE dl)
+    target_link_libraries(lamina PRIVATE dl)
 endif()
 
 # Automatically copy dependent dynamic libraries
-#add_custom_command(TARGET Lamina POST_BUILD
+#add_custom_command(TARGET lamina POST_BUILD
 #    COMMAND ${CMAKE_COMMAND} -E copy_if_different
 #        $<TARGET_FILE:uv>
-#        $<TARGET_FILE_DIR:Lamina>
+#        $<TARGET_FILE_DIR:lamina>
 #    COMMENT "Copying libuv.dll to output directory"
 #)
 
 # Copy lamina_core.dll on Windows
 if(WIN32)
-    add_custom_command(TARGET Lamina POST_BUILD
+    add_custom_command(TARGET lamina POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:lamina_core>
-            $<TARGET_FILE_DIR:Lamina>
+            $<TARGET_FILE_DIR:lamina>
         COMMENT "Copying lamina_core.dll to output directory"
     )
 endif()
@@ -333,9 +336,15 @@ endif()
     cmake --build build --config Debug --parallel
 ]]
 
+# 确保可执行文件能找到库
+set_target_properties(lamina PROPERTIES
+    INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
+    BUILD_WITH_INSTALL_RPATH True
+)
+
 # Installation rules
-install(TARGETS Lamina lamina_core
-    RUNTIME DESTINATION bin
+install(TARGETS lamina
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} #Utilized the CMAKE_INSTALL_LIBDIR variable to achieve platform-adaptive installation paths.
 )

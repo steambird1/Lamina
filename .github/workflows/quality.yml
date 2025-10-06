@@ -453,7 +453,7 @@ jobs:
           echo 'print("Result:", x);' >> coverage_test.lm
 
           # 运行测试以生成覆盖率数据
-          ./Lamina coverage_test.lm || echo "⚠️  Test execution failed"
+          ./bin/lamina coverage_test.lm || echo "⚠️  Test execution failed"
 
           # 生成覆盖率报告
           echo "📊 Generating coverage report..."
