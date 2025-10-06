@@ -2,9 +2,9 @@
 #include "parser.hpp"
 std::unique_ptr<BlockStmt> Parser::parse_block(bool is_global) {
     std::vector<std::unique_ptr<Statement>> stmts;
-    while (curr_token().type != TokenType::RBrace) {
+    while (curr_token().type != LexerTokenType::RBrace) {
         stmts.emplace_back(parse_stmt());
-        if (curr_token().type == TokenType::Semicolon) skip_token(";");
+        if (curr_token().type == LexerTokenType::Semicolon) skip_token(";");
     }
     return std::make_unique<BlockStmt>(std::move(stmts));
 }
@@ -15,9 +15,9 @@ std::unique_ptr<Statement> Parser::parse_if() {
     auto stmts = parse_block(true);
     skip_token("}");
     std::unique_ptr<BlockStmt> else_stmts = nullptr;
-    if (curr_token().type == TokenType::Else) {
+    if (curr_token().type == LexerTokenType::Else) {
         skip_token("else");
-        if (curr_token().type == TokenType::If) {
+        if (curr_token().type == LexerTokenType::If) {
             std::vector<std::unique_ptr<Statement>> if_branch = {};
             if_branch.emplace_back(std::move(stmts));
             else_stmts = std::make_unique<BlockStmt>(std::move(if_branch));
@@ -34,11 +34,11 @@ std::unique_ptr<Statement> Parser::parse_func() {
     auto name = skip_token().text;
     std::vector<std::string> params;
 
-    if (curr_token().type == TokenType::LParen) {
+    if (curr_token().type == LexerTokenType::LParen) {
         skip_token("(");
-        while (curr_token().type != TokenType::RParen) {
+        while (curr_token().type != LexerTokenType::RParen) {
             params.emplace_back(skip_token().text);
-            if (curr_token().type == TokenType::Comma) skip_token(",");
+            if (curr_token().type == LexerTokenType::Comma) skip_token(",");
         }
         skip_token(")");
     }
@@ -63,9 +63,9 @@ std::unique_ptr<Statement> Parser::parse_struct() {
     auto name = skip_token().text;
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};
     skip_token("{");
-    while (curr_token().type != TokenType::RBrace) {
+    while (curr_token().type != LexerTokenType::RBrace) {
 
-        if (curr_token().type == TokenType::TripleDot) {
+        if (curr_token().type == LexerTokenType::TripleDot) {
             skip_token("...");
             auto other_struct = std::make_unique<IdentifierExpr>(skip_token().text);
             includes.emplace_back(std::move(other_struct));

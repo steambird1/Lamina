@@ -1,8 +1,10 @@
 #pragma once
-#include "../lexer.hpp"
 #include "color_style.hpp"
+#include "lamina_api/value.hpp"
 #include "src_manger.hpp"
 #include "version.hpp"
+
+#include <iostream>
 
 enum class WarningLevel: unsigned char {
     Low, Medium, High

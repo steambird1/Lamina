@@ -1,5 +1,4 @@
 #include "../../interpreter/lamina_api/lamina.hpp"
-#include "interpreter.hpp"
 // #include "latex.hpp"
 #include "../../interpreter/lamina_api/symbolic.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
@@ -405,7 +404,7 @@ inline Value pow(const std::vector<Value>& args) {
 
     // Warn if we're converting BigInt to double
     if (args[0].is_bigint() || args[1].is_bigint()) {
-        Interpreter::print_warning("pow() with BigInt converted to floating point, precision may be lost");
+        throw StdLibException("pow() with BigInt converted to floating point, precision may be lost");
     }
 
     return Value(std::pow(base_val, exp_val));
@@ -453,7 +452,7 @@ inline Value gcd(const std::vector<Value>& args) {
     }
 
     // For floating point, warn about precision loss
-    Interpreter::print_warning("gcd() with floating point numbers may have precision issues");
+    throw StdLibException("gcd() with floating point numbers may have precision issues");
     long long a = static_cast<long long>(std::abs(args[0].as_number()));
     long long b = static_cast<long long>(std::abs(args[1].as_number()));
 
@@ -512,7 +511,7 @@ inline Value lcm(const std::vector<Value>& args) {
     }
 
     // For floating point, warn about precision loss
-    Interpreter::print_warning("lcm() with floating point numbers may have precision issues");
+    throw StdLibException("lcm() with floating point numbers may have precision issues");
     long long a = static_cast<long long>(std::abs(args[0].as_number()));
     long long b = static_cast<long long>(std::abs(args[1].as_number()));
 

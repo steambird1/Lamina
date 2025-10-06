@@ -1,6 +1,8 @@
 #pragma once
-#include "lexer.hpp"
 #include "lamina_api/ast.hpp"
+
+enum class LexerTokenType;
+struct Token;
 
 class LAMINA_API Parser {
     const std::vector<Token> tokens_;
@@ -35,7 +37,7 @@ public:
     std::unique_ptr<NameSpaceGetMemberExpr> parse_namespace_get_member(std::unique_ptr<Expression> node);
     std::unique_ptr<GetMemberExpr> parse_get_member(std::unique_ptr<Expression> node);
     std::unique_ptr<GetItemExpr> parse_get_item(std::unique_ptr<Expression> node);
-    std::vector<std::unique_ptr<Expression>> parse_params(TokenType endswith);
+    std::vector<std::unique_ptr<Expression>> parse_params(LexerTokenType endswith);
 
     std::unique_ptr<BlockStmt> parse_block(bool is_global);
 

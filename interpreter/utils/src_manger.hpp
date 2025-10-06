@@ -7,8 +7,8 @@
 
 namespace fs = std::filesystem;
 
-namespace src_manager{
-    std::unordered_map<std::string, std::string> opened_files;  // path: content
+namespace src_manager {
+    inline std::unordered_map<std::string, std::string> opened_files;  // path: content
 }
 
 inline std::string get_slice(const std::string& src_path, const int& src_line_start, const int& src_line_end);

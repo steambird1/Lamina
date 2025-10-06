@@ -1,4 +1,4 @@
-#include "interpreter.hpp"
+#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -9,15 +9,15 @@ std::unique_ptr<Expression> Parser::parse_expression() {
 std::unique_ptr<Expression> Parser::parse_comparison() {
     auto node = parse_add_sub();
     while (
-        curr_token().type == TokenType::Equal
-        or curr_token().type == TokenType::NotEqual
-        or curr_token().type == TokenType::Greater
-        or curr_token().type == TokenType::Less
-        or curr_token().type == TokenType::GreaterEqual
-        or curr_token().type == TokenType::LessEqual
-        or curr_token().type == TokenType::Assign
+        curr_token().type == LexerTokenType::Equal
+        or curr_token().type == LexerTokenType::NotEqual
+        or curr_token().type == LexerTokenType::Greater
+        or curr_token().type == LexerTokenType::Less
+        or curr_token().type == LexerTokenType::GreaterEqual
+        or curr_token().type == LexerTokenType::LessEqual
+        or curr_token().type == LexerTokenType::Assign
     ) {
-        if (curr_token().type == TokenType::Assign) throw RuntimeError("'=' can not use in expression, Maybe you mean '=='");
+        if (curr_token().type == LexerTokenType::Assign) throw StdLibException("'=' can not use in expression, Maybe you mean '=='");
         auto tok = curr_token();
         auto op = skip_token().text;
         auto right = parse_add_sub();
@@ -29,8 +29,8 @@ std::unique_ptr<Expression> Parser::parse_comparison() {
 std::unique_ptr<Expression> Parser::parse_add_sub() {
     auto node = parse_mul_div_mod();
     while (
-        curr_token().type == TokenType::Plus
-        or curr_token().type == TokenType::Minus
+        curr_token().type == LexerTokenType::Plus
+        or curr_token().type == LexerTokenType::Minus
     ) {
         auto tok = curr_token();
         auto op = skip_token().text;
@@ -43,9 +43,9 @@ std::unique_ptr<Expression> Parser::parse_add_sub() {
 std::unique_ptr<Expression> Parser::parse_mul_div_mod() {
     auto node = parse_power();
     while (
-        curr_token().type == TokenType::Star
-        or curr_token().type == TokenType::Slash
-        or curr_token().type == TokenType::Percent
+        curr_token().type == LexerTokenType::Star
+        or curr_token().type == LexerTokenType::Slash
+        or curr_token().type == LexerTokenType::Percent
     ) {
         auto tok = curr_token();
         auto op = skip_token().text;
@@ -57,7 +57,7 @@ std::unique_ptr<Expression> Parser::parse_mul_div_mod() {
 
 std::unique_ptr<Expression> Parser::parse_power() {
     auto node = parse_unary();
-    if (curr_token().type == TokenType::Caret) {
+    if (curr_token().type == LexerTokenType::Caret) {
         auto tok = curr_token();
         auto op = skip_token().text;
         auto right = parse_power();  // 右结合
@@ -67,7 +67,7 @@ std::unique_ptr<Expression> Parser::parse_power() {
 }
 
 std::unique_ptr<Expression> Parser::parse_unary() {
-    if (curr_token().type == TokenType::Minus) {
+    if (curr_token().type == LexerTokenType::Minus) {
         auto tok = curr_token();
         auto operand = parse_unary();
         return std::make_unique<UnaryExpr>("-", std::move(operand));
@@ -79,20 +79,20 @@ std::unique_ptr<Expression> Parser::parse_factor() {
     auto node = parse_a_token();
 
     while (true) {
-        if (curr_token().type == TokenType::ExclamationMark) {
+        if (curr_token().type == LexerTokenType::ExclamationMark) {
             skip_token("!");
             node = std::make_unique<UnaryExpr>("!", std::move(node));
         }
-        if (curr_token().type == TokenType::Dot) {
+        if (curr_token().type == LexerTokenType::Dot) {
             node = parse_get_member(std::move(node));
         }
-        else if (curr_token().type == TokenType::DoubleColon) {
+        else if (curr_token().type == LexerTokenType::DoubleColon) {
             node = parse_namespace_get_member(std::move(node));
         }
-        else if (curr_token().type == TokenType::LBracket) {
+        else if (curr_token().type == LexerTokenType::LBracket) {
             node = parse_get_item(std::move(node));
         }
-        else if (curr_token().type == TokenType::LParen) {
+        else if (curr_token().type == LexerTokenType::LParen) {
             node = parse_func_call(std::move(node));
         }
         else {

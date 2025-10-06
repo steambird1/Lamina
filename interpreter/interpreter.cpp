@@ -1,6 +1,7 @@
 #include "interpreter.hpp"
 
 #include "../extensions/standard/lmStruct.hpp"
+#include "../extensions/standard/std.hpp"
 #include "cpp_module_loader.hpp"
 #include "lamina_api/bigint.hpp"
 #include "lamina_api/lamina.hpp"
@@ -37,21 +38,25 @@
 #include <unistd.h>// For isatty
 #endif
 
+std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
+std::vector<StackFrame> Interpreter::call_stack{};
+std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins();
+std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
+
 Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
 
 Interpreter::Interpreter() {
-    Interpreter::variable_stack = {{}};
-    builtins = register_builtins();
+
 }
 
 Interpreter::~Interpreter() {
-    Interpreter::variable_stack = {{}};
-    Interpreter::call_stack = {};
+    variable_stack = {{}};
+    call_stack = {};
 }
 
 // Scope stack operations
 void Interpreter::push_scope() {
-    Interpreter::variable_stack.emplace_back();
+    variable_stack.emplace_back();
 }
 
 void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
@@ -59,11 +64,11 @@ void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
 }
 
 void Interpreter::pop_scope() {
-    if (Interpreter::variable_stack.size() > 1) Interpreter::variable_stack.pop_back();
+    if (variable_stack.size() > 1) variable_stack.pop_back();
 }
 
 Value Interpreter::get_variable(const std::string& name) {
-    for (const auto & it : std::ranges::reverse_view(Interpreter::variable_stack)) {
+    for (const auto & it : std::ranges::reverse_view(variable_stack)) {
         auto found = it.find(name);
         if (found != it.end()) return found->second;
     }
@@ -80,14 +85,14 @@ Value Interpreter::get_variable(const std::string& name) {
 }
 
 void Interpreter::set_variable(const std::string& name, const Value& val) {
-    if (!Interpreter::variable_stack.empty()) {
-        (*Interpreter::variable_stack.rbegin())[name] = val;
+    if (!variable_stack.empty()) {
+        (*variable_stack.rbegin())[name] = val;
     }
 }
 
 void Interpreter::set_global_variable(const std::string& name, const Value& val) {
-    if (!Interpreter::variable_stack.empty()) {
-        Interpreter::variable_stack.front()[name] = val;
+    if (!variable_stack.empty()) {
+        variable_stack.front()[name] = val;
     }
 }
 
@@ -485,7 +490,7 @@ bool Interpreter::load_cpp_module(const std::string& module_path) {
         properties_file_path = module_path + "." + "properties";
     }
 
-    const auto& version = parse_properties(properties_file_path).at("version");
+    const auto version = parse_properties(properties_file_path).at("version");
     set_variable(module_name,
         Value(
             std::make_shared<LmModule>(

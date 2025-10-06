@@ -6,6 +6,12 @@
 #include <string>
 #include <variant>
 
+#ifdef LAMINA_CORE_EXPORTS
+#define LAMINA_API __declspec(dllexport)
+#else
+#define LAMINA_API __declspec(dllimport)
+#endif
+
 
 // 符号表达式系统
 // 支持精确的数学表达式，不进行数值近似

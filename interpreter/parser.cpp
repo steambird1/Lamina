@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-#include "interpreter.hpp"
+#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "utils/color_style.hpp"
 
@@ -21,12 +21,12 @@ Token Parser::skip_token(const std::string& want_skip) {
             std::cerr << ConClr::RED
             << "There should be '" << want_skip << "' , but you given '"
             << tok.text << "'" << ConClr::RESET << std::endl;
-            throw ReturnException("");
+            throw StdLibException("");
         }
         curr_tok_idx_++;
         return tok;
     }
-    return {TokenType::EndOfFile, "", 0, 0};
+    return {LexerTokenType::EndOfFile, "", 0, 0};
 }
 
 Token Parser::curr_token() const {
@@ -34,20 +34,20 @@ Token Parser::curr_token() const {
         auto& tok = tokens_[curr_tok_idx_];
         return tok;
     }
-    return {TokenType::EndOfFile, "", 0, 0};
+    return {LexerTokenType::EndOfFile, "", 0, 0};
 }
 
 void Parser::skip_end_of_ln() {
     const Token tok = curr_token();
-    if (tok.type == TokenType::Semicolon) {
+    if (tok.type == LexerTokenType::Semicolon) {
         skip_token(";");
         return;
     }
-    if (tok.type == TokenType::EndOfFile) {
+    if (tok.type == LexerTokenType::EndOfFile) {
         return;
     }
     std::cerr << ConClr::RED << "End of line must be ';', got '" << tok.text << "'" << ConClr::RESET << std::endl;
-    throw ReturnException("");
+    throw StdLibException("");
 }
 
 void Parser::must_token(const std::string& text, const std::string& waring) const {
@@ -61,7 +61,7 @@ void Parser::must_token(const std::string& text, const std::string& waring) cons
 std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
     std::vector<std::unique_ptr<Statement>>
         stmts = {};
-    while (curr_token().type != TokenType::EndOfFile) {
+    while (curr_token().type != LexerTokenType::EndOfFile) {
         if (auto s = parse_stmt();
             s != nullptr
         ) {
@@ -74,57 +74,57 @@ std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
 std::unique_ptr<Statement> Parser::parse_stmt() {
     auto tok = curr_token();
 
-    if (tok.type == TokenType::If) {
+    if (tok.type == LexerTokenType::If) {
         skip_token("if");
         return parse_if();
     }
-    if (tok.type == TokenType::While) {
+    if (tok.type == LexerTokenType::While) {
         skip_token("while");
         return parse_while();
     }
-    if (tok.type == TokenType::Func) {
+    if (tok.type == LexerTokenType::Func) {
         skip_token("func");
         return parse_func();
     }
-    if (tok.type == TokenType::Var) {
+    if (tok.type == LexerTokenType::Var) {
         skip_token("var");
         return parse_var();
     }
-    if (tok.type == TokenType::Struct) {
+    if (tok.type == LexerTokenType::Struct) {
         skip_token("struct");
         return parse_struct();
     }
 
-    if (tok.type == TokenType::Return) {
+    if (tok.type == LexerTokenType::Return) {
         skip_token("return");
         auto expr = parse_expression();
         skip_end_of_ln();
         return std::make_unique<ReturnStmt>(std::move(expr));
     }
-    if (tok.type == TokenType::Break) {
+    if (tok.type == LexerTokenType::Break) {
         skip_token("break");
         skip_end_of_ln();
         return std::make_unique<BreakStmt>();
     }
-    if (tok.type == TokenType::Continue) {
+    if (tok.type == LexerTokenType::Continue) {
         skip_token("continue");
         skip_end_of_ln();
         return std::make_unique<ContinueStmt>();
     }
-    if (tok.type == TokenType::Include) {
+    if (tok.type == LexerTokenType::Include) {
         skip_token("include");
         const auto path = skip_token().text;
         skip_end_of_ln();
         return std::make_unique<IncludeStmt>(path);
     }
-    if (tok.type == TokenType::Loop) {
+    if (tok.type == LexerTokenType::Loop) {
     auto expr = std::make_unique<LiteralExpr>("true", Value::Type::Bool);
     skip_token("{");
     auto stmts = parse_block(true);
     skip_token("}");
     return std::make_unique<WhileStmt>(std::move(expr), std::move(stmts));
     }
-    if (tok.type == TokenType::Define) {
+    if (tok.type == LexerTokenType::Define) {
         skip_token("define");
         const auto name = skip_token().text;
         skip_token("=");
@@ -145,7 +145,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 
         return std::make_unique<DefineStmt>(name, std::move(value));
     }
-    if (tok.type == TokenType::Bigint) {
+    if (tok.type == LexerTokenType::Bigint) {
         skip_token("bigint");
         const auto name = skip_token().text;
         skip_token("=");
@@ -153,9 +153,9 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<BigIntDeclStmt>(name, std::move(value));
     }
-    if (tok.type == TokenType::Identifier
+    if (tok.type == LexerTokenType::Identifier
         and curr_tok_idx_ + 1 < tokens_.size()
-        and tokens_[curr_tok_idx_ + 1].type == TokenType::Assign
+        and tokens_[curr_tok_idx_ + 1].type == LexerTokenType::Assign
     ) {
         const auto name = skip_token().text;
         skip_token("=");
@@ -169,7 +169,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<ExprStmt>(std::move(expr));
     }
-    while (tok.type != TokenType::Semicolon) {
+    while (tok.type != LexerTokenType::Semicolon) {
         skip_token(";");
         tok = curr_token();
     }

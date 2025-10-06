@@ -13,7 +13,8 @@
 #define LAMINA_API
 #endif
 
-enum class LAMINA_API TokenType {
+
+enum class LexerTokenType {
     Var,
     Func,
     If,
@@ -71,11 +72,11 @@ enum class LAMINA_API TokenType {
 };
 
 struct Token {
-    TokenType type;
+    LexerTokenType type;
     std::string text;
     size_t line;
     size_t column;
-    Token(const TokenType t, std::string  txt, const int l, const int c)
+    Token(const LexerTokenType t, std::string  txt, const int l, const int c)
         : type(t), text(std::move(txt)), line(l), column(c) {}
 };
 

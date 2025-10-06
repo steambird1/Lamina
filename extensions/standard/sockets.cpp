@@ -1,5 +1,4 @@
 #include "sockets.hpp"
-#include "../../interpreter/interpreter.hpp"
 
 #ifdef USE_LIBUV
 

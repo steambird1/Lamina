@@ -1,6 +1,5 @@
 #include "console_ui.hpp"
 #include "interpreter.hpp"
-#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "utils/repl_input.hpp"
@@ -14,7 +13,9 @@
 #include <winnls.h>
 #endif
 
+#include "lamina_api/lamina.hpp"
 #include "utils/color_style.hpp"
+#include "version.hpp"
 
 
 #include <string>
@@ -26,10 +27,10 @@ int exec_block(const BlockStmt* block) {
     for (auto& stmt: block->statements) {
         currentLine++;
         try {
-            interpreter.execute(stmt);
+            Interpreter::execute(stmt);
         } catch (const RuntimeError& re) {
             // Use stack trace for runtime errors
-            interpreter.print_stack_trace(re, true);
+            Interpreter::print_stack_trace(re, true);
         } catch (const ReturnException&) {
             // Catch and show meaningful info (return outside function causes this exception)
             Interpreter::print_warning("Return statement used outside function (line " + std::to_string(currentLine) + ")", true);
@@ -300,7 +301,7 @@ int repl() {
                     continue;
                 }
                 if (trimmed_line == ":vars") {
-                    interpreter.print_variables();
+                    Interpreter::print_variables();
                     ++lineno;
                     continue;
                 }
@@ -340,12 +341,12 @@ int repl() {
                 // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
-                        const auto result = interpreter.execute(stmt);
+                        const auto result = Interpreter::execute(stmt);
                         if (! result.is_null()) {
                             std::cout << "[exec the expr]: " << result.to_string() << std::endl;
                         }
                     } catch (const RuntimeError& re) {
-                        interpreter.print_stack_trace(re, true);
+                        Interpreter::print_stack_trace(re, true);
                         break;
                     } catch (const ReturnException&) {
                         Interpreter::print_warning(
@@ -382,7 +383,7 @@ int repl() {
 
             // Catch top-level runtime errors during block execution
             catch (const RuntimeError& re) {
-                interpreter.print_stack_trace(re, true);
+                Interpreter::print_stack_trace(re, true);
             }
 
             catch (StdLibException) {
@@ -400,7 +401,7 @@ int repl() {
                 Interpreter::print_error("Unknown error occurred", true);
             }
             // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(std::move(block));
+            Interpreter::save_repl_ast(std::move(block));
         }
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
