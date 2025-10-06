@@ -4,6 +4,7 @@
 #include <map>
 #include <functional>
 #include <iostream>
+#include <algorithm>
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
@@ -892,41 +893,66 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			// TODO: Debug output:
 			std::cerr << "[Debug output] bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
 			
-			// 如果成功，返回 true，origin 为修改后的值，保证 origin 不增大
-			// 如果失败，返回 false，origin 不做修改
+			// 如果成功，返回非 0，origin 为修改后的值，保证 origin 不增大
+			// 如果失败，返回 0，origin 不做修改
 			// 注意，要保证既约分数（gcd(num, denom) = 1）
-			auto simplify_inner = [](int& origin, const int& denom) -> bool {
-				// 可以优化
-				int answer = 1, target = origin;
+			// TODO: 考虑是否特判 1
+			// 返回：0: 无法化简，否则返回 es_d 应当被除以多少
+			auto simplify_inner = [](int& origin, const int& denom) -> int {
+				int ediv = denom, target = origin;
 				for (int i = 2; 1ll * i * i <= target; i++) {
 					int exphere = 0;
 					while (target % i == 0) {
 						exphere++;
 						target /= i;
 					}
-					if (exphere && (exphere % denom == 0)) {
-						int contb = exphere / denom;
+					if (exphere) {
+						ediv = __gcd(ediv, exphere);
+					}
+				}
+				if (ediv <= 1) return 0;
+				// 可以优化
+				int answer = 1;
+				target = origin;
+				for (int i = 2; 1ll * i * i <= target; i++) {
+					int exphere = 0;
+					while (target % i == 0) {
+						exphere++;
+						target /= i;
+					}
+					if (exphere && (exphere % ediv == 0)) {
+						int contb = exphere / ediv;
 						for (int j = 0; j < contb; j++) answer *= i;
 					} else return false;
 				}
 				if (target != 1) {
-					if (denom != 1) return false;
+					if (ediv != 1) {
+						// TODO: Debug output:
+						std::cerr << "[Debug output] warning: target != 1\n";
+						return 0;
+					}
 					answer *= target;
 				}
 				// TODO: Debug output:
 				std::cerr << "[Debug output] Denom = " << denom << ", Simplifying " << target << " to " << answer << std::endl;
 				origin = answer;
-				return true;
+				return ediv;
 			};
 			
-			if (simplify_inner(bs_n, es_d) && simplify_inner(bs_d, es_d)) {
-				// 化简成功
-				// TODO: Debug output:
-				std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
-				std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
-				auto current_new_base = SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n)));
-				if (es_d == 1) return current_new_base;
-				return SymbolicExpr::power(current_new_base, SymbolicExpr::number(::Rational(::BigInt(1), ::BigInt(es_d))));
+			int simp1 = 1, simp2 = 1;
+			if ((simp1 = simplify_inner(bs_n, es_d)) >= 1 && (simp2 = simplify_inner(bs_d, es_d)) >= 1) {
+				int simps = __gcd(simp1, simp2);
+				if (simps >= 1) {
+					// 化简成功
+					// TODO: Debug output:
+					es_d /= simps;
+					std::cerr << "[Debug output] Post-operation bs = " << bs_n << "/" << bs_d << "; es = " << es_n << "/" << es_d << std::endl;
+					std::cerr << "[Debug output] Power simplifying (rational ^ rational) - success" << std::endl;
+					auto current_new_base = SymbolicExpr::number((::Rational(bs_n, bs_d)).power(::BigInt(es_n)));
+					if (es_d == 1) return current_new_base;
+					return SymbolicExpr::power(current_new_base, SymbolicExpr::number(::Rational(::BigInt(1), ::BigInt(es_d))));
+				}
+				
 			}
 			// 否则化简失败，注意 bs_n 和 bs_d 可能需要重新获取
 			
