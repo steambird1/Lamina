@@ -6,11 +6,6 @@
 #include <iostream>
 #include <algorithm>
 
-#ifndef _SYMBOLIC_DEBUG
-#define cerr if(0) cout
-#define _SYMBOLIC_DEBUG_CERR_OVERRIDDEN 1
-#endif
-
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	// !! TODO: !! 添加“化简”标记，避免 simplify 重复调用导致效率降低
