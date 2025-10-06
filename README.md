@@ -45,16 +45,16 @@
 <li>cmodule loader更新</li>
 <li>c++扩展格式更新</li>
 <li>新增函数 typeof、find、replace、foreach、copy、map、exit、tostring</li>
-<li>新增函数 vars、locals、funcs</li>
+<li>新增函数 locals、globals</li>
 <li>loop语句</li>
 <li>repl直接打印表达式</li>
 <li>repl支持不带颜色的输出</li>
 <li>repl关键字高亮及自动补齐</li>
-<li>数学区间相关扩展</li>
 </ul>
 
 <b>延迟到下一个版本的特性</b>
 <ul>
+<li>数学区间相关扩展</li>
 <li>set 集合类型</li>
 <li>取消int类型, 取消bigint语句, Bigint更名为lmInt, 成为唯一整数类型并优化它的性能,然后在有理数/无理数/虚数/小数的数字部分都使用lmInt </li>
 <li>Decimal类型</li>
