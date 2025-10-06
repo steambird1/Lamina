@@ -711,6 +711,68 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						else res = SymbolicExpr::multiply(cres, res);
 					}
 					return res;
+				} else {
+					// 至少把数值（数字和根号）化简到一起
+					err_stream << "[Debug output] fallback to alternative simplifier\n";
+					::Rational number_collection = ::Rational(1);
+					std::shared_ptr<SymbolicExpr> large_numbers = nullptr;
+					std::shared_ptr<SymbolicExpr> sqrt_collection = SymbolicExpr::number(1);
+					std::shared_ptr<SymbolicExpr> auxiliary = nullptr;
+					for (auto &i : result) {
+						switch (i->type) {
+							case SymbolicExpr::Number:
+								number_collection = number_collection * i->number_value;
+								break;
+							case SymbolicExpr::Sqrt:
+								sqrt_collection = SymbolicExpr::multiply(sqrt_collection, i);
+								break;
+							case SymbolicExpr::Power:
+								if (i->operands[1]->is_number()) {
+									bool failed = true;
+									::Rational eval_res;
+									auto icrt = i->operands[1]->convert_rational();
+									auto inum = icrt.get_numerator();
+									auto idem = icrt.get_denominator();
+									if (idem == ::BigInt(1)) {
+										switch (i->operands[0]->type) {
+											case SymbolicExpr::Number:
+												// 尝试计算
+												eval_res = i->operands[0]->convert_rational().power(inum);
+												number_collection = number_collection * eval_res;
+												failed = false;
+												break;
+											case SymbolicExpr::Sqrt:
+												// 理论上不应该这样，先不处理
+												err_stream << "[Debug output] unreachable sqrt processor!\n";
+											default:
+												break;
+										}
+									} else if (idem == ::BigInt(2)) {
+										// 按根号处理
+										sqrt_collection = SymbolicExpr::multiply(sqrt_collection, SymbolicExpr::power(i->operands[0], SymbolicExpr::number(inum)));
+									}
+									if (!failed) break;
+								}
+								// 这里没有 break，是故意的
+							default:
+								if (auxiliary == nullptr) auxiliary = i;
+								else auxiliary = SymbolicExpr::multiply(auxiliary, i);
+						}
+					}
+					sqrt_collection->simplify();
+					auto lalt = (number_collection == ::Rational(1)) ? large_numbers
+							: SymbolicExpr::multiply(SymbolicExpr::number(number_collection), large_numbers);
+					std::shared_ptr<SymbolicExpr> ralt;
+					if (sqrt_collection->is_number()) {
+						number_collection = number_collection * sqrt_collection->number_value;
+						ralt = auxiliary;
+					} else {
+						ralt = SymbolicExpr::multiply(sqrt_collection, auxiliary);
+					}
+					if (lalt == nullptr && ralt == nullptr) return SymbolicExpr::number(1);
+					else if (lalt == nullptr) return ralt;
+					else if (ralt == nullptr) return lalt;
+					else return SymbolicExpr::multiply(lalt, ralt);
 				}
 				
 				
@@ -719,7 +781,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
 		
 		// 到此处：未能化简，（以后这里可能引入欧拉公式等等）
-		// TODO: 分母有理化
+		// TODO: 考虑是否需要配合分母有理化（很可能不用）
 		
 	}
 
