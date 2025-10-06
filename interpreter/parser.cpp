@@ -118,7 +118,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         return std::make_unique<IncludeStmt>(path);
     }
     if (tok.type == TokenType::Loop) {
-    auto expr = std::make_unique<BoolNode>();
+    auto expr = std::make_unique<LiteralExpr>("true", Value::Type::Bool);
     skip_token("{");
     auto stmts = parse_block(true);
     skip_token("}");
