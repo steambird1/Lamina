@@ -856,7 +856,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	if (exponent->type == SymbolicExpr::Type::Number && exponent->convert_rational() == ::Rational(0)) return SymbolicExpr::number(1);
 	if (base->type == SymbolicExpr::Type::Number && base->convert_rational() == ::Rational(0)) return SymbolicExpr::number(0);
 	if (exponent->is_number() && exponent->convert_rational() == ::Rational(1)) return base;
-	if (base->is_number() && base->convert_rational == ::Rational(1)) return base;
+	if (base->is_number() && base->convert_rational() == ::Rational(1)) return base;
 	
 	if (base->type == SymbolicExpr::Type::Infinity) return base;
 	if (exponent->type == SymbolicExpr::Type::Infinity) return exponent;
