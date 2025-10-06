@@ -898,6 +898,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			// 注意，要保证既约分数（gcd(num, denom) = 1）
 			// TODO: 考虑是否特判 1
 			// 返回：0: 无法化简，否则返回 es_d 应当被除以多少
+			
+			std::function<int(int,int)> __int_gcd;
+			__int_gcd = [&__int_gcd](int a, int b) -> int {
+				if (b == 0) return a;
+				else return __int_gcd(b, a%b);
+			};
+			
 			auto simplify_inner = [](int& origin, const int& denom) -> int {
 				int ediv = denom, target = origin;
 				for (int i = 2; 1ll * i * i <= target; i++) {
@@ -907,7 +914,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 						target /= i;
 					}
 					if (exphere) {
-						ediv = std::__gcd(ediv, exphere);
+						ediv = __int_gcd(ediv, exphere);
 					}
 				}
 				if (ediv <= 1) return 0;
@@ -941,7 +948,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			
 			int simp1 = 1, simp2 = 1;
 			if ((simp1 = simplify_inner(bs_n, es_d)) >= 1 && (simp2 = simplify_inner(bs_d, es_d)) >= 1) {
-				int simps = std::__gcd(simp1, simp2);
+				int simps = std::__int_gcd(simp1, simp2);
 				if (simps >= 1) {
 					// 化简成功
 					// TODO: Debug output:
