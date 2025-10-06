@@ -6,29 +6,46 @@
 #include <iostream>
 #include <algorithm>
 
+#ifndef _SYMBOLIC_DEBUG
+#define cerr if(0) cout
+#define _SYMBOLIC_DEBUG_CERR_OVERRIDDEN 1
+#endif
+
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	// !! TODO: !! 添加“化简”标记，避免 simplify 重复调用导致效率降低
-    switch (type) {
-        case Type::Number:
-        case Type::Variable:
-            return std::make_shared<SymbolicExpr>(*this);
-            
-        case Type::Sqrt:
-            return simplify_sqrt();
-            
-        case Type::Multiply:
-            return simplify_multiply();
-            
-        case Type::Add:
-            return simplify_add();
+	
+	static int current_simplify_level = 0;
+	const int max_simplify_level = 30;
+	if (current_simplify_level > max_simplify_level) return std::make_shared<SymbolicExpr>(*this);
+	current_simplify_level++;
+	
+    auto intcall = [&]() {
+		switch (type) {
+			case Type::Number:
+			case Type::Variable:
+				return std::make_shared<SymbolicExpr>(*this);
+				
+			case Type::Sqrt:
+				return simplify_sqrt();
+				
+			case Type::Multiply:
+				return simplify_multiply();
+				
+			case Type::Add:
+				return simplify_add();
 
-        case Type::Power:
-            return simplify_power();
-        
-        default:
-            return std::make_shared<SymbolicExpr>(*this);
-    }
+			case Type::Power:
+				return simplify_power();
+			
+			default:
+				return std::make_shared<SymbolicExpr>(*this);
+		}
+	};
+	
+	auto res = intcall();
+	current_simplify_level--;
+	return res;
 }
 
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
@@ -257,7 +274,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	
 	// 如果右侧只有 variable，认为化简完成
 	// TODO: 确定如果有 power 项目，要不要同样判断
-	
+	/*
 	std::function<bool(std::shared_ptr<SymbolicExpr>,bool)> check_simp_1;
 	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj, bool allow_num) -> bool {
 		return (obj->type == SymbolicExpr::Type::Number && allow_num) || obj->type == SymbolicExpr::Type::Variable || (
@@ -267,6 +284,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			);
 	};
 	if (check_simp_1(right, false)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
+	*/
 	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
@@ -1172,3 +1190,8 @@ double SymbolicExpr::to_double() const {
             return 0.0;
     }
 }
+
+#ifdef _SYMBOLIC_DEBUG_CERR_OVERRIDDEN
+#undef _SYMBOLIC_DEBUG_CERR_OVERRIDDEN
+#undef cerr
+#endif
