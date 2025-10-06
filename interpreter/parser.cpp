@@ -117,6 +117,13 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<IncludeStmt>(path);
     }
+    if (tok.type == TokenType::Loop) {
+    auto expr = std::make_unique<BoolNode>();
+    skip_token("{");
+    auto stmts = parse_block(true);
+    skip_token("}");
+    return std::make_unique<WhileStmt>(std::move(expr), std::move(stmts));
+    }
     if (tok.type == TokenType::Define) {
         skip_token("define");
         const auto name = skip_token().text;
