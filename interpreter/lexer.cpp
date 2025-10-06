@@ -26,6 +26,7 @@ void registerKeywords() {
     keywords["false"] = TokenType::False;
     keywords["null"] = TokenType::Null;
     keywords["do"] = TokenType::Lambda;
+    keywords["loop"] = TokenType::Loop;
     keywords_registered = true;
 }
 
