@@ -719,6 +719,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					std::shared_ptr<SymbolicExpr> sqrt_collection = SymbolicExpr::number(1);
 					std::shared_ptr<SymbolicExpr> auxiliary = nullptr;
 					for (auto &i : result) {
+						err_stream << "[Debug output] dealing with " << i->to_string() << std::endl;
 						switch (i->type) {
 							case SymbolicExpr::Type::Number:
 								number_collection = number_collection * i->convert_rational();
@@ -760,6 +761,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						}
 					}
 					sqrt_collection->simplify();
+					err_stream << "[Debug output] end of Sqrt-collection simplifier\n";
 					auto lalt = (number_collection == ::Rational(1)) ? large_numbers
 							: SymbolicExpr::multiply(SymbolicExpr::number(number_collection), large_numbers);
 					std::shared_ptr<SymbolicExpr> ralt;
