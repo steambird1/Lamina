@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (+)
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (Big Refactor)
 
 <img src="./assets/logo.svg" width="100%">
 
@@ -23,7 +23,7 @@
 [语法指南](https://wiki.lm-lang.org) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md)
 
 
-<h1>🎉What's news in lamina 1.7.0</h1>
+<h1>🎉What's news in lamina 1.2.0(Big Refactor)</h1>
 <details>
 <summary><strong>点击展开详情</strong></b>
 </summary>
@@ -56,7 +56,7 @@
 <b>延迟到下一个版本的特性</b>
 <ul>
 <li>set 集合类型</li>
-<li>取消int类型,取消bigint语句,Bigint更名为lmInt,成为唯一整数类型并优化它的性能,然后在有理数/无理数/虚数/小数的数字部分都使用lmInt </li>
+<li>取消int类型, 取消bigint语句, Bigint更名为lmInt, 成为唯一整数类型并优化它的性能,然后在有理数/无理数/虚数/小数的数字部分都使用lmInt </li>
 <li>Decimal类型</li>
 <li>虚数功能</li>
 <li>array[index] = item setitem语法</li>
