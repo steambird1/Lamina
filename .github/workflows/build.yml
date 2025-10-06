@@ -21,11 +21,11 @@ jobs:
             arch: "x64"
             toolchain: ""
           
-          - os: windows-latest
-            target: i686-pc-windows-msvc
-            generator: "Visual Studio 17 2022"
-            arch: "Win32"
-            toolchain: ""
+         # - os: windows-latest
+         #   target: i686-pc-windows-msvc
+         #   generator: "Visual Studio 17 2022"
+         #   arch: "Win32"
+         #   toolchain: ""
 
           - os: windows-latest
             target: aarch64-pc-windows-msvc
