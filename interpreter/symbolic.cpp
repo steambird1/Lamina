@@ -710,7 +710,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						err_stream << "[Debug output] [2] extra exponent referring (" << base_special_ref[i.first]->to_string() << ")^(" << i.second->to_string() << ")\n";
 						// 此处不要化简（也许？）
 						res = inits ? SymbolicExpr::power(base_special_ref[i.first], i.second) 
-								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second));
+								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second->simplify()));
 					}
 					return res;
 				} else if (base_merger && (base_merger_cnt >= exponent_merger_cnt)) {
