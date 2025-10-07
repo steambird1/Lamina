@@ -985,7 +985,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 	// TODO: Debug output:
 	err_stream << "[Debug output] Simplifying power: base = " << base->to_string() << "; exponent = " << exponent->to_string()
 		<< std::endl;
-		
 	
     if (base->is_number() && (exponent->is_int() || exponent->is_big_int())) {
 		auto banum = base->convert_rational();
@@ -1065,6 +1064,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 			};
 			
 			auto simplify_inner = [&__int_gcd](int& origin, const int& denom) -> int {
+				if (denom == 1) return 1;	// 无条件成功
 				int ediv = denom, target = origin;
 				for (int i = 2; 1ll * i * i <= target; i++) {
 					int exphere = 0;
