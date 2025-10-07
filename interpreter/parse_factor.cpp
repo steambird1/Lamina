@@ -59,7 +59,7 @@ std::unique_ptr<Expression> Parser::parse_a_token() {
             auto key = skip_token().text;
             skip_token("=");
             auto val = parse_expression();
-            skip_end_of_ln();
+            if (curr_token().type == LexerTokenType::Comma) skip_token(",");
             init_vec.emplace_back(std::move(key), std::move(val));
         }
         skip_token("}");

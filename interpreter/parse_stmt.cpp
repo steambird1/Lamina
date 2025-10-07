@@ -64,17 +64,10 @@ std::unique_ptr<Statement> Parser::parse_struct() {
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};
     skip_token("{");
     while (curr_token().type != LexerTokenType::RBrace) {
-
-        if (curr_token().type == LexerTokenType::TripleDot) {
-            skip_token("...");
-            auto other_struct = std::make_unique<IdentifierExpr>(skip_token().text);
-            includes.emplace_back(std::move(other_struct));
-            continue;
-        }
         auto key = skip_token().text;
         skip_token("=");
         auto val = parse_expression();
-        skip_end_of_ln();
+        if (curr_token().type == LexerTokenType::Comma) skip_token(",");
         init_vec.emplace_back(std::move(key), std::move(val));
     }
     skip_token("}");

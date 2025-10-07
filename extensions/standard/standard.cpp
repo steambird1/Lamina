@@ -89,6 +89,7 @@ std::unordered_map<std::string, Value> register_builtins() {
         LAMINA_FUNC("update", update),
         LAMINA_FUNC("to_string", to_string),
         LAMINA_FUNC("copy_struct", copy_struct),
+        LAMINA_FUNC("new_struct_from", new_struct_from),
 
         // 容器遍历模块：一级函数
         LAMINA_FUNC("foreach", foreach),

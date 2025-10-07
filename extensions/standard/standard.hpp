@@ -129,6 +129,9 @@ Value setattr(const std::vector<Value>& args);
 // 复制结构体
 Value copy_struct(const std::vector<Value>& args);
 
+// 创建原型
+Value new_struct_from(const std::vector<Value>& args);
+
 // 更新容器/对象：需2个参数（原容器/对象、待更新的键值对/属性），合并内容并返回更新后的结果
 Value update(const std::vector<Value>& args);
 

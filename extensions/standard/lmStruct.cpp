@@ -3,6 +3,11 @@
 #include "standard.hpp"
 #include <algorithm>
 
+lmStruct::lmStruct() {
+    constexpr size_t init_size = 16;
+    buckets_.resize(init_size, nullptr);
+}
+
 // 初始化lStruct
 lmStruct::lmStruct(const std::vector<std::pair<std::string, Value>>& vec) {
     // 初始化桶数组
@@ -35,6 +40,10 @@ std::shared_ptr<Node> lmStruct::find(const std::string& key) const {
             return current; // 找到匹配节点
         }
         current = current->next;
+    }
+
+    if (parent_) {
+        return parent_->find(key);
     }
 
     return nullptr; // 未找到
@@ -86,16 +95,17 @@ std::vector<std::pair<std::string, Value>> lmStruct::to_vector() const {
 
 
 std::string lmStruct::to_string() const {
-    std::string text = "{\n";
+    std::string text = "{ ";
+    if (parent_) text += "parent: " + parent_->to_string() + ";";
     for (const std::shared_ptr<Node>& bucket_head : buckets_) {
         auto current = bucket_head;
         while (current != nullptr) {
             text += current->key + ": " + current->value.to_string();
-            text += ",\n";
+            text += ", ";
             current = current->next;
         }
     }
-    text += "}";
+    text += " }";
     return text;
 }
 
@@ -152,4 +162,18 @@ std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct) {
         return "{}";
     }
     return lstruct->to_string();
+}
+
+Value new_struct_from(const std::vector<Value>& args) {
+    check_cpp_function_argv(args, {Value::Type::lmStruct});
+    const auto& arg_data = args[0].data;
+    auto& original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
+
+    if (!original_ptr) return LAMINA_NULL;
+
+    // 新对象
+    const auto new_obj = std::make_shared<lmStruct>();
+    new_obj->parent_ = original_ptr;
+    return {new_obj};
+
 }

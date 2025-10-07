@@ -68,6 +68,8 @@ private:
     }
 
 public:
+    std::shared_ptr<lmStruct> parent_;
+    explicit lmStruct();
     explicit lmStruct(const std::vector<std::pair<std::string, Value>>& vec);
     ~lmStruct();
     Value insert(const std::string& key, Value& val);
