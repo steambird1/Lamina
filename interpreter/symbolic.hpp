@@ -111,21 +111,21 @@ public:
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
-					this->hash = (ld.hash & ODDBIT) ^ (rd.hash & EVENBIT);
+					this->hash = ((ld.hash & ODDBIT) << 7) ^ (rd.hash & EVENBIT);
 					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj);
 					break;
 				case Type::Add:
 					// 理论上不应该用到
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->hash = (ld.to_single_hash() & EVENBIT) ^ (rd.to_single_hash() & ODDBIT);
+					this->hash = ((ld.to_single_hash() & EVENBIT) << 6) ^ (rd.to_single_hash() & ODDBIT);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				case Type::Power:
 					// TODO: 此处引入类似根式化简的机制，暂时直接 hash
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->hash = (ld.to_single_hash() & SQRBIT) ^ (rd.to_single_hash() & HALFBIT);
+					this->hash = ((ld.to_single_hash() & SQRBIT) << 5) ^ (rd.to_single_hash() & HALFBIT);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				case Type::Variable:
