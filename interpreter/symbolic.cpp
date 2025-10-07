@@ -693,7 +693,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						if (i.second->is_number()) {
 							if (i.second->convert_rational() == ::Rational(0)) continue;
 							if (i.second->convert_rational() == ::Rational(1)) {
-								res = inits ? i.first : SymbolicExpr::multiply(res, base_special_ref[i.first]);
+								res = inits ? base_special_ref[i.first] : SymbolicExpr::multiply(res, base_special_ref[i.first]);
 								inits = false;
 								continue;
 							}
