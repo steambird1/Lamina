@@ -121,13 +121,13 @@ public:
 				case Type::Infinity:
 					this->hash = INFINITY_D;
 					break;
-				/*
+				
 				case Type::Sqrt:
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					// sqrt 里面还有 sqrt，取值异或哈希
 					this->ksqrt = ld.k;
 					ld.k = ::Rational(0);
-					this->hash = ld.to_single_hash();
+					this->hash = ld.to_single_hash() ^ SQRBIT;
 					this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
 					break;
 				case Type::Multiply:
@@ -135,37 +135,25 @@ public:
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
-					err_stream << "Hashing multiply, left: " << ((ld.hash & ODDBIT) << 7) << ", right: " << (rd.hash & EVENBIT) << std::endl;
-					err_stream << "Hash rel: " << ld.hash_obj->to_string() << "; " << rd.hash_obj->to_string() << std::endl;
-					this->hash = ((ld.hash & ODDBIT) << 7) ^ (rd.hash & EVENBIT);
+					this->hash = ld.hash * rd.hash;
 					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
 					break;
 				case Type::Add:
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->hash = ((ld.to_single_hash() & EVENBIT) << 6) ^ (rd.to_single_hash() & ODDBIT);
+					this->hash = ld.to_single_hash() + rd.to_single_hash();
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				case Type::Power:
-					// TODO: 此处引入类似根式化简的机制，暂时直接 hash
+					// TODO: 此处引入类似根式化简的机制，暂时直接 hash（可能有问题）
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->hash = ((ld.to_single_hash() & SQRBIT) << 5) ^ (rd.to_single_hash() & HALFBIT);
+					// 不是特别恰当，但可以先这样
+					// 保证 1，2，-1 等常见数值
+					auto rterm = rd.to_single_hash() - 1;
+					this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 4) ^ (rterm << 8) ^ (rterm << 12) ^ (rterm << 16);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
-				*/
-				case Type::Sqrt:
-					prehash = SQRBIT;
-					goto defs;
-				case Type::Multiply:
-					prehash = HALFBIT;
-					goto defs;
-				case Type::Add:
-					prehash = ODDBIT;
-					goto defs;
-				case Type::Power:
-					prehash = EVENBIT;
-					goto defs;
 				case Type::Variable:
 					if (obj->identifier == "π" || obj->identifier == "pi") this->hash = PI_H;
 					else if (obj->identifier == "e") this->hash = E_H;
@@ -173,6 +161,7 @@ public:
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				default:
+					// 如果某个 hash 不能用就调过来
 					defs: this->hash = EMPTY;
 					for (auto &i : obj->operands) {
 						if (obj->type == Type::Add) {
