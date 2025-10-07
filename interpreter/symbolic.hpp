@@ -39,15 +39,15 @@ public:
 #define _HASH_PARAMS		ODDBIT, EVENBIT, SQRBIT, HALFBIT
 		using HashType = unsigned long long;
 		// TODO: 允许多个 HashData 对象之间的不同以减少哈希冲突概率
-		constexpr HashType ODDBIT_D = 0x5555555555555555ull;
-		constexpr HashType EVENBIT_D = 0xAAAAAAAAAAAAAAAAull;
-		constexpr HashType SQRBIT_D = 0x7BDEEBD77BDEEBD7ull;
-		constexpr HashType HALFBIT_D = 0x6969969669699696ull;
-		constexpr HashType EMPTY = 0ull;
-		constexpr HashType INFINITY = 0x7FFF7FFFFDEADBEEFull;
-		constexpr HashType PI_H = 0x11451419810C0000ull;
-		constexpr HashType E_H = 0x19198101145C0000ull;
-		constexpr HashType UNKNOWN_H = 0xBAD0AA0BEEFC0000ull;
+		constexpr static HashType ODDBIT_D = 0x555555555555555ull;
+		constexpr static HashType EVENBIT_D = 0xAAAAAAAAAAAAAAAull;
+		constexpr static HashType SQRBIT_D = 0xBDEEBD77BDEEBD7ull;
+		constexpr static HashType HALFBIT_D = 0x969969669699696ull;
+		constexpr static HashType EMPTY = 0ull;
+		constexpr static HashType INFINITY = 0xFFF7FFFFDEADBEEFull;
+		constexpr static HashType PI_H = 0x1451419810C0000ull;
+		constexpr static HashType E_H = 0x9198101145C0000ull;
+		constexpr static HashType UNKNOWN_H = 0xAD0AA0BEEFC0000ull;
 		
 		HashType ODDBIT;
 		HashType EVENBIT;
@@ -106,8 +106,8 @@ public:
 					this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
 					break;
 				case Type::Multiply:
-					ld = HashData(obj->operand[0], _HASH_PARAMS);
-					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					ld = HashData(obj->operands[0], _HASH_PARAMS);
+					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
 					this->hash = (ld.hash & ODDBIT) ^ (rd.hash & EVENBIT);
@@ -115,15 +115,15 @@ public:
 					break;
 				case Type::Add:
 					// 理论上不应该用到
-					ld = HashData(obj->operand[0], _HASH_PARAMS);
-					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					ld = HashData(obj->operands[0], _HASH_PARAMS);
+					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->hash = (ld.to_single_hash() & EVENBIT) ^ (rd.to_single_hash() & ODDBIT);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				case Type::Power:
 					// TODO: 此处引入类似根式化简的机制，暂时直接 hash
-					ld = HashData(obj->operand[0], _HASH_PARAMS);
-					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					ld = HashData(obj->operands[0], _HASH_PARAMS);
+					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->hash = (ld.to_single_hash() & SQRBIT) ^ (rd.to_single_hash() & HALFBIT);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
@@ -133,6 +133,10 @@ public:
 					else this->hash = UNKNOWN_H;
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
+				default:
+					for (auto &i : obj->operands)
+						this->hash ^= HashData(i).to_single_hash();
+					this->hash_obj = obj;
 			}
 			// TODO: 可能考虑在这里做根式化简
 		}
@@ -179,9 +183,9 @@ public:
 	}
 
     // 平方根构造函数
-    static std::shared_ptr<SymbolicExpr> sqrt(std::shared_ptr<SymbolicExpr> operand) {
+    static std::shared_ptr<SymbolicExpr> sqrt(std::shared_ptr<SymbolicExpr> operands) {
         auto expr = std::make_shared<SymbolicExpr>(Type::Sqrt);
-        expr->operands.push_back(operand);
+        expr->operands.push_back(operands);
         return expr;
     }
 
