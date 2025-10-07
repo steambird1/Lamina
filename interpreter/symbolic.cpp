@@ -751,6 +751,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 									} else if (idem == ::BigInt(2)) {
 										// 按根号处理
 										sqrt_collection = SymbolicExpr::multiply(sqrt_collection, SymbolicExpr::power(i->operands[0], SymbolicExpr::number(inum)));
+										failed = false;
 									}
 									if (!failed) break;
 								}
@@ -785,6 +786,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					else if (lalt == nullptr) return ralt;
 					else if (ralt == nullptr) return lalt;
 					else return SymbolicExpr::multiply(lalt, ralt);
+					// TODO: 考虑是否允许向后化简
 				}
 				
 				
