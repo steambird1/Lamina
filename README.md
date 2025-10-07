@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (Big Refactor)
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (Big Refactor) （debug) 
 
 <img src="./assets/logo.svg" width="100%">
 
