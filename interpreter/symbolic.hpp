@@ -44,7 +44,7 @@ public:
 #define SQRBIT_D 0xBDEEBD77BDEEBD7ull
 #define HALFBIT_D 0x969969669699696ull
 #define EMPTY 0ull
-#define INFINITY 0xFFF7FFFFDEADBEEFull
+#define INFINITY_D 0xFFF7FFFFDEADBEEFull
 #define PI_H 0x1451419810C0000ull
 #define E_H 0x9198101145C0000ull
 #define UNKNOWN_H 0xAD0AA0BEEFC0000ull
@@ -95,7 +95,7 @@ public:
 					this->k = obj->convert_rational();
 					break;
 				case Type::Infinity:
-					this->hash = INFINITY;
+					this->hash = INFINITY_D;
 					break;
 				case Type::Sqrt:
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
@@ -145,7 +145,7 @@ public:
 #undef SQRBIT_D
 #undef HALFBIT_D
 #undef EMPTY
-#undef INFINITY
+#undef INFINITY_D
 #undef PI_H
 #undef E_H
 #undef UNKNOWN_H		
