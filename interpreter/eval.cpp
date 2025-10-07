@@ -39,10 +39,10 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
         args.push_back(eval(arg.get()));
     }
 
-
     const auto left = eval(call->callee.get());
-    if (!left.is_lambda() or !left.is_lmCppFunction()) {
-        std::cerr << "Left type is not a callable object " << std::endl;
+    if (!left.is_lambda() and !left.is_lmCppFunction()) {
+        std::cerr << "Left type '" << left.to_string() << "' is not a callable object " << std::endl;
+        return LAMINA_NULL;
     }
 
     if (std::holds_alternative<std::shared_ptr<LambdaDeclExpr>>(left.data)) {

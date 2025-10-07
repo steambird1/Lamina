@@ -3,6 +3,7 @@
  * 提供符号计算、微积分、方程求解等功能
  */
 
+#include "standard.hpp"
 #include "cas.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
 #include <cstring>

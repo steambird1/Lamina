@@ -1,7 +1,7 @@
 #include "lmStruct.hpp"
 #include "../../interpreter/lamina_api/lamina.hpp"
+#include "standard.hpp"
 #include <algorithm>
-#include "std.hpp"
 
 // 初始化lStruct
 lmStruct::lmStruct(const std::vector<std::pair<std::string, Value>>& vec) {
@@ -100,7 +100,7 @@ std::string lmStruct::to_string() const {
 }
 
 
-Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec) {
+Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec) {
     const auto lstruct_ptr = std::make_shared<lmStruct>(vec);
     return Value(lstruct_ptr);
 }

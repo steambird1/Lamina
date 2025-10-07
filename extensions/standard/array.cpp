@@ -1,5 +1,6 @@
 #include "lmStruct.hpp"
-#include "std.hpp"
+#include "standard.hpp"
+#include "interpreter.hpp"
 #include <ranges>
 
 Value range(const std::vector<Value>& args) {
@@ -21,7 +22,7 @@ Value range(const std::vector<Value>& args) {
     return vec;
 }
 
-Value array_at(const std::vector<Value>& args) {
+Value arr_at(const std::vector<Value>& args) {
     if (!args[0].is_array()) {
         L_ERR("First Arg Must Be A Array");
         return LAMINA_NULL;
@@ -54,7 +55,24 @@ Value array_at(const std::vector<Value>& args) {
     return *current;
 }
 
-Value array_index_of(const std::vector<Value>& args) {
+Value arr_set(const std::vector<Value>& args) {
+    check_cpp_function_argv(args, 3);
+    if (!args[1].is_array() and !args[2].is_int()) {
+        L_ERR("First Arg Must Be A Array, Second Arg Must Be a int");
+        return LAMINA_NULL;
+    }
+    auto arr = std::get<std::vector<Value>>(args[0].data);
+    const auto idx = std::get<int>(args[1].data);
+    if (idx > arr.size()) {
+        L_ERR("Array Index Out Of Range");
+    }
+    const auto& val = args[3];
+    arr[idx] = val;
+
+    return arr;
+}
+
+Value arr_index_of(const std::vector<Value>& args) {
     if (!args[0].is_array() || !args[1].is_string()) {
         L_ERR("Invalid arguments (expected array and string)");
         return LAMINA_NULL;
@@ -90,4 +108,62 @@ Value array_index_of(const std::vector<Value>& args) {
     }
 
     return result;
+}
+
+// 遍历容器：需2个参数（容器、遍历执行的函数），对容器每个元素执行函数并返回执行结果集
+Value foreach(const std::vector<Value>& args){
+    check_cpp_function_argv(args, 2);
+    const auto arr = std::get<std::vector<Value>>(args[0].data);
+    const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+    int cnt = 0;
+    for (const auto& value: arr) {
+        Interpreter::call_function(func.get(), {cnt, value});
+        ++cnt;
+    }
+    return LAMINA_NULL;
+}
+
+// 查找符合条件的元素：需2个参数（容器、判断函数），返回第一个满足条件的元素；无则返回空
+Value find(const std::vector<Value>& args) {
+    check_cpp_function_argv(args, 2);
+    const auto arr = std::get<std::vector<Value>>(args[0].data);
+    const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+    for (const auto& value: arr) {
+        auto ret = Interpreter::call_function(
+            func.get(), {value});
+        if (ret.as_bool() != false) {
+            Value result;
+            return result;
+        }
+    }
+    return LAMINA_NULL;
+}
+
+// 映射转换：需2个参数（容器、转换函数），对容器每个元素执行函数，返回转换后的新容器
+Value map(const std::vector<Value>& args){
+    check_cpp_function_argv(args, 2);
+    const auto arr = std::get<std::vector<Value>>(args[0].data);
+    const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+    std::vector<Value> result{};
+    for (const auto& value: arr) {
+        result.emplace_back(Interpreter::call_function(
+            func.get(), {value}
+        ));
+    }
+    return result;
+}
+
+// 替换内容：需2个参数（原容器、转换函数）
+Value replace(const std::vector<Value>& args) {
+    check_cpp_function_argv(args, 2);
+    auto arr = std::get<std::vector<Value>>(args[0].data);
+    const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+    std::vector<Value> result{};
+    for (const auto& value: arr) {
+        result.emplace_back(Interpreter::call_function(
+            func.get(), {value}
+        ));
+    }
+    arr = result;
+    return arr;
 }

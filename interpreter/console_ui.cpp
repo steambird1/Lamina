@@ -343,7 +343,7 @@ int repl() {
                     try {
                         const auto result = Interpreter::execute(stmt);
                         if (! result.is_null()) {
-                            std::cout << "[exec the expr]: " << result.to_string() << std::endl;
+                            std::cout << result.to_string() << std::endl;
                         }
                     } catch (const RuntimeError& re) {
                         Interpreter::print_stack_trace(re, true);

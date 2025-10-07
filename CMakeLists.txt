@@ -104,7 +104,8 @@ add_library(lamina_core SHARED
         interpreter/utils/src_manger.cpp
         interpreter/utils/properties_parser.hpp
         interpreter/utils/src_manger.hpp
-        extensions/standard/std.hpp
+        extensions/standard/standard.hpp
+        extensions/standard/standard.cpp
 )
 
 # Add version header

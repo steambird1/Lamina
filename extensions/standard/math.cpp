@@ -2,7 +2,7 @@
 // #include "latex.hpp"
 #include "../../interpreter/lamina_api/symbolic.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
-#include "std.hpp"
+#include "standard.hpp"
 
 /**
  * @brief 计算数值的平方根
@@ -15,7 +15,7 @@
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 平方根的结果，可能为数值或符号表达式
  */
-inline Value sqrt(const std::vector<Value>& args) {
+Value sqrt_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: sqrt() requires numeric argument" << std::endl;
         return Value();
@@ -92,7 +92,7 @@ inline Value sqrt(const std::vector<Value>& args) {
  * @param args 无参数
  * @return Value 圆周率π的表示
  */
-inline Value pi(const std::vector<Value>& /* args */) {
+Value pi(const std::vector<Value>& /* args */) {
     return Value(::Irrational::pi());
 }
 
@@ -102,7 +102,7 @@ inline Value pi(const std::vector<Value>& /* args */) {
  * @param args 无参数
  * @return Value 自然常数e的表示
  */
-inline Value e(const std::vector<Value>& /* args */) {
+Value e(const std::vector<Value>& /* args */) {
     return Value(::Irrational::e());
 }
 
@@ -114,7 +114,7 @@ inline Value e(const std::vector<Value>& /* args */) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 绝对值结果
  */
-inline Value abs(const std::vector<Value>& args) {
+Value abs_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: abs() requires numeric argument" << std::endl;
         return Value();
@@ -137,7 +137,7 @@ inline Value abs(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数（弧度）
  * @return Value 正弦值结果
  */
-inline Value sin(const std::vector<Value>& args) {
+Value sin_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: sin() requires numeric argument" << std::endl;
         return Value();
@@ -151,7 +151,7 @@ inline Value sin(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数（弧度）
  * @return Value 余弦值结果
  */
-inline Value cos(const std::vector<Value>& args) {
+Value cos_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: cos() requires numeric argument" << std::endl;
         return Value();
@@ -165,7 +165,7 @@ inline Value cos(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数（弧度）
  * @return Value 正切值结果
  */
-inline Value tan(const std::vector<Value>& args) {
+Value tan_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: tan() requires numeric argument" << std::endl;
         return Value();
@@ -179,7 +179,7 @@ inline Value tan(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个正数类型的参数
  * @return Value 自然对数值结果
  */
-inline Value log(const std::vector<Value>& args) {
+Value log_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("log() requires numeric argument");
     }
@@ -196,7 +196,7 @@ inline Value log(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 四舍五入后的整数结果
  */
-inline Value round(const std::vector<Value>& args) {
+Value round_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("round() requires numeric argument");
     }
@@ -209,7 +209,7 @@ inline Value round(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 向下取整后的整数结果
  */
-inline Value floor(const std::vector<Value>& args) {
+Value floor_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("floor() requires numeric argument");
     }
@@ -222,7 +222,7 @@ inline Value floor(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 向上取整后的整数结果
  */
-inline Value ceil(const std::vector<Value>& args) {
+Value ceil_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         error_and_exit("ceil() requires numeric argument");
     }
@@ -235,7 +235,7 @@ inline Value ceil(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个向量类型的参数
  * @return Value 点积结果
  */
-inline Value dot(const std::vector<Value>& args) {
+Value dot(const std::vector<Value>& args) {
     return args[0].dot_product(args[1]);
 }
 
@@ -245,7 +245,7 @@ inline Value dot(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个向量类型的参数
  * @return Value 叉积结果
  */
-inline Value cross(const std::vector<Value>& args) {
+Value cross(const std::vector<Value>& args) {
     return args[0].cross_product(args[1]);
 }
 
@@ -255,7 +255,7 @@ inline Value cross(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个向量类型的参数
  * @return Value 模长结果
  */
-inline Value norm(const std::vector<Value>& args) {
+Value norm(const std::vector<Value>& args) {
     return args[0].magnitude();
 }
 
@@ -265,7 +265,7 @@ inline Value norm(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个向量类型的参数
  * @return Value 归一化后的单位向量
  */
-inline Value normalize(const std::vector<Value>& args) {
+Value normalize(const std::vector<Value>& args) {
     return args[0].normalize();
 }
 
@@ -275,7 +275,7 @@ inline Value normalize(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个矩阵类型的参数
  * @return Value 行列式结果
  */
-inline Value det(const std::vector<Value>& args) {
+Value det(const std::vector<Value>& args) {
     return args[0].determinant();
 }
 
@@ -285,7 +285,7 @@ inline Value det(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数组、矩阵或字符串类型的参数
  * @return Value 大小结果（整数）
  */
-inline Value size(const std::vector<Value>& args) {
+Value size(const std::vector<Value>& args) {
     if (args[0].is_array()) {
         const auto& arr = std::get<std::vector<Value>>(args[0].data);
         return Value(static_cast<int>(arr.size()));
@@ -305,7 +305,7 @@ inline Value size(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个数值类型的参数
  * @return Value 整数除法结果（整数）
  */
-inline Value idiv(const std::vector<Value>& args) {
+Value idiv(const std::vector<Value>& args) {
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
         error_and_exit("idiv() requires numeric arguments");
     }
@@ -323,7 +323,7 @@ inline Value idiv(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 分数形式的结果
  */
-inline Value fraction(const std::vector<Value>& args) {
+Value fraction(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: fraction() requires numeric argument" << std::endl;
         return Value();
@@ -351,7 +351,7 @@ inline Value fraction(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含一个数值类型的参数
  * @return Value 小数形式的结果
  */
-inline Value decimal(const std::vector<Value>& args) {
+Value decimal(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
         std::cerr << "Error: decimal() requires numeric argument" << std::endl;
         return Value();
@@ -368,7 +368,7 @@ inline Value decimal(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个数值类型的参数（底数和指数）
  * @return Value 幂运算结果
  */
-inline Value pow(const std::vector<Value>& args) {
+Value pow_(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: pow() requires two arguments (base, exponent)" << std::endl;
         return Value();
@@ -416,7 +416,7 @@ inline Value pow(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个数值类型的参数
  * @return Value 最大公约数结果
  */
-inline Value gcd(const std::vector<Value>& args) {
+Value gcd(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: gcd() requires two arguments" << std::endl;
         return Value();
@@ -470,7 +470,7 @@ inline Value gcd(const std::vector<Value>& args) {
  * @param args 参数列表，要求包含两个数值类型的参数
  * @return Value 最小公倍数结果
  */
-inline Value lcm(const std::vector<Value>& args) {
+Value lcm(const std::vector<Value>& args) {
     if (args.size() < 2) {
         std::cerr << "Error: lcm() requires two arguments" << std::endl;
         return Value();

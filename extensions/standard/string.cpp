@@ -1,10 +1,10 @@
 #include "lamina_api/lamina.hpp"
-#include "std.hpp"
+#include "standard.hpp"
 
 /**
  * 拼接多个字符串，并返回一个新字符串
  */
-Value concat(const std::vector<Value>& args) {
+Value cat(const std::vector<Value>& args) {
     std::string str;
     for (const auto & arg : args) {
         if (!arg.is_string()) {
@@ -63,7 +63,7 @@ Value length(const std::vector<Value>& args) {
  * 参数2：start_index（开始位置索引）
  * 参数3：sub_str（子字符串）
  */
-Value find(const std::vector<Value>& args) {
+Value str_find(const std::vector<Value>& args) {
     if (!args[0].is_string()) {
         L_ERR("First Arg Must Be A String");
         return LAMINA_NULL;
@@ -89,9 +89,8 @@ Value find(const std::vector<Value>& args) {
 
     if (index != str.npos) {
         return Value(static_cast<int>(index));
-    } else {
-        return Value(-1);
     }
+    return Value(-1);
 }
 
 /**

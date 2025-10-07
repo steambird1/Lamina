@@ -1,7 +1,7 @@
 #include "interpreter.hpp"
 
 #include "../extensions/standard/lmStruct.hpp"
-#include "../extensions/standard/std.hpp"
+#include "../extensions/standard/standard.hpp"
 #include "cpp_module_loader.hpp"
 #include "lamina_api/bigint.hpp"
 #include "lamina_api/lamina.hpp"
@@ -40,13 +40,13 @@
 
 std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
 std::vector<StackFrame> Interpreter::call_stack{};
-std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins();
+std::unordered_map<std::string, Value> Interpreter::builtins{};
 std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
 
-Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
+Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec);
 
 Interpreter::Interpreter() {
-
+    builtins = register_builtins();
 }
 
 Interpreter::~Interpreter() {
@@ -159,7 +159,7 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
             auto val = eval(e.get());
             struct_init_val.emplace_back(n, val);
         }
-        set_variable(a->name, new_lstruct(struct_init_val));
+        set_variable(a->name, new_lm_struct(struct_init_val));
     } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
             error_and_exit("Null condition in if statement");
@@ -392,7 +392,7 @@ Value Interpreter::eval(const ASTNode* node) {
             auto val = eval(e.get());
             struct_init_val.emplace_back(n, val);
         }
-        return new_lstruct(struct_init_val);
+        return new_lm_struct(struct_init_val);
     }
     if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
         std::vector<Value> elements;

@@ -118,11 +118,12 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         return std::make_unique<IncludeStmt>(path);
     }
     if (tok.type == LexerTokenType::Loop) {
-    auto expr = std::make_unique<LiteralExpr>("true", Value::Type::Bool);
-    skip_token("{");
-    auto stmts = parse_block(true);
-    skip_token("}");
-    return std::make_unique<WhileStmt>(std::move(expr), std::move(stmts));
+        skip_token("loop");
+        auto expr = std::make_unique<LiteralExpr>("true", Value::Type::Bool);
+        skip_token("{");
+        auto stmts = parse_block(true);
+        skip_token("}");
+        return std::make_unique<WhileStmt>(std::move(expr), std::move(stmts));
     }
     if (tok.type == LexerTokenType::Define) {
         skip_token("define");

@@ -1,7 +1,7 @@
+#include "standard.hpp"
 #include <random>
-#include "std.hpp"
 
-Value rand(const std::vector<Value>& args) {
+Value random_(const std::vector<Value>& args) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::uniform_real_distribution<long double> dis(0.0L, 1.0L);
