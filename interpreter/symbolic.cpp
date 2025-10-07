@@ -875,9 +875,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     std::map<::Rational, ::Rational> sqrt_terms;// radicand -> sum of coeffs
     // std::map<std::string, ::Rational> variable_terms;// TODO
     Rational number_term(0);// 数字部分
-    std::vector<std::shared_ptr<SymbolicExpr>> others;// other things
+    std::vector<std::shared_ptr<SymbolicExpr>> others;// other things (now reserved for others)
 	
 	err_stream << "[Debug output] adder: end flatten add\n";
+	// 键：其余项目，值：系数
+	std::map<SymbolicExpr::HashData::HashType, std::shared_ptr<SymbolicExpr> > undealt_items; 
+	std::map<SymbolicExpr::HashData::HashType, std::shared_ptr<SymbolicExpr> > hash_ref;
 	
     for (const auto& term : terms) {
         ::Rational coeff;
@@ -888,8 +891,17 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         } else if (extract_number(term, number_term)) {
             // Do nothing yet
         } else {
-			err_stream << "[Debug output] adder: undealt item " << term->to_string() << std::endl;
-            others.push_back(term);
+			// TODO: 这边上哈希
+			err_stream << "[Debug output] adder: special item " << term->to_string() << std::endl;
+            //others.push_back(term);
+			SymbolicExpr::HashData hd(term);
+			auto cb = hd.get_combined_k();
+			hash_ref[hd.hash] = term;
+			if (undealt_items.count(hd.hash)) {
+				undealt_items[hd.hash] = SymbolicExpr::add(undealt_items[hd.hash], cb);
+			} else {
+				undealt_items[hd.hash] = cb;
+			}
         }
     }
 	
@@ -910,6 +922,11 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
         }
     }
     result_terms.insert(result_terms.end(), others.begin(), others.end());
+	for (const auto& i : undealt_items) {
+		// TODO: 可能此处有化简 hash_ref[i.first] 项的需求？（千万不要化简整个 multiply）
+		result_terms.push_back(SymbolicExpr::multiply(i.second->simplify(), hash_ref[i.first]));
+	}
+	
     if (number_term != 0) {// 非0时才添加数字
         result_terms.push_back(SymbolicExpr::number(number_term));
     }

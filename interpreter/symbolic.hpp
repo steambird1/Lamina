@@ -27,6 +27,117 @@ public:
         Variable     // 变量 (如 π, e)
 
     };
+	
+	/*
+	哈希要保证的一些因素：
+	- 乘法交换律（乘法：奇数二进制位参与运算）
+	- 加法交换律（加法：偶数二进制位参与运算）
+	- 加法和乘法区分
+	这个函数在加法化简时使用。
+	*/
+	struct HashData {
+#define _HASH_PARAMS		ODDBIT, EVENBIT, SQRBIT, HALFBIT
+		using HashType = unsigned long long;
+		// TODO: 允许多个 HashData 对象之间的不同以减少哈希冲突概率
+		constexpr HashType ODDBIT_D = 0x5555555555555555ull;
+		constexpr HashType EVENBIT_D = 0xAAAAAAAAAAAAAAAAull;
+		constexpr HashType SQRBIT_D = 0x7BDEEBD77BDEEBD7ull;
+		constexpr HashType HALFBIT_D = 0x6969969669699696ull;
+		constexpr HashType EMPTY = 0ull;
+		constexpr HashType INFINITY = 0x7FFF7FFFFDEADBEEFull;
+		constexpr HashType PI_H = 0x11451419810C0000ull;
+		constexpr HashType E_H = 0x19198101145C0000ull;
+		constexpr HashType UNKNOWN_H = 0xBAD0AA0BEEFC0000ull;
+		
+		HashType ODDBIT;
+		HashType EVENBIT;
+		HashType SQRBIT;
+		HashType HALFBIT;
+		
+		::Rational k = ::Rational(1), ksqrt = ::Rational(1);
+		HashType hash = EMPTY;
+		std::shared_ptr<SymbolicExpr> hash_obj = SymbolicExpr::number(1);	// 因为是乘法，1为默认状态。此处存储被 hash 的项目对应的值
+		
+		static HashType bigint_hash(const BigInt& rt) {
+			// 直接哈希所有 digits
+			HashType weight = 1ull, ans = 0ull;
+			for (auto &i : digits) {
+				ans = ans * weight + i;
+				weight *= 10ull;
+			}
+			return ans;
+		}
+		
+		static HashType rational_hash(const Rational& rt) {
+			return bigint_hash(rt.get_numerator()) ^ bigint_hash(rt.get_denominator());
+		}
+		
+		HashType to_single_hash() {
+			return (rational_hash(k) & HALFBIT) ^ (rational_hash(ksqrt) & SQRBIT) ^ hash;
+		}
+		
+		// TODO: 考虑优化
+		std::shared_ptr<SymbolicExpr> get_combined_k() {
+			return SymbolicExpr::multiply(SymbolicExpr::number(k), SymbolicExpr::sqrt(ksqrt))->simplify();
+		}
+		
+		HashData() {
+			
+		}
+		
+		HashData(std::shared_ptr<SymbolicExpr> obj, 
+			HashType ODDBIT = ODDBIT_D, HashType EVENBIT = EVENBIT_D, HashType SQRBIT = SQRBIT_D, HashType HALFBIT = HALFBIT_D)
+			: ODDBIT(ODDBIT), EVENBIT(EVENBIT), SQRBIT(SQRBIT), HALFBIT(HALFBIT) {
+			// Evaluate hash
+			HashData ld, rd;
+			switch (obj->type) {
+				case Type::Number:
+					this->k = obj->convert_rational();
+					break;
+				case Type::Infinity:
+					this->hash = INFINITY;
+					break;
+				case Type::Sqrt:
+					ld = HashData(obj->operands[0], _HASH_PARAMS);
+					// sqrt 里面还有 sqrt，取值异或哈希
+					this->ksqrt = ld.k;
+					ld.k = ::Rational(0);
+					this->hash = ld.to_single_hash();
+					this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
+					break;
+				case Type::Multiply:
+					ld = HashData(obj->operand[0], _HASH_PARAMS);
+					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					this->k = ld.k * rd.k;
+					this->ksqrt = ld.ksqrt * rd.ksqrt;
+					this->hash = (ld.hash & ODDBIT) ^ (rd.hash & EVENBIT);
+					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj);
+					break;
+				case Type::Add:
+					// 理论上不应该用到
+					ld = HashData(obj->operand[0], _HASH_PARAMS);
+					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					this->hash = (ld.to_single_hash() & EVENBIT) ^ (rd.to_single_hash() & ODDBIT);
+					this->hash_obj = obj;	// 没有做任何处理
+					break;
+				case Type::Power:
+					// TODO: 此处引入类似根式化简的机制，暂时直接 hash
+					ld = HashData(obj->operand[0], _HASH_PARAMS);
+					rd = HashData(obj->operand[1], _HASH_PARAMS);
+					this->hash = (ld.to_single_hash() & SQRBIT) ^ (rd.to_single_hash() & HALFBIT);
+					this->hash_obj = obj;	// 没有做任何处理
+					break;
+				case Type::Variable:
+					if (obj->identifier == "π" || obj->identifier == "pi") this->hash = PI_H;
+					else if (obj->identifier == "e") this->hash = E_H;
+					else this->hash = UNKNOWN_H;
+					this->hash_obj = obj;	// 没有做任何处理
+					break;
+			}
+			// TODO: 可能考虑在这里做根式化简
+		}
+		
+	};
 
     Type type;
 
