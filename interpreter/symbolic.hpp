@@ -173,8 +173,14 @@ public:
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				default:
-					defs: for (auto &i : obj->operands)
-						this->hash ^= HashData(i).to_single_hash();
+					defs: this->hash = EMPTY;
+					for (auto &i : obj->operands) {
+						if (obj->type == Type::Add) {
+							this->hash += HashData(i).to_single_hash();	// 令其自然溢出，同时避免异或消除
+						} else {
+							this->hash *= HashData(i).to_single_hash();	// 令其自然溢出，同时避免异或消除
+						}
+					}
 					this->hash ^= prehash;
 					this->hash_obj = obj;
 			}
