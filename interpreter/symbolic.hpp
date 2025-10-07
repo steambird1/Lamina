@@ -39,15 +39,15 @@ public:
 #define _HASH_PARAMS		ODDBIT, EVENBIT, SQRBIT, HALFBIT
 		using HashType = unsigned long long;
 		// TODO: 允许多个 HashData 对象之间的不同以减少哈希冲突概率
-		constexpr static HashType ODDBIT_D = 0x555555555555555ull;
-		constexpr static HashType EVENBIT_D = 0xAAAAAAAAAAAAAAAull;
-		constexpr static HashType SQRBIT_D = 0xBDEEBD77BDEEBD7ull;
-		constexpr static HashType HALFBIT_D = 0x969969669699696ull;
-		constexpr static HashType EMPTY = 0ull;
-		constexpr static HashType INFINITY = 0xFFF7FFFFDEADBEEFull;
-		constexpr static HashType PI_H = 0x1451419810C0000ull;
-		constexpr static HashType E_H = 0x9198101145C0000ull;
-		constexpr static HashType UNKNOWN_H = 0xAD0AA0BEEFC0000ull;
+#define ODDBIT_D 0x555555555555555ull
+#define EVENBIT_D 0xAAAAAAAAAAAAAAAull
+#define SQRBIT_D 0xBDEEBD77BDEEBD7ull
+#define HALFBIT_D 0x969969669699696ull
+#define EMPTY 0ull
+#define INFINITY 0xFFF7FFFFDEADBEEFull
+#define PI_H 0x1451419810C0000ull
+#define E_H 0x9198101145C0000ull
+#define UNKNOWN_H 0xAD0AA0BEEFC0000ull
 		
 		HashType ODDBIT;
 		HashType EVENBIT;
@@ -61,7 +61,7 @@ public:
 		static HashType bigint_hash(const BigInt& rt) {
 			// 直接哈希所有 digits
 			HashType weight = 1ull, ans = 0ull;
-			for (auto &i : digits) {
+			for (auto &i : rt.digits) {
 				ans = ans * weight + i;
 				weight *= 10ull;
 			}
@@ -78,7 +78,7 @@ public:
 		
 		// TODO: 考虑优化
 		std::shared_ptr<SymbolicExpr> get_combined_k() {
-			return SymbolicExpr::multiply(SymbolicExpr::number(k), SymbolicExpr::sqrt(ksqrt))->simplify();
+			return SymbolicExpr::multiply(SymbolicExpr::number(k), SymbolicExpr::sqrt(SymbolicExpr::number(ksqrt)))->simplify();
 		}
 		
 		HashData() {
@@ -140,7 +140,15 @@ public:
 			}
 			// TODO: 可能考虑在这里做根式化简
 		}
-		
+#undef ODDBIT_D
+#undef EVENBIT_D
+#undef SQRBIT_D
+#undef HALFBIT_D
+#undef EMPTY
+#undef INFINITY
+#undef PI_H
+#undef E_H
+#undef UNKNOWN_H		
 	};
 
     Type type;
