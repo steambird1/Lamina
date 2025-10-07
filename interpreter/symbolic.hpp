@@ -11,9 +11,9 @@
 #include <functional>
 #include <iostream>
 
-#define _SYMBOLIC_DEBUG 1
+#define _SYMBOLIC_DEBUG 0
 
-#ifdef _SYMBOLIC_DEBUG
+#if _SYMBOLIC_DEBUG
 #define err_stream std::cerr
 #else
 class _NullBuffer : public std::streambuf {
