@@ -1,30 +1,5 @@
 #include "symbolic.hpp"
-#include <algorithm>
-#include <cmath>
-#include <map>
-#include <functional>
-#include <iostream>
-#include <algorithm>
 
-#define _SYMBOLIC_DEBUG 1
-
-#ifdef _SYMBOLIC_DEBUG
-#define err_stream std::cerr
-#else
-class _NullBuffer : public std::streambuf {
-	public:
-		virtual int overflow(int c) {
-			return c;
-		}
-};
-std::ostream nullstream;
-auto init = []() -> bool {
-	static _NullBuffer nbf;
-	nullstream = std::ostream(&nbf);
-	return true;
-}();
-#define err_stream nullstream
-#endif
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
@@ -579,6 +554,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			// 键为底数的值，值为指数的值
 			// TODO: 这样可能需要额外判断双层根号问题，以及分母有理化问题
 			std::map<::Rational, ::Rational> base_ref;
+			std::map<SymbolicExpr::HashData::HashType, std::shared_ptr<SymbolicExpr> > base_special;
+			std::map<SymbolicExpr::HashData::HashType, std::shared_ptr<SymbolicExpr> > base_special_ref;
+			std::shared_ptr<SymbolicExpr> split_special_base = SymbolicExpr::number(1);	// 还是不要空指针为好
 			std::map<::Rational, std::shared_ptr<SymbolicExpr>> exponent_ref;
 			std::vector<std::shared_ptr<SymbolicExpr>> result;
 			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr, std::shared_ptr<SymbolicExpr> pre_timing) -> bool {
@@ -621,12 +599,14 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						continue;
 					}
 					if (!cvt->operands[0]->is_number()) {
+						// 底数不是 number，TODO: 上哈希（仅对非 number 项上哈希！！）
 						// TODO: Debug output:
 						err_stream << "[Debug output] [2] Flat: exponent fails at " << cvt->operands[0]->to_string() << std::endl;
 						err_stream << "[Debug output] [2] Flat: (of " << cvt->to_string() << ")\n";
-						exponent_merger = false;
+						//exponent_merger = false;
 					}
 					if (!cvt->operands[1]->is_number()) {
+						// 指数不是 number，真没办法
 						// TODO: Debug output:
 						err_stream << "[Debug output] [2] Flat: fails at " << cvt->operands[1]->to_string() << std::endl;
 						err_stream << "[Debug output] [2] Flat: (of " << cvt->to_string() << ")\n";
@@ -641,13 +621,35 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 					err_stream << "[Debug output] [2m] Ready for exp merger" << std::endl;
 					// 同底数合并
 					for (auto &cvt : result) {
-						// 已经检查过了
+						if (!(cvt->operands[0]->is_number() && cvt->operands[1]->is_number())) {
+							auto hd = SymbolicExpr::HashData(cvt->operands[0]);
+							auto hds = hd.hash;
+							auto hdo = hd.hash_obj;
+							auto exps = cvt->operands[1];
+							// 如果指数是有理数，根号之类的东西分离出来 -- 理论上不应该用
+							if (!cvt->operands[1]->is_number()) {
+								hds = hd.to_single_hash();
+								hdo = cvt->operands[0];
+								exps = SymbolicExpr::number(1);
+							} else {
+								if (split_special_base == nullptr) split_special_base = SymbolicExpr::number(1);
+								split_special_base = SymbolicExpr::multiply(split_special_base, SymbolicExpr::power(hd.get_combined_k(), exps));
+							}
+							if (base_special.count(hd.hash)) {
+								base_special[hd.hash] = SymbolicExpr::add(base_special[hd.hash], exps);
+							} else {
+								base_special[hd.hash] = exps;
+							}
+							base_special_ref[hds] = cvt->operands[0];
+							exponent_merger_cnt++;	// 只算一半权重
+							continue;
+						}
 						::Rational base = cvt->operands[0]->convert_rational();
 						::Rational exponent = cvt->operands[1]->convert_rational();
 						auto finder = base_ref.find(base);
 						if (finder != base_ref.end()) {
 							finder->second = finder->second + exponent;
-							exponent_merger_cnt++;
+							exponent_merger_cnt += 2;
 						} else {
 							base_ref[base] = exponent;
 						}
@@ -662,7 +664,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						auto finder = exponent_ref.find(cvt_rational);
 						if (finder != exponent_ref.end()) {
 							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
-							base_merger_cnt++;
+							base_merger_cnt += 2;
 						} else {
 							exponent_ref[cvt_rational] = cvt->operands[0];
 						}
@@ -687,9 +689,23 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						}
 						else res = SymbolicExpr::multiply(cres, res);
 					}
+					for (auto &i : base_special) {
+						if (i.second->is_number()) {
+							if (i.second->convert_rational() == ::Rational(0)) continue;
+							if (i.second->convert_rational() == ::Rational(1)) {
+								res = inits ? i.first : SymbolicExpr::multiply(res, base_special_ref[i.first]);
+								inits = false;
+								continue;
+							}
+						}
+						// TODO: Debug output:
+						err_stream << "[Debug output] [2] extra exponent referring (" << base_special_ref[i.first]->to_string() << ")^(" << i.second->to_string() << ")\n";
+						// 此处不要化简（也许？）
+						res = inits ? SymbolicExpr::power(base_special_ref[i.first], i.second) 
+								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second));
+					}
 					return res;
 				} else if (base_merger && (base_merger_cnt >= exponent_merger_cnt)) {
-					// 先这么复制下来，万一以后逻辑不同
 					auto res = SymbolicExpr::number(1);
 					bool inits = true;
 					

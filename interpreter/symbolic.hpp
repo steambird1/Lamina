@@ -6,9 +6,30 @@
 #include <variant>
 #include <cmath>
 #include <limits>
-#include "bigint.hpp"
-#include "rational.hpp"
+#include <algorithm>
+#include <map>
+#include <functional>
+#include <iostream>
 
+#define _SYMBOLIC_DEBUG 1
+
+#ifdef _SYMBOLIC_DEBUG
+#define err_stream std::cerr
+#else
+class _NullBuffer : public std::streambuf {
+	public:
+		virtual int overflow(int c) {
+			return c;
+		}
+};
+std::ostream nullstream;
+auto init = []() -> bool {
+	static _NullBuffer nbf;
+	nullstream = std::ostream(&nbf);
+	return true;
+}();
+#define err_stream nullstream
+#endif
 
 // 符号表达式系统
 // 支持精确的数学表达式，不进行数值近似
@@ -111,11 +132,12 @@ public:
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
+					err_stream << "Hashing multiply, left: " << ((ld.hash & ODDBIT) << 7) << ", right: " << (rd.hash & EVENBIT) << std::endl;
+					err_stream << "Hash rel: " << ld.hash_obj->to_string() << "; " << rd.hash_obj->to_string() << std::endl;
 					this->hash = ((ld.hash & ODDBIT) << 7) ^ (rd.hash & EVENBIT);
-					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj);
+					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
 					break;
 				case Type::Add:
-					// 理论上不应该用到
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->hash = ((ld.to_single_hash() & EVENBIT) << 6) ^ (rd.to_single_hash() & ODDBIT);
