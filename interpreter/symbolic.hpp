@@ -22,12 +22,8 @@ class _NullBuffer : public std::streambuf {
 			return c;
 		}
 };
-std::ostream nullstream;
-auto init = []() -> bool {
-	static _NullBuffer nbf;
-	nullstream = std::ostream(&nbf);
-	return true;
-}();
+_NullBuffer nbf;
+std::ostream nullstream(&nbf);
 #define err_stream nullstream
 #endif
 
