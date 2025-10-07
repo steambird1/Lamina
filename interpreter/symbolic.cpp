@@ -8,7 +8,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	
 	static int current_simplify_level = 0;
 	const int max_simplify_level = 30;
-	if (current_simplify_level > max_simplify_level) return std::make_shared<SymbolicExpr>(*this);
+	if (current_simplify_level > max_simplify_level) {
+		// 不用 err_stream
+		std::cerr << "[Warning] SymbolicExpr: reaching maximum simplifying depth\n";
+	}
 	current_simplify_level++;
 	
     auto intcall = [&]() {
@@ -708,7 +711,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						}
 						// TODO: Debug output:
 						err_stream << "[Debug output] [2] extra exponent referring (" << base_special_ref[i.first]->to_string() << ")^(" << i.second->to_string() << ")\n";
-						// 此处不要化简（也许？）
 						res = inits ? SymbolicExpr::power(base_special_ref[i.first], i.second) 
 								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second->simplify()));
 					}
@@ -995,7 +997,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
 		
         auto expr = std::make_shared<SymbolicExpr>(Type::Number);
         // 底数是分数，结果为分数
+		err_stream << "[Debug output] now simplifying power by literal\n";
+		
         if (base->is_rational() || exponent->is_rational()) {
+			err_stream << "[Debug output] simplifying with rational power value\n";
             if (exponent->is_int()) {
 				expr->number_value = (base->get_rational()).power(BigInt(exponent->get_int()));
             } else if (exponent->is_big_int()) {
@@ -1026,7 +1031,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
     } else if (base->is_number() && exponent->is_rational()) {
         // 底数是数字，指数是分数
         // 用符号储存
-		// TODO:某些必要的化简如 8^(1/3)
+		// 必要的化简如 8^(1/3)
 		auto bsr = base->convert_rational();
 		auto expr = exponent->convert_rational();
 		
