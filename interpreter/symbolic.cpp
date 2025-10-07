@@ -512,6 +512,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						err_stream << "[Debug output] [1a] Merging exponents in a simplified way" << std::endl;
 						
 						if (lcom->operands[0]->type == SymbolicExpr::Type::Variable || rcom->operands[0]->type == SymbolicExpr::Type::Variable) {
+							// !!! TODO: 这里好像是万恶之源
 							err_stream << "[Debug output] [1a] Entering special reservation\n";
 							auto mt = SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify());
 							if (lcr == ::Rational(1)) return mt;
@@ -663,11 +664,18 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						auto cvt_rational = cvt->operands[1]->convert_rational();
 						auto finder = exponent_ref.find(cvt_rational);
 						if (finder != exponent_ref.end()) {
-							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0])->simplify();
-							base_merger_cnt += 2;
+							// 问题是这里会导致继续循环调用
+							finder->second = SymbolicExpr::multiply(finder->second, cvt->operands[0]);
+							// 为 1 不允许继续合并，否则死循环
+							if (cvt_rational != ::Rational(1)) {
+								finder->second = finder->second->simplify();
+								base_merger_cnt++;
+							}
+							base_merger_cnt++;
 						} else {
 							exponent_ref[cvt_rational] = cvt->operands[0];
 						}
+						if (cvt_rational == ::Rational(0)) exponent_ref[cvt_rational] = SymbolicExpr::number(1);
 					}
 				}
 				

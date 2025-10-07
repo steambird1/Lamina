@@ -60,6 +60,7 @@ public:
 #define _HASH_PARAMS		ODDBIT, EVENBIT, SQRBIT, HALFBIT
 		using HashType = unsigned long long;
 		// TODO: 允许多个 HashData 对象之间的不同以减少哈希冲突概率
+		// 下方变量的名字不重要。
 #define ODDBIT_D 0x555555555555555ull
 #define EVENBIT_D 0xAAAAAAAAAAAAAAAull
 #define SQRBIT_D 0xBDEEBD77BDEEBD7ull
@@ -112,6 +113,7 @@ public:
 			: ODDBIT(ODDBIT), EVENBIT(EVENBIT), SQRBIT(SQRBIT), HALFBIT(HALFBIT) {
 			// Evaluate hash
 			HashData ld, rd;
+			HashType prehash = 0;
 			switch (obj->type) {
 				case Type::Number:
 					this->k = obj->convert_rational();
@@ -119,6 +121,7 @@ public:
 				case Type::Infinity:
 					this->hash = INFINITY_D;
 					break;
+				/*
 				case Type::Sqrt:
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					// sqrt 里面还有 sqrt，取值异或哈希
@@ -150,6 +153,19 @@ public:
 					this->hash = ((ld.to_single_hash() & SQRBIT) << 5) ^ (rd.to_single_hash() & HALFBIT);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
+				*/
+				case Type::Sqrt:
+					prehash = SQRBIT;
+					goto defs;
+				case Type::Multiply:
+					prehash = HALFBIT;
+					goto defs;
+				case Type::Add:
+					prehash = ODDBIT;
+					goto defs;
+				case Type::Power:
+					prehash = EVENBIT;
+					goto defs;
 				case Type::Variable:
 					if (obj->identifier == "π" || obj->identifier == "pi") this->hash = PI_H;
 					else if (obj->identifier == "e") this->hash = E_H;
@@ -157,9 +173,9 @@ public:
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				default:
-					for (auto &i : obj->operands)
+					defs: for (auto &i : obj->operands)
 						this->hash ^= HashData(i).to_single_hash();
-					this->hash_obj = obj;
+					this->hash_obj = obj ^ prehash;
 			}
 			// TODO: 可能考虑在这里做根式化简
 		}
