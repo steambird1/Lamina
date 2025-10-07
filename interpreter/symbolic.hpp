@@ -65,6 +65,7 @@ public:
 				ans = ans * weight + i;
 				weight *= 10ull;
 			}
+			if (rt.negative) return ~ans;
 			return ans;
 		}
 		

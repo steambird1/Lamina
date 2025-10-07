@@ -896,7 +896,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
             //others.push_back(term);
 			SymbolicExpr::HashData hd(term);
 			auto cb = hd.get_combined_k();
-			hash_ref[hd.hash] = term;
+			hash_ref[hd.hash] = hd.hash_obj;
 			if (undealt_items.count(hd.hash)) {
 				undealt_items[hd.hash] = SymbolicExpr::add(undealt_items[hd.hash], cb);
 			} else {
