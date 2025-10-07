@@ -40,14 +40,12 @@
 
 std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
 std::vector<StackFrame> Interpreter::call_stack{};
-std::unordered_map<std::string, Value> Interpreter::builtins{};
+std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins();
 std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
 
 Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec);
 
-Interpreter::Interpreter() {
-    builtins = register_builtins();
-}
+Interpreter::Interpreter()= default;
 
 Interpreter::~Interpreter() {
     variable_stack = {{}};

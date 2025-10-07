@@ -156,6 +156,8 @@ Value str_find(const std::vector<Value>& args);
 // 截取子字符串：需3个参数（原字符串、起始索引、截取长度），返回截取后的子串
 Value sub_string(const std::vector<Value>& args);
 
+Value to_string(const std::vector<Value>& args);
+
 // ====================== CAS ======================
 
 // CAS表达式解析：需1个参数（待解析的数学表达式字符串），返回解析后的CAS表达式对象
@@ -184,6 +186,26 @@ Value cas_solve_linear(const std::vector<Value>& args);
 
 // CAS数值导数计算：需3个参数（CAS表达式、求导变量、计算点），返回该点的数值导数
 Value cas_numerical_derivative(const std::vector<Value>& args);
+
+// ====================== io ======================
+
+Value fast_read(const std::vector<Value>& args);
+
+Value fast_write(const std::vector<Value>& args);
+
+Value exist_file(const std::vector<Value>& args);
+
+Value create_file(const std::vector<Value>& args);
+
+Value console_write(const std::vector<Value>& args);
+
+Value console_getch(const std::vector<Value>& args);
+
+Value console_getlines(const std::vector<Value>& args);
+
+Value console_scanf(const std::vector<Value>& args);
+
+Value console_clear(const std::vector<Value>& args);
 
 
 std::unordered_map<std::string, Value> register_builtins();

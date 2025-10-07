@@ -125,3 +125,8 @@ Value sub_string(const std::vector<Value>& args) {
 
     return Value(sub_str);
 }
+
+Value to_string(const std::vector<Value>& args) {
+    check_cpp_function_argv(args,1);
+    return Value(  args[0].to_string()  );
+}

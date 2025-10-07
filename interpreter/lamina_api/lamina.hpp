@@ -82,7 +82,7 @@ inline void L_ERR(const std::string& str) {
 }
 
 inline bool check_cpp_function_argv(const std::vector<Value>& argv, const size_t argc) {
-    if (argv.size() == argc) {
+    if (argv.size() != argc) {
         const std::string msg = "function need " + std::to_string(argc) + ", but got " + std::to_string(argv.size());
         throw StdLibException(msg);
     }

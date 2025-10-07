@@ -3,7 +3,7 @@
 std::unordered_map<std::string, Value> register_builtins() {
     return {
         // 字符串操作模块：封装字符串拼接、查找、截取等功能
-        LAMINA_MODULE("string", "1.0.0", {
+        LAMINA_MODULE("string", LAMINA_VERSION, {
             LAMINA_FUNC("cat", cat),
             LAMINA_FUNC("at", char_at),
             LAMINA_FUNC("find", str_find),
@@ -37,27 +37,46 @@ std::unordered_map<std::string, Value> register_builtins() {
         LAMINA_FUNC("range", range),
 
         // 随机模块：封装随机浮点数、整数、字符串生成功能
-        LAMINA_MODULE("random", "1.0.0", {
+        LAMINA_MODULE("random", LAMINA_VERSION, {
             LAMINA_FUNC("random", random_),
             LAMINA_FUNC("randint", randint),
             LAMINA_FUNC("randstr", randstr)
         }),
 
         // 时间模块：封装当前时间、日期、格式化日期获取功能
-        LAMINA_MODULE("time", "1.0.0", {
+        LAMINA_MODULE("time", LAMINA_VERSION, {
             LAMINA_FUNC("get_time", get_time),
             LAMINA_FUNC("get_date", get_date),
             LAMINA_FUNC("get_format_date", get_format_date)
         }),
 
         // 数组处理模块：封装数组元素访问、修改、查找功能
-        LAMINA_MODULE("array", "1.0.0", {
+        LAMINA_MODULE("array", LAMINA_VERSION, {
             LAMINA_FUNC("at", arr_at),
             LAMINA_FUNC("set", arr_set),
             LAMINA_FUNC("index_of", arr_index_of)
         }),
 
-        // IO与系统模块：一级函数
+        // IO模块
+        // ToDo: not complete
+        LAMINA_MODULE("io", LAMINA_VERSION, {
+            LAMINA_FUNC("fast_read", fast_read),
+            LAMINA_FUNC("fast_write", fast_write),
+            LAMINA_FUNC("exist_file", exist_file),
+            LAMINA_FUNC("create_file", create_file)
+        }),
+
+        // 控制台模块
+        // ToDo: not complete
+        LAMINA_MODULE("console", LAMINA_VERSION, {
+            LAMINA_FUNC("console_write", console_write),
+            LAMINA_FUNC("console_getch", console_getch),
+            LAMINA_FUNC("console_getlines", console_getlines),
+            LAMINA_FUNC("console_scanf", console_scanf),
+            LAMINA_FUNC("console_clear", console_clear),
+        }),
+
+        // 系统模块：一级函数
         LAMINA_FUNC("input", input),
         LAMINA_FUNC("print", print),
         LAMINA_FUNC("system", system_),
@@ -68,6 +87,7 @@ std::unordered_map<std::string, Value> register_builtins() {
         LAMINA_FUNC("getattr", getattr),
         LAMINA_FUNC("setattr", setattr),
         LAMINA_FUNC("update", update),
+        LAMINA_FUNC("to_string", to_string),
         LAMINA_FUNC("copy_struct", copy_struct),
 
         // 容器遍历模块：一级函数
@@ -77,7 +97,7 @@ std::unordered_map<std::string, Value> register_builtins() {
         LAMINA_FUNC("replace", replace),
 
         // CAS数学模块：封装符号计算相关的解析、化简、求导等功能
-        LAMINA_MODULE("cas", "1.0.0", {
+        LAMINA_MODULE("cas", LAMINA_VERSION, {
             LAMINA_FUNC("cas_parse", cas_parse),
             LAMINA_FUNC("cas_simplify", cas_simplify),
             LAMINA_FUNC("cas_differentiate", cas_differentiate),

@@ -61,7 +61,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
     }
 
     if (std::holds_alternative<std::shared_ptr<LmCppFunction>>(left.data)) {
-        push_frame("<cpp function>", 0);
+        push_frame("<cpp function>", " ");
 
         Value result;
         std::shared_ptr<LmCppFunction> func;

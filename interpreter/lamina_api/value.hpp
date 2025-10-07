@@ -66,10 +66,10 @@ public:
             ::BigInt, ::Rational, ::Irrational,
             std::shared_ptr<SymbolicExpr>,
             std::shared_ptr<lmStruct>,
-            std::shared_ptr<LambdaDeclExpr>
-    >  data;
+            std::shared_ptr<LambdaDeclExpr>>
+            data;
 
-    virtual ~Value() = default;
+    ~Value() = default;
 
     // Constructors
     Value() : type(Type::Null), data(std::in_place_index<0>, nullptr) {}// 0对应std::nullptr_t类型
@@ -81,6 +81,7 @@ public:
     Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {}
     Value(const std::string& s) : type(Type::String), data(s) {}
     Value(const char* s) : type(Type::String), data(std::string(s)) {}
+    Value(const char s) : type(Type::String), data(std::string(1,s)) {}
     Value(const ::BigInt& bi) : type(Type::BigInt), data(bi) {}
     Value(const ::Rational& r) : type(Type::Rational), data(r) {}
     Value(const ::Irrational& ir) : type(Type::Irrational), data(ir) {}
@@ -282,7 +283,6 @@ public:
             default:
                 return "<unknown>";
         }
-        return "<unknown>";
     }
 
     // Vector operations

@@ -113,12 +113,32 @@ Value arr_index_of(const std::vector<Value>& args) {
 // 遍历容器：需2个参数（容器、遍历执行的函数），对容器每个元素执行函数并返回执行结果集
 Value foreach(const std::vector<Value>& args){
     check_cpp_function_argv(args, 2);
-    const auto arr = std::get<std::vector<Value>>(args[0].data);
     const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
-    int cnt = 0;
-    for (const auto& value: arr) {
-        Interpreter::call_function(func.get(), {cnt, value});
-        ++cnt;
+
+    if (args[0].is_array()) {
+        const auto arr = std::get<std::vector<Value>>(args[0].data);
+        int cnt = 0;
+        for (const auto& value: arr) {
+            Interpreter::call_function(func.get(), {cnt, value});
+            ++cnt;
+        }
+        return LAMINA_NULL;
+    }
+    if (args[0].is_lstruct()) {
+        const auto arr = std::get<std::shared_ptr<lmStruct>>(args[0].data)->to_vector();
+        for (auto [key, value] : arr) {
+            Interpreter::call_function(func.get(), {Value(key), value});
+        }
+        return LAMINA_NULL;
+    }
+    if (args[0].is_string()) {
+        const auto arr = std::get<std::string>(args[0].data);
+        int cnt = 0;
+        for (const auto value: arr) {
+            Interpreter::call_function(func.get(), {Value(cnt), Value(value)});
+            ++cnt;
+        }
+        return LAMINA_NULL;
     }
     return LAMINA_NULL;
 }

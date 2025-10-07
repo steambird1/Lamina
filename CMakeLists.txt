@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(Lamina VERSION 0.0.1 LANGUAGES CXX)# Lamina version is here
+project(Lamina VERSION 1.2.0 LANGUAGES CXX)# Lamina version is here
 
 # add sub directory
 add_subdirectory(interpreter)
@@ -106,6 +106,7 @@ add_library(lamina_core SHARED
         interpreter/utils/src_manger.hpp
         extensions/standard/standard.hpp
         extensions/standard/standard.cpp
+        extensions/standard/io.cpp
 )
 
 # Add version header

@@ -76,7 +76,8 @@ int console_getchar() {
 
 // 关键字表（按需求定义）
 const std::set<std::string> KEYWORDS = {
-    "if", "var", "else", "struct", "func", "print", "define", "while"
+    "if", "var", "else", "struct", "func", "print", "define", "while",
+    "foreach", "do", "loop", "typeof", "to_string"
 };
 
 // 分隔符
@@ -98,6 +99,33 @@ size_t utf8_char_len(unsigned char c) {
     if (c <= 0xEF) return 3;
     if (c <= 0xF7) return 4;
     return 1; // 非法字节按1字节处理
+}
+
+/**
+ * @brief 计算字符串排除ANSI转义序列后的真实可见长度（核心辅助函数）
+ * ANSI转义序列格式：\033[ + 数字/分号 + m（如\033[35m、\033[0m、\033[90m）
+ */
+size_t get_visible_length(const std::string& str) {
+    size_t len = 0;
+    size_t i = 0;
+    const size_t str_len = str.size();
+
+    while (i < str_len) {
+        // 遇到ANSI转义序列的起始符 \033[，跳过整个序列
+        if (str[i] == '\033' && i + 1 < str_len && str[i+1] == '[') {
+            i += 2; // 跳过 \033[
+            // 一直跳到 'm' 结束（匹配所有数字、分号）
+            while (i < str_len && str[i] != 'm') {
+                i++;
+            }
+            if (i < str_len) i++; // 跳过 'm'
+        } else {
+            // 非转义字符，计数+1
+            len++;
+            i++;
+        }
+    }
+    return len;
 }
 
 /**
@@ -139,10 +167,35 @@ std::string find_completion(const std::string& prefix) {
 /**
  * @brief 渲染输入行（含prompt、高亮、补全候选），并移动光标到正确位置
  */
-void render_line(const std::string& prompt, const std::string& buf, size_t cursor_pos, const std::string& completion) {
-    // 解析缓冲区，按“普通文本/字符串/关键字”应用高亮
-    bool in_string = false; // 是否处于双引号内（字符串高亮）
-    size_t buf_len = buf.size();
+void render_line(const std::string& prompt,
+    const std::string& buf,
+    const size_t cursor_pos,
+    const std::string& completion,
+    const std::vector<size_t>& char_indices  // 新增：用于计算可见字符数
+) {
+    std::cout << "\r\033[K" << prompt;
+
+    // 关键修改: 用辅助函数计算prompt的可见长度，排除颜色码
+    size_t prompt_visible_len = get_visible_length(prompt);
+    size_t buf_visible_len = 0;
+
+    if (!char_indices.empty()) {
+        buf_visible_len = get_char_index(char_indices, cursor_pos);
+        if (buf_visible_len > char_indices.size() - 2) {
+            buf_visible_len = char_indices.size() - 2;
+        }
+        if (cursor_pos > 0 && buf_visible_len < char_indices.size() - 1) {
+            if (cursor_pos > char_indices[buf_visible_len]) {
+                buf_visible_len++;
+            }
+        }
+    }
+
+    // 最终光标偏移量
+    const size_t cursor_offset = prompt_visible_len + buf_visible_len;
+
+    bool in_string = false;
+    const size_t buf_len = buf.size();
     size_t current_pos = 0;
 
     while (current_pos < buf_len) {
@@ -183,37 +236,32 @@ void render_line(const std::string& prompt, const std::string& buf, size_t curso
         current_pos++;
     }
 
-    // 显示补全候选
     if (!completion.empty()) {
         std::cout << ConClr::LIGHT_BLACK << completion << ConClr::RESET;
     }
 
-    // 移动光标
-    size_t cursor_offset = cursor_pos;
-    if (!completion.empty()) {
-        cursor_offset -= completion.size(); // 补全部分不占光标位置
-    }
-    std::cout << "\033[" << cursor_offset << "C"; // ANSI：移动光标到第N列
-
-    std::cout.flush(); // 强制刷新输出
+    // 移动光标（使用计算好的cursor_offset，而非cursor_pos）
+    std::cout << "\033[" << cursor_offset << "C";  // 用可见列数偏移
+    std::cout.flush();
 }
 
 // 核心函数
 std::string repl_readline(const std::string& prompt, const std::string& placeholder) {
-    std::cout << prompt;
-    std::string buf = placeholder;          // 输入缓冲区
+    std::string buf = placeholder;       // 输入缓冲区
     size_t cursor_pos;                      // 光标初始位置
     std::vector<size_t> char_indices;       // 记录每个UTF-8字符的起始字节位置
     std::string current_completion;         // 当前补全候选（如输入whi时，completion是"le"）
 
     if (!buf.empty()) {
         cursor_pos = buf.size();
+    } else {
+        cursor_pos = 0;
     }
-    cursor_pos = 0;
 
     size_t byte_pos = 0;
     char_indices.clear();
     byte_pos = 0;
+
     while (byte_pos < buf.size()) {
         char_indices.push_back(byte_pos);
         const auto c = static_cast<unsigned char>(buf[byte_pos]);
@@ -224,6 +272,8 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
         char_indices.push_back(0);
     }
     char_indices.push_back(byte_pos);
+
+    render_line(prompt, buf, cursor_pos, current_completion, char_indices);
 
     while (true) {
         const int ch = console_getchar(); // 获取不回显字符
@@ -249,7 +299,7 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
             char_indices.push_back(byte_pos);
             current_completion.clear();
 
-            render_line(prompt, buf, cursor_pos, current_completion);
+            render_line(prompt, buf, cursor_pos, current_completion, char_indices);
             continue;
         }
 
@@ -277,7 +327,7 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
             if (!current_completion.empty()) {
                 current_completion = current_completion.substr(word.size()); // 补全部分（如whi→while，补全"le"）
             }
-            render_line(prompt, buf, cursor_pos, current_completion);
+            render_line(prompt, buf, cursor_pos, current_completion, char_indices);
             continue;
         }
 
@@ -306,7 +356,7 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
             if (!current_completion.empty()) {
                 current_completion = current_completion.substr(word.size());
             }
-            render_line(prompt, buf, cursor_pos, current_completion);
+            render_line(prompt, buf, cursor_pos, current_completion, char_indices);
             continue;
         }
 
@@ -327,7 +377,7 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
                 char_indices.push_back(byte_pos);
                 current_completion.clear(); // 补全后清空候选
             }
-            render_line(prompt, buf, cursor_pos, current_completion);
+            render_line(prompt, buf, cursor_pos, current_completion, char_indices);
             continue;
         }
 
@@ -373,6 +423,6 @@ std::string repl_readline(const std::string& prompt, const std::string& placehol
         }
 
         // 重新渲染
-        render_line(prompt, buf, cursor_pos, current_completion);
+        render_line(prompt, buf, cursor_pos, current_completion, char_indices);
     }
 }
