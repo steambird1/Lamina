@@ -694,6 +694,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						// TODO: Debug output:
 						err_stream << "[Debug output] [2] exponent referring (" << i.first.to_string() << ")^(" << i.second.to_string() << ")\n";
 						auto cres = SymbolicExpr::power(SymbolicExpr::number(i.first), SymbolicExpr::number(i.second))->simplify();
+						if (cres->is_number() && cres->convert_rational() == ::Rational(1)) continue;
 						if (inits) {
 							res = cres;
 							inits = false;
@@ -952,7 +953,16 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     result_terms.insert(result_terms.end(), others.begin(), others.end());
 	for (const auto& i : undealt_items) {
 		// TODO: 可能此处有化简 hash_ref[i.first] 项的需求？（千万不要化简整个 multiply）
-		result_terms.push_back(SymbolicExpr::multiply(i.second->simplify(), hash_ref[i.first]->simplify()));
+		auto isv = i.second->simplify();
+		if (isv->is_number()) {
+			auto icr = isv->convert_rational();
+			if (icr == ::Rational(0)) continue;
+			if (icr == ::Rational(1)) {
+				result_terms.push_back(hash_ref[i.first]->simplify());
+				continue;
+			}
+		}
+		result_terms.push_back(SymbolicExpr::multiply(isv, hash_ref[i.first]->simplify()));
 	}
 	
     if (number_term != 0) {// 非0时才添加数字
