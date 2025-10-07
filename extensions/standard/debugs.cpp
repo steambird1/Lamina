@@ -3,7 +3,8 @@
 
 Value __hash_symbolic(const std::vector<Value>& args) {
 	auto hd = SymbolicExpr::HashData(args[0].as_symbolic());
-	return Value(std::vector<Value>({Value(hd.k), Value(hd.ksqrt), Value(BigInt(hd.hash)), Value(hd.hash_obj), Value(hd.to_single_hash())}));
+	std::vector<Value> val = {Value(hd.k), Value(hd.ksqrt), Value(BigInt(hd.hash)), Value(hd.hash_obj), Value(hd.to_single_hash())}; //???
+	return Value(val);
 }
 
 namespace Lamina {
