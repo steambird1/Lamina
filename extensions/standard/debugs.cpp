@@ -3,7 +3,7 @@
 
 Value __hash_symbolic(const std::vector<Value>& args) {
 	auto hd = SymbolicExpr::HashData(args[0].as_symbolic());
-	std::vector<Value> val = {Value(hd.k), Value(hd.ksqrt), Value(BigInt(hd.hash)), Value(hd.hash_obj), Value(hd.to_single_hash())}; //???
+	std::vector<Value> val = {Value(hd.k), Value(hd.ksqrt), Value(BigInt(hd.hash)), Value(hd.hash_obj), Value(BigInt(hd.to_single_hash()))}; //???
 	return Value(val);
 }
 
