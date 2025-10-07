@@ -16,6 +16,8 @@
 #if _SYMBOLIC_DEBUG
 #define err_stream std::cerr
 #else
+#define err_stream if (0) std::cerr
+/*
 class _NullBuffer : public std::streambuf {
 	public:
 		virtual int overflow(int c) {
@@ -25,6 +27,7 @@ class _NullBuffer : public std::streambuf {
 _NullBuffer nbf;
 std::ostream nullstream(&nbf);
 #define err_stream nullstream
+*/
 #endif
 
 // 符号表达式系统
