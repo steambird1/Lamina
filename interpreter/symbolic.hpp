@@ -175,7 +175,8 @@ public:
 				default:
 					defs: for (auto &i : obj->operands)
 						this->hash ^= HashData(i).to_single_hash();
-					this->hash_obj = obj ^ prehash;
+					this->hash ^= prehash;
+					this->hash_obj = obj;
 			}
 			// TODO: 可能考虑在这里做根式化简
 		}
