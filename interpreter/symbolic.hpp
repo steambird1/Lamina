@@ -113,7 +113,7 @@ public:
 			: ODDBIT(ODDBIT), EVENBIT(EVENBIT), SQRBIT(SQRBIT), HALFBIT(HALFBIT) {
 			// Evaluate hash
 			HashData ld, rd;
-			HashType prehash = 0;
+			HashType prehash = 0, rterm = 0;
 			switch (obj->type) {
 				case Type::Number:
 					this->k = obj->convert_rational();
@@ -150,7 +150,7 @@ public:
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					// 不是特别恰当，但可以先这样
 					// 保证 1，2，-1 等常见数值
-					auto rterm = rd.to_single_hash() - 1;
+					rterm = rd.to_single_hash() - 1;
 					this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 4) ^ (rterm << 8) ^ (rterm << 12) ^ (rterm << 16);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
