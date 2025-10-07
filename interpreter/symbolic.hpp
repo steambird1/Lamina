@@ -84,8 +84,8 @@ public:
 			// 直接哈希所有 digits
 			HashType weight = 1ull, ans = 0ull;
 			for (auto &i : rt.digits) {
-				ans = ans * weight + i;
-				weight *= 10ull;
+				ans = ans * weight + (i + 3ull);
+				weight *= 17ull;			// 不用 10 减少哈希冲突
 			}
 			if (rt.negative) return ~ans;
 			return ans;
@@ -117,6 +117,7 @@ public:
 			switch (obj->type) {
 				case Type::Number:
 					this->k = obj->convert_rational();
+					err_stream << "[HPP Debug] Return as value " << k.to_string() << "\n";
 					break;
 				case Type::Infinity:
 					this->hash = INFINITY_D;
@@ -127,7 +128,7 @@ public:
 					// sqrt 里面还有 sqrt，取值异或哈希
 					this->ksqrt = ld.k;
 					ld.k = ::Rational(0);
-					this->hash = ld.to_single_hash() ^ SQRBIT;
+					this->hash = ld.to_single_hash() * SQRBIT;	// 表明这是个 sqrt，里面没东西则恰好为 0
 					this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
 					break;
 				case Type::Multiply:
@@ -135,7 +136,12 @@ public:
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
-					this->hash = ld.hash * rd.hash;
+					this->hash = (obj->operands[0]->is_number() ? 1 : ld.hash) * (obj->operands[1]->is_number() ? 1 : rd.hash);
+					err_stream << "[HPP Debug] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
+					err_stream << "[HPP Debug] My hash value is " << this->hash << std::endl;
+					err_stream << "[HPP Debug] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
+						", R applied: " << (obj->operands[1]->is_number() ? 1 : rd.hash) << std::endl;
+					if (!(ld.hash | rd.hash)) this->hash = 0;	// 里面没有东西
 					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
 					break;
 				case Type::Add:
@@ -151,7 +157,7 @@ public:
 					// 不是特别恰当，但可以先这样
 					// 保证 1，2，-1 等常见数值
 					rterm = rd.to_single_hash() - 1;
-					this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 4) ^ (rterm << 8) ^ (rterm << 12) ^ (rterm << 16);
+					this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 8) ^ (rterm << 16) ^ (rterm << 32);
 					this->hash_obj = obj;	// 没有做任何处理
 					break;
 				case Type::Variable:
@@ -167,7 +173,7 @@ public:
 						if (obj->type == Type::Add) {
 							this->hash += HashData(i).to_single_hash();	// 令其自然溢出，同时避免异或消除
 						} else {
-							this->hash *= HashData(i).to_single_hash();	// 令其自然溢出，同时避免异或消除
+							this->hash *= HashData(i).to_single_hash() + 1;	// 令其自然溢出，同时避免异或消除
 						}
 					}
 					this->hash ^= prehash;
