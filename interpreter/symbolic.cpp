@@ -28,8 +28,8 @@ auto init = []() -> bool {
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
-	// 添加“化简”标记，避免 simplify 重复调用导致效率降低
-	if (already_simplified) return std::make_shared<SymbolicExpr>(*this);
+	// 添加“化简”标记，避免 simplify 重复调用导致效率降低（似乎暂时不可用？）
+	//if (already_simplified) return std::make_shared<SymbolicExpr>(*this);
 	
 	static int current_simplify_level = 0;
 	const int max_simplify_level = 30;
