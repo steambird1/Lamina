@@ -163,6 +163,9 @@ public:
     // 字符串标识（用于变量名或操作符）
     std::string identifier;
 
+	// 是否已经化简完成
+	bool already_simplified = false;
+
     // 构造函数
     SymbolicExpr(Type t) : type(t) {}
 

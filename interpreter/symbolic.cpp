@@ -28,7 +28,8 @@ auto init = []() -> bool {
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
-	// !! TODO: !! 添加“化简”标记，避免 simplify 重复调用导致效率降低
+	// 添加“化简”标记，避免 simplify 重复调用导致效率降低
+	if (already_simplified) return std::make_shared<SymbolicExpr>(*this);
 	
 	static int current_simplify_level = 0;
 	const int max_simplify_level = 30;
@@ -60,6 +61,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	
 	auto res = intcall();
 	current_simplify_level--;
+	res->already_simplified = true;
 	return res;
 }
 
@@ -924,7 +926,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
     result_terms.insert(result_terms.end(), others.begin(), others.end());
 	for (const auto& i : undealt_items) {
 		// TODO: 可能此处有化简 hash_ref[i.first] 项的需求？（千万不要化简整个 multiply）
-		result_terms.push_back(SymbolicExpr::multiply(i.second->simplify(), hash_ref[i.first]));
+		result_terms.push_back(SymbolicExpr::multiply(i.second->simplify(), hash_ref[i.first]->simplify()));
 	}
 	
     if (number_term != 0) {// 非0时才添加数字
