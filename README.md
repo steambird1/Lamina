@@ -42,7 +42,7 @@
 <li>结构体深拷贝</li>
 <li>重构 Parser, ast</li>
 <li>将部分内置函数移到内置库</li>
-<li>cmodule loader更新</li>
+<li>c++ module loader更新</li>
 <li>c++扩展格式更新</li>
 <li>新增函数 typeof、find、replace、foreach、copy、map、exit、tostring</li>
 <li>新增函数 locals、globals</li>
