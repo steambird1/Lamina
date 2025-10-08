@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 project(Lamina VERSION 1.2.0 LANGUAGES CXX)# Lamina version is here
 
 include(GNUInstallDirs)
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/lamina)# 安装模式选择
 # add sub directory
 add_subdirectory(interpreter)
 
@@ -82,8 +83,8 @@ add_library(lamina_core SHARED
         extensions/standard/random.cpp
         extensions/standard/times.cpp
         extensions/standard/array.cpp
-        extensions/standard/sockets.hpp
-        extensions/standard/sockets.cpp
+  #      extensions/standard/sockets.hpp
+  #      extensions/standard/sockets.cpp
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
         extensions/standard/cas.cpp
