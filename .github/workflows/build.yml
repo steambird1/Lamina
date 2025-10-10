@@ -212,6 +212,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract Lamina version
+        id: extract-version
+        shell: bash
+        run: |
+          # Extract version from CMakeLists.txt using awk (portable)
+          VERSION=$(awk 'match($0, /project\(\s*Lamina\s+VERSION\s+([0-9.]+)/, m){print m[1]; exit}' CMakeLists.txt || true)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -226,7 +234,7 @@ jobs:
             g++-13-multilib \
             gcc-13-${{ matrix.pcknm || matrix.arch }} \
             g++-13-${{ matrix.pcknm || matrix.arch }} \
-            musl-tools \
+            musl-tools
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -266,8 +274,9 @@ jobs:
 
       - name: Configure CMake(UNIX)
         if: runner.os == 'macOS' || runner.os == 'Linux'
+        env:
+          MUSL: "${{ matrix.musl }}"
         run: |
-
           # 平台检测
           case "$(uname -s)" in
             Linux*)
@@ -277,7 +286,8 @@ jobs:
             Darwin*)
               PLATFORM="MacOS"
               # macOS使用-arch标志
-              CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=$ARCH";;
+              CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=$ARCH"
+              ;;
           esac
 
           # 构建命令
@@ -293,15 +303,15 @@ jobs:
             echo "Building for $ARCH on $PLATFORM"
             # 设置编译器（Linux）
             if [ "$PLATFORM" = "Linux" ] && [ -n "$ARCH" ]; then
-                        if [ -z ${{ matrix.musl }} ]; then
-                            export CC="$ARCH-gcc-13"
-                            export CXX="$ARCH-g++-13"
-                        else
-                            export CC="gcc-13-$ARCH"
-                            export CXX="g++-13-$ARCH"
-                        fi
+              if [ -z "$MUSL" ]; then
+                export CC="$ARCH-gcc-13"
+                export CXX="$ARCH-g++-13"
+              else
+                export CC="gcc-13-$ARCH"
+                export CXX="g++-13-$ARCH"
+              fi
             fi
-            
+
             cmake -B build \
               -G "$GENERATOR" \
               -DCMAKE_BUILD_TYPE=Release \
@@ -386,9 +396,51 @@ jobs:
           ls -laR --color artifacts/
     
       - name: Upload artifact
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: Lamina-${{ matrix.target }}
           path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Submit signing request (Windows only)
+        if: runner.os == 'Windows'
+        id: signpath
+        uses: signpath/github-action-submit-signing-request@v1
+        env:
+          SIGNING_API_TOKEN: "${{ secrets.SIGNING_API_TOKEN }}"
+        with:
+          api-token: ${{ env.SIGNING_API_TOKEN }}
+          organization-id: '7e544555-678f-4f64-a945-ad61c35f957f'
+          project-slug: 'Lamina'
+          signing-policy-slug: 'test-signing'
+          artifact-configuration-slug: 'Lamina_on_Windows'
+          github-artifact-id: '${{ steps.upload-artifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'artifacts/signed'
+          parameters: |
+            version: ${{ steps.extract-version.outputs.version }}
+
+      - name: Package signed artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ZIP_NAME: "Lamina-${{ matrix.target }}-signed.zip"
+        run: |
+          # Ensure output dir exists
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          # Remove existing zip if present
+          if (Test-Path "artifacts/$env:ZIP_NAME") { Remove-Item "artifacts/$env:ZIP_NAME" -Force }
+          # Package all signed files into a single zip
+          Compress-Archive -Path "artifacts/signed/*" -DestinationPath "artifacts/$env:ZIP_NAME" -Force
+          Write-Output "Packaged signed artifacts: artifacts/$env:ZIP_NAME"
+
+      - name: Upload signed artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lamina-${{ matrix.target }}-signed
+          path: artifacts/Lamina-${{ matrix.target }}-signed.zip
           if-no-files-found: error
           retention-days: 30
