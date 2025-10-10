@@ -216,8 +216,27 @@ jobs:
         id: extract-version
         shell: bash
         run: |
-          # Extract version from CMakeLists.txt using awk (portable)
-          VERSION=$(awk 'match($0, /project\(\s*Lamina\s+VERSION\s+([0-9.]+)/, m){print m[1]; exit}' CMakeLists.txt || true)
+          set -euo pipefail
+          echo "PWD: $(pwd)"
+          # Locate CMakeLists.txt (repo root or first match tracked by git)
+          if [ -f "CMakeLists.txt" ]; then
+            SRC="CMakeLists.txt"
+          else
+            SRC=$(git ls-files | grep -i 'CMakeLists.txt' | head -n1 || true)
+          fi
+
+          if [ -z "$SRC" ]; then
+            echo "CMakeLists.txt not found in repo" >&2
+            echo "version=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Using CMake file: $SRC"
+
+          # Use sed to extract project(lamina VERSION 1.1.1 ...)
+          VERSION=$(sed -nE 's/.*project\([[:space:]]*[Ll]amina[^V]*VERSION[[:space:]]*([0-9A-Za-z.+-]+).*/\1/p' "$SRC" | head -n1 || true)
+
+          echo "Extracted version: [$VERSION]"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Install dependencies (Linux)
@@ -419,8 +438,7 @@ jobs:
           github-artifact-id: '${{ steps.upload-artifact.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: 'artifacts/signed'
-          parameters: |
-            version: ${{ steps.extract-version.outputs.version }}
+          parameters: "{\"version\": \"${{ steps.extract-version.outputs.version }}\"}"
 
       - name: Package signed artifacts (Windows)
         if: runner.os == 'Windows'
