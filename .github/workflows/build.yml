@@ -439,7 +439,7 @@ jobs:
           wait-for-completion: true
           output-artifact-directory: 'artifacts/signed'
           parameters: |
-            version=${{ steps.extract_version.outputs.version }}
+            version: ${{ steps.extract_version.outputs.version }}
 
       - name: Package signed artifacts (Windows)
         if: runner.os == 'Windows'
