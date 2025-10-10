@@ -3,8 +3,6 @@
 #include <optional>
 #include "lamina.hpp"
 
-// Please handle the *fword value type at once, OK?
-// Hahhhhh, I will push these specially prepared shits.
 enum VALUE_TYPE {
     VALUE_IS_STRING,
     VALUE_IS_ARRAY,
@@ -15,8 +13,7 @@ enum VALUE_TYPE {
     VALUE_IS_BIGINT,
     VALUE_IS_INT,
     VALUE_IS_FLOAT,
-
-    VALUE_IS_FUCKING_SHIT
+    VALUE_IS_NOTSURE
 };
 
 static std::shared_ptr<SymbolicExpr> GET_SYMBOLICEXPR(const Value *val, enum VALUE_TYPE type);
@@ -64,7 +61,7 @@ enum VALUE_TYPE GET_VALUE_TYPE(const Value *val)
             return VALUE_IS_INT;
         if (val->is_float())
             return VALUE_IS_FLOAT;
-        return VALUE_IS_FUCKING_SHIT; // don't f**king handle this value becase it's a shit.
+        return VALUE_IS_NOTSURE; 
     }
 
 Value HANDLE_BINARYEXPR_ADD(Value *l, Value *r)
