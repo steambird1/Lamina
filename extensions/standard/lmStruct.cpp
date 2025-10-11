@@ -118,7 +118,7 @@ std::string lmStruct::to_string() const {
         auto current = bucket_head;
         while (current != nullptr) {
             // 写入当前键值对
-            ss << current->key << ":" << current->value.to_string();
+            ss << current->key << ": " << current->value.to_string();
 
             if (current_node_idx < total_node_count - 1) {
                 ss << ", ";
