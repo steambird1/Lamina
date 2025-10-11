@@ -104,6 +104,22 @@ Value globals(const std::vector<Value>& args) {
     return {std::make_shared<lmStruct>(init_vec)};
 }
 
+// 变量表
+Value vars(const std::vector<Value>& args) {
+    const auto tables = Interpreter::variable_stack;
+    std::vector<Value> results{};
+
+    for (auto table: tables) {
+        std::vector<std::pair<std::string, Value>> init_vec = {};
+        for (auto [key, value] : table) {
+            init_vec.emplace_back(key, value);
+        }
+        results.emplace_back(std::make_shared<lmStruct>(init_vec));
+    }
+    return results;
+}
+
+
 Value typeof_(const std::vector<Value>& args) {
     if (args.empty()) {
         return LAMINA_NULL;
