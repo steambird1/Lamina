@@ -68,11 +68,14 @@
 </ul>
 </details>
 
+---
 
 <br>
     
 感谢所有参与开发的工作者和用户
 
 <br>
+
 如果您想为lamina贡献代码
-您可以看看[ToDo list](TODO.md)
+
+您可以看看 [ToDo list](TODO.md)
