@@ -6,7 +6,8 @@
 🟢实现时间较不重要
 🟧 已经实现但功能不完善
 
-** 注意 ToDo list 的每一项需要标注状态 (已完成) (未完成) (正在做)**
+
+** 注意 ToDo list 的每一项需要标注状态 (已完成) (未完成) (正在做) **
 
 ## 库方面
 - [ ] 🟡 IO库
@@ -24,9 +25,13 @@
 - [ ] 🟡 列表项赋值语句 a[i] = v
 - [ ] 🟡 break expr 表达式
 - [ ] 🟡 三元表达式 
+
     方案一: `if cond : expr else expr`
+
     方案二: `cond if expr else expr`
+
     方案三:  `cond ? expr ! expr`
+
 - [ ] 🟡 类型注释及类型系统
 - [ ] 🟡 when语句
 - [ ] 🟡 is not or in not int 运算符
