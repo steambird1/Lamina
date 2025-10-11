@@ -1,4 +1,7 @@
 #include "lexer.hpp"
+
+#include "lamina_api/lamina.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -43,6 +46,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 and tokens.back().type != LexerTokenType::LBrace
                 and tokens.back().type != LexerTokenType::LBracket
                 and tokens.back().type != LexerTokenType::LParen
+                and tokens.back().type != LexerTokenType::Comma
                 and tokens.back().type != LexerTokenType::Backslash) {
                 tokens.emplace_back(LexerTokenType::Semicolon, ";", line, col);
             }
@@ -237,7 +241,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             }
 
             if (j >= src.size()) {// Unterminated string
-                std::cerr << "Error: Unterminated string literal at line " << line << std::endl;
+                throw StdLibException("Error: Unterminated string literal at line " + line);
                 i = src.size();// Stop tokenizing
             } else {
                 tokens.emplace_back(LexerTokenType::String, str_content, line, start_col);
@@ -305,6 +309,12 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i;
             ++col;
         } else if (src[i] == '}') {
+            if (
+                tokens.back().type != LexerTokenType::Semicolon
+                and tokens.back().type != LexerTokenType::Comma
+            ) {
+                tokens.emplace_back(LexerTokenType::Semicolon, ";", line, start_col);
+            }
             tokens.emplace_back(LexerTokenType::RBrace, "}", line, start_col);
             ++i;
             ++col;
