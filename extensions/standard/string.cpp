@@ -6,7 +6,7 @@
  */
 Value cat(const std::vector<Value>& args) {
     std::string str;
-    for (const auto & arg : args) {
+    for (const auto& arg : args) {
         if (!arg.is_string()) {
             L_ERR("Args Must Be String");
             return LAMINA_NULL;

@@ -54,16 +54,13 @@ add_library(lamina_core SHARED
     extensions/standard/random.cpp
     extensions/standard/times.cpp
     extensions/standard/array.cpp
-    extensions/standard/sockets.hpp
-    extensions/standard/sockets.cpp
     extensions/standard/string.cpp
     extensions/standard/cas.hpp
     extensions/standard/cas.cpp
     extensions/standard/lmStruct.hpp
     extensions/standard/lmStruct.cpp
     extensions/standard/standard.hpp
-    extensions/standard/standard.cpp
-    extensions/standard/io.cpp
+        extensions/standard/io.cpp
 
     interpreter/eval.cpp
     interpreter/interpreter.cpp
@@ -78,6 +75,7 @@ add_library(lamina_core SHARED
     interpreter/cpp_module_loader.hpp
 
     interpreter/utils/src_manger.cpp
+    interpreter/cpp_module_loader.hpp
     interpreter/utils/properties_parser.hpp
     interpreter/utils/src_manger.hpp
 )
@@ -123,12 +121,12 @@ endif()
 
 add_executable(Lamina 
     interpreter/main.cpp 
-    interpreter/repl_input.cpp
-    interpreter/module_loader.cpp
-    interpreter/symbolic.cpp
+    interpreter/utils/repl_input.hpp
+    interpreter/utils/repl_input.cpp
     interpreter/console_ui.hpp
     interpreter/console_ui.cpp
-    interpreter/color_style.hpp
+    interpreter/utils/color_style.hpp
+    interpreter/utils/color_style.cpp
     interpreter/eval.cpp
 )
 

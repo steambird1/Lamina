@@ -40,7 +40,7 @@
 
 std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
 std::vector<StackFrame> Interpreter::call_stack{};
-std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins();
+std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins;
 std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
 
 Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec);
@@ -111,7 +111,7 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
         if (!d->value) {
-            error_and_exit("Null expression in define statement for '" + d->name + "'");
+            L_ERR("Null expression in define statement for '" + d->name + "'");
         }
         Value val = eval(d->value.get());
     } else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
@@ -130,24 +130,18 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
                     ::BigInt big_val(std::get<std::string>(val.data));
                     set_variable(bi->name, Value(big_val));
                 } catch (const std::exception& e) {
-                    error_and_exit("Invalid BigInt string '" + std::get<std::string>(val.data) + "' in declaration of " + bi->name);
+                    L_ERR("Invalid BigInt string '" + std::get<std::string>(val.data) + "' in declaration of " + bi->name);
                 }
             } else {
                 // 默认初始化为0
-                error_and_exit("Cannot convert " + val.to_string() + " to BigInt in declaration of " + bi->name);
+                L_ERR("Cannot convert " + val.to_string() + " to BigInt in declaration of " + bi->name);
             }
         } else {
             set_variable(bi->name, Value(::BigInt(0)));
         }
     } else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
         if (!a->expr) {
-            error_and_exit("Null expression in assignment to '" + a->name + "'");
-        }
-        try {
-            get_variable(a->name);
-        } catch (const RuntimeError&){
-            std::cerr << "Warning :" << a->name << " is undefined"<< std::endl;
-            std::cerr << "But now it is defined"<< std::endl;
+            L_ERR("Null expression in assignment to '" + a->name + "'");
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
@@ -160,7 +154,7 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
         set_variable(a->name, new_lm_struct(struct_init_val));
     } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
-            error_and_exit("Null condition in if statement");
+            L_ERR("Null condition in if statement");
         }
         Value cond = eval(ifs->condition.get());
         if (cond.as_bool()) {
@@ -242,18 +236,26 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
         if (path.ends_with(".lm")){
             ok_to_load = load_module(path);
         }
-        else if ( path.ends_with(".dll")
+        else if
+        (   path.ends_with(".dll")
          or path.ends_with(".so")
          or path.ends_with(".dylib")
          or path.ends_with(".a")
         ){
             ok_to_load = load_cpp_module(path);
         }
+        else if (
+            auto it = register_std_libs.find(path);
+            it != register_std_libs.end()
+        ){
+            set_variable(it->first, it->second);
+            ok_to_load = true;
+        }
         else {
-            error_and_exit("Failed to include module '" + path + "'");
+            L_ERR("Failed to include module '" + path + "'");
         }
         if (!ok_to_load) {
-            error_and_exit("Failed to include module '" + path + "'");
+            L_ERR("Failed to include module '" + path + "'");
         }
     } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
         if (exprstmt->expr) {
@@ -270,7 +272,7 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 std::cerr << "ERROR: Unknown exception in expression statement" << std::endl;
             }
         } else {
-            error_and_exit("Empty expression statement");
+            L_ERR("Empty expression statement");
         }
     } else if (auto* nullstmt = dynamic_cast<NullStmt*>(node.get())) {
         (void) nullstmt;
@@ -283,7 +285,7 @@ Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
 
 Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
-        error_and_exit("Attempted to evaluate null expression");
+        L_ERR("Attempted to evaluate null expression");
     }
     if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
         return eval_LiteralExpr(lit);
@@ -520,13 +522,6 @@ std::shared_ptr<SymbolicExpr> Interpreter::from_number_to_symbolic(const Value& 
     }
 
     return expr;
-}
-
-
-// 在文件顶端添加错误处理函数
-LAMINA_EXPORT void error_and_exit(const std::string& msg) {
-    std::cerr << "Error: " << msg << std::endl;
-    std::exit(EXIT_FAILURE);
 }
 
 // 添加一个新的错误报告函数，只打印错误但不终止程序

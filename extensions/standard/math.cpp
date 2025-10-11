@@ -181,11 +181,11 @@ Value tan_(const std::vector<Value>& args) {
  */
 Value log_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
-        error_and_exit("log() requires numeric argument");
+        L_ERR("log() requires numeric argument");
     }
     double val = args[0].as_number();
     if (val <= 0) {
-        error_and_exit("log() requires positive argument");
+        L_ERR("log() requires positive argument");
     }
     return Value(std::log(val));
 }
@@ -198,7 +198,7 @@ Value log_(const std::vector<Value>& args) {
  */
 Value round_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
-        error_and_exit("round() requires numeric argument");
+        L_ERR("round() requires numeric argument");
     }
     return Value(static_cast<int>(std::round(args[0].as_number())));
 }
@@ -211,7 +211,7 @@ Value round_(const std::vector<Value>& args) {
  */
 Value floor_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
-        error_and_exit("floor() requires numeric argument");
+        L_ERR("floor() requires numeric argument");
     }
     return Value(static_cast<int>(std::floor(args[0].as_number())));
 }
@@ -224,7 +224,7 @@ Value floor_(const std::vector<Value>& args) {
  */
 Value ceil_(const std::vector<Value>& args) {
     if (!args[0].is_numeric()) {
-        error_and_exit("ceil() requires numeric argument");
+        L_ERR("ceil() requires numeric argument");
     }
     return Value(static_cast<int>(std::ceil(args[0].as_number())));
 }
@@ -307,11 +307,11 @@ Value size(const std::vector<Value>& args) {
  */
 Value idiv(const std::vector<Value>& args) {
     if (!args[0].is_numeric() || !args[1].is_numeric()) {
-        error_and_exit("idiv() requires numeric arguments");
+        L_ERR("idiv() requires numeric arguments");
     }
     double divisor = args[1].as_number();
     if (divisor == 0.0) {
-        error_and_exit("Integer division by zero");
+        L_ERR("Integer division by zero");
     }
     double dividend = args[0].as_number();
     return Value(static_cast<int>(dividend / divisor));

@@ -403,6 +403,11 @@ int repl() {
             // 保存AST以保持函数指针有效
             Interpreter::save_repl_ast(std::move(block));
         }
+        catch (StdLibException& e) {
+            Interpreter::print_error(
+                    e.what(),
+                    true);
+        }
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {
             Interpreter::print_error(

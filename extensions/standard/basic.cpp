@@ -1,3 +1,7 @@
+#include "interpreter.hpp"
+#include "lmStruct.hpp"
+
+
 #include <fstream>
 
 #include "../../interpreter/lamina_api/lamina.hpp"
@@ -44,76 +48,6 @@ Value print(const std::vector<Value>& args) {
     return Value();
 }
 
-// #include <filesystem>
-//
-// inline Value file_put_content(const std::vector<Value>& args) {
-//     if (args.size() < 2) {
-//         L_ERR("file_put_content requires at least 2 arguments: filename and content");
-//         return Value(false);
-//     }
-//
-//     if (!args[0].is_string()) {
-//         L_ERR("The first argument of file_put_content must be a string (filename).");
-//         return Value(false);
-//     }
-//
-//     std::string filename = args[0].to_string();
-//
-//     // 检查文件是否存在
-//     if (!std::filesystem::exists(filename)) {
-//         L_ERR("File does not exist: " + filename);
-//         return Value(false);
-//     }
-//
-//     if (!std::filesystem::is_regular_file(filename)) {
-//         L_ERR("Path is not a file: " + filename);
-//         return Value(false);
-//     }
-//
-//     std::ofstream file(filename, std::ios::binary);
-//     if (!file.is_open()) {
-//         L_ERR("Failed to open existing file for writing: " + filename);
-//         return Value(false);
-//     }
-//
-//     std::string content = args[1].to_string();
-//     file.write(content.data(), content.size());
-//
-//     if (file.fail()) {
-//         L_ERR("Failed to write to existing file: " + filename);
-//         return Value(false);
-//     }
-//
-//     return Value(static_cast<int>(content.size()));
-// }
-//
-// inline Value file_get_content(const std::vector<Value>& args) {
-//     if (args.empty()) {
-//         L_ERR("file_get_content requires 1 argument: filename");
-//     }
-//
-//     if (!args[0].is_string()) {
-//         L_ERR("The first argument of file_get_content must be a string (filename).");
-//     }
-//
-//     std::ifstream file(args[0].to_string().c_str(), std::ios::binary | std::ios::ate);
-//     if (!file.is_open()) {
-//         L_ERR("Failed to open file for reading: " + args[0].to_string());
-//     }
-//
-//     std::streamsize size = file.tellg();
-//     file.seekg(0, std::ios::beg);
-//
-//     std::string content;
-//     content.resize(static_cast<size_t>(size));
-//
-//     if (!file.read(&content[0], size)) {
-//         L_ERR("Failed to read from file: " + args[0].to_string());
-//     }
-//
-//     return Value(content);
-// }
-
 /**
  * 终端内执行系统指令
  */
@@ -126,8 +60,8 @@ Value system_(const std::vector<Value>& args) {
         L_ERR("The first argument of exec must be a string (command).");
     }
 
-    std::string command = args[0].to_string();
-    int result = std::system(command.c_str());
+    const std::string command = args[0].to_string();
+    const int result = std::system(command.c_str());
 
     if (result != 0) {
         L_ERR("Command execution failed: " + command);
@@ -135,46 +69,6 @@ Value system_(const std::vector<Value>& args) {
 
     return Value(result);
 }
-
-// inline Value exist(const std::vector<Value>& args) {
-//     if (args.empty()) {
-//         L_ERR("exist() requires 1 argument: filename");
-//         return Value(false);
-//     }
-//
-//     if (!args[0].is_string()) {
-//         L_ERR("The first argument of exist must be a string (filename).");
-//         return Value(false);
-//     }
-//
-//     std::string filename = args[0].to_string();
-//     bool exists = std::filesystem::exists(filename);
-//     return Value(exists);
-// }
-//
-// inline Value touch_file(const std::vector<Value>& args) {
-//     if (args.empty()) {
-//         L_ERR("touch_file() requires 1 argument: filename");
-//         return Value(false);
-//     }
-//
-//     if (!args[0].is_string()) {
-//         L_ERR("The first argument of touch_file must be a string (filename).");
-//         return Value(false);
-//     }
-//
-//     std::string filename = args[0].to_string();
-//
-//     std::ofstream file(filename, std::ios::app);
-//     if (!file.is_open()) {
-//         L_ERR("Failed to touch file: " + filename);
-//         return Value(false);
-//     }
-//
-//     std::filesystem::last_write_time(filename, std::filesystem::file_time_type::clock::now());
-//
-//     return Value(true);
-// }
 
 Value assert(const std::vector<Value>& args) {
     const bool cond = !args.empty()
@@ -188,6 +82,26 @@ Value assert(const std::vector<Value>& args) {
     }
 
     return LAMINA_NULL;
+}
+
+// 局部变量表
+Value locals(const std::vector<Value>& args) {
+    auto table = Interpreter::variable_stack.back();
+    std::vector<std::pair<std::string, Value>> init_vec = {};
+    for (auto [key, value] : table) {
+        init_vec.emplace_back(key, value);
+    }
+    return {std::make_shared<lmStruct>(init_vec)};
+}
+
+// 全局变量表
+Value globals(const std::vector<Value>& args) {
+    auto table = Interpreter::variable_stack[0];
+    std::vector<std::pair<std::string, Value>> init_vec = {};
+    for (auto [key, value] : table) {
+        init_vec.emplace_back(key, value);
+    }
+    return {std::make_shared<lmStruct>(init_vec)};
 }
 
 Value typeof_(const std::vector<Value>& args) {

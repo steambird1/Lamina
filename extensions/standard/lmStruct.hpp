@@ -72,7 +72,7 @@ public:
     explicit lmStruct();
     explicit lmStruct(const std::vector<std::pair<std::string, Value>>& vec);
     ~lmStruct();
-    Value insert(const std::string& key, Value& val);
+    Value insert(const std::string& key, Value val);
     [[nodiscard]] std::shared_ptr<Node> find(const std::string& key) const;
     [[nodiscard]] std::string to_string() const;
     [[nodiscard]] std::vector<std::pair<std::string, Value>> to_vector() const;

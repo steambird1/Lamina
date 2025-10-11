@@ -1,0 +1,40 @@
+include random
+print(random::random())
+
+print(string::cat( "a", "b", "c" ))
+
+var arr = range(10)
+print( arr[0] )
+
+foreach(arr , |i,e| print(i, "=>", e) )
+
+print(typeof(arr))
+print(to_string(print))
+
+var lambda_struct = {a=0, b=0}
+print(lambda_struct)
+
+var i = 0
+loop {
+    print("lamina")
+    i=i+1
+    if i>10 {
+        break
+    }
+}
+
+struct Student{name = "Tom";age = 18;}
+
+print(Student);
+
+print(Student.name);
+
+struct Dog { name = "",  init = do|n|{self.name = n},   bark = do{ print(self.name, "is barking") } }
+
+var my_dog = new(Dog)
+my_dog.init("Tim")
+my_dog.bark()
+
+print(my_dog.__parent__)
+print(same(Dog, my_dog.__parent__))
+print(same(Dog, my_dog))

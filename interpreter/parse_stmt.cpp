@@ -68,6 +68,7 @@ std::unique_ptr<Statement> Parser::parse_struct() {
         skip_token("=");
         auto val = parse_expression();
         if (curr_token().type == LexerTokenType::Comma) skip_token(",");
+        if (curr_token().type == LexerTokenType::Semicolon) skip_token(";");
         init_vec.emplace_back(std::move(key), std::move(val));
     }
     skip_token("}");

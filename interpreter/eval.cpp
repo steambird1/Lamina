@@ -208,7 +208,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             }
             return Value(result);
         } else {
-            error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
+            L_ERR("Cannot add " + l.to_string() + " and " + r.to_string());
         }
     }
     // Arithmetic operations (require numeric operands or vector operations)
@@ -284,7 +284,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 return Value(result);
             }
             // Error case
-            error_and_exit("Cannot multiply " + l.to_string() + " and " + r.to_string());
+            L_ERR("Cannot multiply " + l.to_string() + " and " + r.to_string());
         }
 
         // Special handling for minus
@@ -298,11 +298,11 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             }
             // Matrix multiplication
             if (l.is_matrix() && r.is_matrix()) {
-                error_and_exit("Arithmetic operation '-' requires numeric or vector operands");
+                L_ERR("Arithmetic operation '-' requires numeric or vector operands");
             }
             // Scalar multiplication for vectors
             if ((l.is_array() && r.is_numeric()) || (l.is_numeric() && r.is_array())) {
-                error_and_exit("Arithmetic operation '-' requires same-type operands");
+                L_ERR("Arithmetic operation '-' requires same-type operands");
             }
             // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
             if ((l.is_irrational() || r.is_irrational() || l.is_symbolic() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
@@ -352,12 +352,12 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 return (l.is_int() && r.is_int()) ? Value(static_cast<int>(result)) : Value(result);
             }
             // Error case
-            error_and_exit("Cannot decrease " + l.to_string() + " by " + r.to_string());
+            L_ERR("Cannot decrease " + l.to_string() + " by " + r.to_string());
         }
 
         // Other arithmetic operations require both operands to be numeric
         if (!l.is_numeric() || !r.is_numeric()) {
-            error_and_exit("Arithmetic operation '" + bin->op + "' requires numeric operands");
+            L_ERR("Arithmetic operation '" + bin->op + "' requires numeric operands");
         }
 
         // For division, always use rational arithmetic for precise results
@@ -384,7 +384,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
                 if (rb.is_zero()) {
-                    error_and_exit("Division by zero");
+                    L_ERR("Division by zero");
                 }
                 // 对于BigInt除法，如果能整除则返回BigInt，否则返回Rational
                 try {
@@ -407,7 +407,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 ::Irrational lr = l.as_irrational();
                 ::Irrational rr = r.as_irrational();
                 if (rr.is_zero()) {
-                    error_and_exit("Division by zero");
+                    L_ERR("Division by zero");
                 }
                 return Value(lr / rr);
             }
@@ -415,7 +415,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             ::Rational lr = l.as_rational();
             ::Rational rr = r.as_rational();
             if (rr.is_zero()) {
-                error_and_exit("Division by zero");
+                L_ERR("Division by zero");
             }
             return Value(lr / rr);
         }
@@ -426,7 +426,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                 double ld = l.as_number();
                 double rd = r.as_number();
                 if (rd == 0.0) {
-                    error_and_exit("Modulo by zero");
+                    L_ERR("Modulo by zero");
                 }
                 return Value(ld - rd * std::floor(ld / rd));    // 保持结果非负
             }
@@ -488,7 +488,7 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             return Value(std::pow(ld, rd));
         }
 
-        error_and_exit("Unknown Arithmetic Operation.");
+        L_ERR("Unknown Arithmetic Operation.");
     }
 
     // Comparison operators
@@ -580,12 +580,12 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
             if (bin->op == "==") return Value(false);   // Different types are never equal
             if (bin->op == "!=") return Value(true);    // Different types are always not equal
 
-            error_and_exit("Cannot compare different types with operator '" + bin->op + "'");
+            L_ERR("Cannot compare different types with operator '" + bin->op + "'");
             return Value();
         }
     }
 
-    error_and_exit("Unknown binary operator '" + bin->op + "'");
+    L_ERR("Unknown binary operator '" + bin->op + "'");
     return {};
 }
 

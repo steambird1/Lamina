@@ -50,7 +50,7 @@ std::shared_ptr<Node> lmStruct::find(const std::string& key) const {
 }
 
 // 插入或更新键值对
-Value lmStruct::insert(const std::string& key, Value& val) {
+Value lmStruct::insert(const std::string& key, Value val) {
     if (buckets_.empty()) {
         buckets_.resize(16, nullptr);   // 初始化为16个桶
     }
@@ -166,14 +166,27 @@ std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct) {
 
 Value new_struct_from(const std::vector<Value>& args) {
     check_cpp_function_argv(args, {Value::Type::lmStruct});
-    const auto& arg_data = args[0].data;
-    auto& original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
+    auto arg_data = args[0].data;
+    auto original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
 
     if (!original_ptr) return LAMINA_NULL;
 
     // 新对象
     const auto new_obj = std::make_shared<lmStruct>();
     new_obj->parent_ = original_ptr;
+    new_obj->insert("__parent__", Value(original_ptr));
     return {new_obj};
 
+}
+
+Value is_same_thing(const std::vector<Value>& args) {
+    check_cpp_function_argv(args,
+    {Value::Type::lmStruct, Value::Type::lmStruct}
+    );
+    const auto arg_0 = std::get<std::shared_ptr<lmStruct>>(args[0].data);
+    const auto arg_1 = std::get<std::shared_ptr<lmStruct>>(args[1].data);
+    if (arg_0.get() == arg_1.get()) {
+        return LAMINA_BOOL(true);
+    }
+    return LAMINA_BOOL(false);
 }

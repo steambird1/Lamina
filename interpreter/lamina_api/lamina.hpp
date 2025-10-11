@@ -30,7 +30,6 @@
 
 class Value;
 // 声明错误处理函数
-LAMINA_EXPORT void error_and_exit(const std::string& msg);
 
 template<class>
 constexpr bool always_false = false;

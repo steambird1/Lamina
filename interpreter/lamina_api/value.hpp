@@ -265,7 +265,7 @@ public:
                 const auto* func_ptr = std::get<std::shared_ptr<LambdaDeclExpr>>(data).get();
                 std::stringstream ss;
                 ss << std::hex << func_ptr;// 以十六进制格式输出指针地址
-                return "<Lamina lambda at " + ss.str() + " >";
+                return "<Lamina lambda at " + ss.str() + ">";
             }
             case Type::Set: {
                 std::string text = "{";
@@ -274,11 +274,17 @@ public:
                 }
                 return text + "}";
             }
+            case Type::lmCppFunction: {
+                const auto* cpp_funv__ptr = std::get<std::shared_ptr<LmCppFunction>>(data).get();
+                std::stringstream ss;
+                ss << std::hex << cpp_funv__ptr;// 以十六进制格式输出指针地址
+                return "<Lamina c++ function at " + ss.str() + ">";
+            }
             case Type::lmModule: {
                 const auto* module_ptr = std::get<std::shared_ptr<LmModule>>(data).get();
                 std::stringstream ss;
                 ss << std::hex << module_ptr;// 以十六进制格式输出指针地址
-                return "<Lamina module at " + ss.str() + " >";
+                return "<Lamina module at " + ss.str() + ">";
             }
             default:
                 return "<unknown>";
