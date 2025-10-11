@@ -150,6 +150,9 @@ Value map(const std::vector<Value>& args);
 // 替换内容：需3个参数（原字符串/容器、目标值、替换值），替换所有匹配的目标值并返回新结果
 Value replace(const std::vector<Value>& args);
 
+// 变量表
+Value vars(const std::vector<Value>& args);
+
 // 局部变量表
 Value locals(const std::vector<Value>& args);
 
@@ -278,6 +281,7 @@ inline std::unordered_map<std::string, Value> register_builtins =
         LAMINA_FUNC("to_string", to_string),
         LAMINA_FUNC("copy_struct", copy_struct),
         LAMINA_FUNC("new", new_struct_from),
+        LAMINA_FUNC("vars", vars),
         LAMINA_FUNC("locals", locals),
         LAMINA_FUNC("globals", globals),
 

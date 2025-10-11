@@ -95,18 +95,42 @@ std::vector<std::pair<std::string, Value>> lmStruct::to_vector() const {
 
 
 std::string lmStruct::to_string() const {
-    std::string text = "{ ";
-    if (parent_) text += "parent: " + parent_->to_string() + ";";
+    std::stringstream ss;
+    ss << "{ ";
+
+    if (parent_) {
+        ss << "parent: " << parent_->to_string() << "; ";
+    }
+
+    // 统计总节点数
+    size_t total_node_count = 0;
     for (const std::shared_ptr<Node>& bucket_head : buckets_) {
         auto current = bucket_head;
         while (current != nullptr) {
-            text += current->key + ": " + current->value.to_string();
-            text += ", ";
+            total_node_count++;
             current = current->next;
         }
     }
-    text += " }";
-    return text;
+
+    // 添加键值对
+    size_t current_node_idx = 0;  // 记录当前节点
+    for (const std::shared_ptr<Node>& bucket_head : buckets_) {
+        auto current = bucket_head;
+        while (current != nullptr) {
+            // 写入当前键值对
+            ss << current->key << ":" << current->value.to_string();
+
+            if (current_node_idx < total_node_count - 1) {
+                ss << ", ";
+            }
+
+            current = current->next;
+            current_node_idx++;  // 更新节点索引
+        }
+    }
+
+    ss << " }";
+    return ss.str();  // 转换为string返回
 }
 
 
