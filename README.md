@@ -22,7 +22,7 @@
 
 [语法指南](https://wiki.lm-lang.org) • [数学特性](#精确数学特性) • [示例代码](#示例代码) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md) • [ToDo list](TODO.md)
 
-
+<br>
 
 <h2>🎉Lamina v1.2.0(Big Refactor) 有什么新功能 ?</h1>
 <details>
@@ -69,7 +69,10 @@
 </details>
 
 
+<br>
+    
 感谢所有参与开发的工作者和用户
 
-
-如果您想为lamina贡献代码，您可以看看[ToDo list](TODO.md)
+<br>
+如果您想为lamina贡献代码
+您可以看看[ToDo list](TODO.md)
