@@ -306,7 +306,8 @@ Value Interpreter::eval(const ASTNode* node) {
     if (auto* g_mem = dynamic_cast<const GetMemberExpr*>(node)) {
         auto left = eval(g_mem->father.get());
         if (left.is_lstruct()) {
-            const auto& lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            const auto lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            variable_stack[0]["self"] = lstruct_;
             const auto& attr_name = g_mem->child->name;
             auto res = lstruct_->find(attr_name);
             if (res == nullptr) {
