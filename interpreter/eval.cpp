@@ -1,29 +1,31 @@
 #include "interpreter.hpp"
 #include "lamina_api/lamina.hpp"
 #include "../extensions/standard/cas.hpp"
+#include "lamina_api/symbolic.hpp"
 #include <optional>
+#include <iostream>
 
-enum VALUE_TYPE {
-    VALUE_IS_STRING,
-    VALUE_IS_ARRAY,
-    VALUE_IS_IRRATIONAL,
-    VALUE_IS_RATIONAL,
-    VALUE_IS_NUMERIC,
-    VALUE_IS_SYMBOLIC,
-    VALUE_IS_BIGINT,
-    VALUE_IS_INT,
-    VALUE_IS_FLOAT,
-    VALUE_IS_NOTSURE
+enum VALUE_TYPE : int {
+    VALUE_IS_STRING = 1,
+    VALUE_IS_ARRAY = 2,
+    VALUE_IS_IRRATIONAL = 4,
+    VALUE_IS_RATIONAL = 8,
+    VALUE_IS_NUMERIC = 16,
+    VALUE_IS_SYMBOLIC = 32,
+    VALUE_IS_BIGINT = 64,
+    VALUE_IS_INT = 128,
+    VALUE_IS_FLOAT = 256,
+    VALUE_IS_NOTSURE = 0
 };
 
 static std::shared_ptr<SymbolicExpr> GET_SYMBOLICEXPR(const Value *val, enum VALUE_TYPE type);
-static enum VALUE_TYPE GET_VALUE_TYPE(const Value *val);
+static int GET_VALUE_TYPE(const Value *val);
 static Value HANDLE_BINARYEXPR_ADD(Value *l, Value *r);
 static Value HANDLE_BINARYEXPR_STR_ADD_STR(Value *l, Value *r);
 
-std::shared_ptr<SymbolicExpr> GET_SYMBOLICEXPR(const Value *val, enum VALUE_TYPE type)
+std::shared_ptr<SymbolicExpr> GET_SYMBOLICEXPR(const Value *val, int type)
     {
-        switch (type) {
+        switch (type & (~int(VALUE_IS_NUMERIC))) {
             case VALUE_IS_SYMBOLIC:
                 return std::get<std::shared_ptr<SymbolicExpr>>(val->data);
             case VALUE_IS_IRRATIONAL:
@@ -41,51 +43,51 @@ std::shared_ptr<SymbolicExpr> GET_SYMBOLICEXPR(const Value *val, enum VALUE_TYPE
         }
     }
 
-enum VALUE_TYPE GET_VALUE_TYPE(const Value *val)
+int GET_VALUE_TYPE(const Value *val)
     {
         if (val->is_string())
             return VALUE_IS_STRING;
         if (val->is_array())
             return VALUE_IS_ARRAY;
         if (val->is_irrational())
-            return VALUE_IS_IRRATIONAL;
+            return VALUE_IS_IRRATIONAL | VALUE_IS_NUMERIC;
         if (val->is_rational())
-            return VALUE_IS_RATIONAL;
+            return VALUE_IS_RATIONAL | VALUE_IS_NUMERIC;
         if (val->is_symbolic())
-            return VALUE_IS_SYMBOLIC;
-        if (val->is_numeric())
-            return VALUE_IS_NUMERIC;
+            return VALUE_IS_SYMBOLIC | VALUE_IS_NUMERIC;
         if (val->is_bigint())
-            return VALUE_IS_BIGINT;
+            return VALUE_IS_BIGINT | VALUE_IS_NUMERIC;
         if (val->is_int())
-            return VALUE_IS_INT;
+            return VALUE_IS_INT | VALUE_IS_NUMERIC;
         if (val->is_float())
-            return VALUE_IS_FLOAT;
+            return VALUE_IS_FLOAT | VALUE_IS_NUMERIC;
+		if (val->is_numeric())
+            return VALUE_IS_NUMERIC;	// Quite strange. Why do we need this?
         return VALUE_IS_NOTSURE;
     }
 
 Value HANDLE_BINARYEXPR_ADD(Value *l, Value *r)
     {
-        enum VALUE_TYPE ltype = GET_VALUE_TYPE(l);
-        enum VALUE_TYPE rtype = GET_VALUE_TYPE(r);
-        if (ltype == VALUE_IS_STRING && rtype == VALUE_IS_STRING) {
+        auto ltype = GET_VALUE_TYPE(l);
+        auto rtype = GET_VALUE_TYPE(r);
+        if (ltype & VALUE_IS_STRING && rtype & VALUE_IS_STRING) {
             return HANDLE_BINARYEXPR_STR_ADD_STR(l, r);
-        } else if (ltype == VALUE_IS_STRING || rtype == VALUE_IS_STRING) {
+        } else if (ltype & VALUE_IS_STRING || rtype & VALUE_IS_STRING) {
             return Value(l->to_string() + r->to_string());
-        } else if (ltype == VALUE_IS_ARRAY && rtype == VALUE_IS_ARRAY) {
+        } else if (ltype & VALUE_IS_ARRAY && rtype & VALUE_IS_ARRAY) {
             // Vector addition
             return l->vector_add(r);
         // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-        } else if ((ltype == VALUE_IS_IRRATIONAL
-                    || ltype == VALUE_IS_SYMBOLIC
-                    || rtype == VALUE_IS_IRRATIONAL
-                    || rtype == VALUE_IS_SYMBOLIC)
-                && ltype == VALUE_IS_NUMERIC
-                && rtype == VALUE_IS_NUMERIC) {
+        } else if (((ltype & VALUE_IS_IRRATIONAL)
+                    || (ltype & VALUE_IS_SYMBOLIC)
+                    || (rtype & VALUE_IS_IRRATIONAL)
+                    || (rtype & VALUE_IS_SYMBOLIC))
+                && (ltype & VALUE_IS_NUMERIC)
+                && (rtype & VALUE_IS_NUMERIC)) {
             std::shared_ptr<SymbolicExpr> leftExpr = GET_SYMBOLICEXPR(l, ltype);
             std::shared_ptr<SymbolicExpr> rightExpr = GET_SYMBOLICEXPR(r, rtype);
             return Value(SymbolicExpr::add(leftExpr, rightExpr)->simplify());
-        } else if (ltype == VALUE_IS_NUMERIC && rtype == VALUE_IS_NUMERIC) {
+        } else if (ltype & VALUE_IS_NUMERIC && rtype & VALUE_IS_NUMERIC) {
             // BigInt 优先：如果任一为 BigInt，结果为 BigInt
             if (l->is_bigint() || r->is_bigint()) {
                 ::BigInt lb = l->is_bigint() ? std::get<::BigInt>(l->data) : ::BigInt(l->as_number());

@@ -48,26 +48,28 @@ public:
     enum class Type {
         Lambda, lmStruct, Symbolic,
         lmModule, lmCppFunction,
-        Null, Bool,
+        Null, Bool, Infinity,
         Int, Float, BigInt,
         lmInt, lmDecimal, // 预留
         Rational, Irrational,
-        String, Array, Set, Matrix,}; // ToDO: 完善set相关函数
+        String, Array, Set, Matrix }; // ToDO: 完善set相关函数
     Type type;
-    std::variant<
-            std::nullptr_t,
-            bool, int, double, std::string,
-            std::shared_ptr<LmModule>,
-            std::shared_ptr<LmCppFunction>,
-            std::set<Value>,
-            std::vector<Value>,
-            std::vector<std::vector<Value>>,
-            std::vector<std::pair<std::string, Value>>,
-            ::BigInt, ::Rational, ::Irrational,
-            std::shared_ptr<SymbolicExpr>,
-            std::shared_ptr<lmStruct>,
-            std::shared_ptr<LambdaDeclExpr>>
-            data;
+
+	using DataType = std::variant<
+		std::nullptr_t,
+		bool, int, double, std::string,
+		std::shared_ptr<LmModule>,
+		std::shared_ptr<LmCppFunction>,
+		std::set<Value>,
+		std::vector<Value>,
+		std::vector<std::vector<Value>>,
+		std::vector<std::pair<std::string, Value>>,
+		::BigInt, ::Rational, ::Irrational,
+		std::shared_ptr<SymbolicExpr>,
+		std::shared_ptr<lmStruct>,
+		std::shared_ptr<LambdaDeclExpr>>;
+
+    DataType data;
 
     ~Value() = default;
 
@@ -78,7 +80,14 @@ public:
     Value(std::nullptr_t) : type(Type::Null), data(std::in_place_index<0>, nullptr) {}
     Value(bool b) : type(Type::Bool), data(std::in_place_index<1>, b) {}
     Value(int i) : type(Type::Int), data(std::in_place_index<2>, i) {}
-    Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {}
+	Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {
+		int res = std::isinf(f);
+		if (res) {
+			if (f < 0) res = -1;
+			this->type = Type::Infinity;
+			this->data = DataType(std::in_place_index<2>, res);
+		}
+	}
     Value(const std::string& s) : type(Type::String), data(s) {}
     Value(const char* s) : type(Type::String), data(std::string(s)) {}
     Value(const char s) : type(Type::String), data(std::string(1,s)) {}
@@ -120,6 +129,7 @@ public:
 
     // Type checking helpers
     bool is_null() const { return type == Type::Null; }
+	bool is_infinity() const { return type == Type::Infinity; }
     bool is_bool() const { return type == Type::Bool; }
     bool is_int() const { return type == Type::Int; }
     bool is_float() const { return type == Type::Float; }
@@ -138,7 +148,8 @@ public:
     bool is_numeric() const { return type == Type::Int || type == Type::Float || type == Type::BigInt || type == Type::Rational || type == Type::Irrational || type == Type::Symbolic; }
     // Get numeric value as double
     double as_number() const {
-        if (type == Type::Int) return static_cast<double>(std::get<int>(data));
+		if (type == Type::Infinity) return (1.0 * std::get<int>(data) / 0.0);
+		if (type == Type::Int) return static_cast<double>(std::get<int>(data));
         if (type == Type::Float) return std::get<double>(data);
         if (type == Type::BigInt) {
             // For BigInt, try to convert to int first, then to double
@@ -189,9 +200,30 @@ public:
         }
         return ::Irrational::constant(0);
     }
+
+	std::shared_ptr<SymbolicExpr> as_symbolic() const {
+		if (type == Type::Infinity) return SymbolicExpr::infinity(std::get<int>(data));
+		if (type == Type::Symbolic) return std::get<std::shared_ptr<SymbolicExpr>>(data);
+		if (type == Type::Int || type == Type::Float || type == Type::Rational || type == Type::BigInt) {
+			return SymbolicExpr::number(as_rational());
+		}
+		if (type == Type::Irrational) {
+			return as_irrational().to_symbolic();
+		}
+		return SymbolicExpr::number(0);
+	}
+
+	bool as_symbolic_compatible() const {
+		if (type == Type::Symbolic) return true;
+		if (type == Type::Int || type == Type::Float || type == Type::Rational || type == Type::BigInt) return true;
+		if (type == Type::Irrational) return true;
+		return false;
+	}
+
     // Get boolean value
     bool as_bool() const {
-        if (type == Type::Bool) return std::get<bool>(data);
+		if (type == Type::Infinity) return true;
+		if (type == Type::Bool) return std::get<bool>(data);
         if (type == Type::Int) return std::get<int>(data) != 0;
         if (type == Type::Float) return std::get<double>(data) != 0.0;
         if (type == Type::BigInt) return !std::get<::BigInt>(data).is_zero();
@@ -205,7 +237,9 @@ public:
     // String conversion
     std::string to_string() const {
         switch (type) {
-            case Type::Null:
+			case Type::Infinity:
+			return std::get<int>(data) > 0 ? "inf" : "-inf";
+			case Type::Null:
                 return "null";
             case Type::Bool:
                 return std::get<bool>(data) ? "true" : "false";

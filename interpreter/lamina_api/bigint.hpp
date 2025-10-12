@@ -54,7 +54,7 @@ public:
             start = 1;
         }
 
-        for (size_t i = str.length() - 1; i >= start and i < str.length(); i--) {
+        for (size_t i = str.length() - 1; i >= start && i < str.length(); i--) {
             if (str[i] >= '0' && str[i] <= '9') {
                 digits.push_back(str[i] - '0');
             }
@@ -129,7 +129,7 @@ public:
         numb.negative = false;
         result.digits.assign(digits.size() + other.digits.size(), 0);
 
-        if (numa.digits.size() >> 7 and numb.digits.size() >> 7) {
+        if ((numa.digits.size() >> 7) && (numb.digits.size() >> 7)) {
             // 等价于numa.digits.size() >= 128 and numb.digits.size() >= 128
             // 如果两数长度均大于50使用卡拉楚巴算法优化
             // 算法思想可以将两个四位数乘法看成
@@ -348,7 +348,7 @@ public:
             re.digits.pop_back();
             n--;
         }
-        while (!re.digits.back() and re.digits.size() > 1) re.digits.pop_back();
+        while (!re.digits.back() && re.digits.size() > 1) re.digits.pop_back();
         return re;
     }
 

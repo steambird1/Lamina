@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.3)
+cmake_minimum_required(VERSION 3.12.1)
 project(Lamina VERSION 1.2.0 LANGUAGES CXX)# Lamina version here
 
 include(GNUInstallDirs)
