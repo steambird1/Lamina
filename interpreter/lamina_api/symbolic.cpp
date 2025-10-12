@@ -264,22 +264,65 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		}
     }
 	
+	// 注意，multiply 不属于这类类型，需要手动化简
+	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
+		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
+			|| expr->type == SymbolicExpr::Type::Power || expr->type == SymbolicExpr::Type::Variable;
+	};
+	
+	// 注意，除法使用指数
+	std::function<std::shared_ptr<SymbolicExpr>(const std::shared_ptr<SymbolicExpr>&)> power_compatible;
+	power_compatible = [&](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
+		std::shared_ptr<SymbolicExpr> ret;
+		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable || expr->type == SymbolicExpr::Type::Multiply) {
+			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
+		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
+			ret = SymbolicExpr::power(power_compatible(expr->operands[0])->simplify(), SymbolicExpr::number(::Rational(1, 2)));
+		} else if (expr->type == SymbolicExpr::Type::Power) {
+			auto pcp = power_compatible(expr->operands[1]);
+			ret = SymbolicExpr::power(power_compatible(expr->operands[0]), pcp)->simplify();
+		} else {
+			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
+		}
+		if (ret->type == SymbolicExpr::Type::Number || ret->type == SymbolicExpr::Type::Variable)
+			ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
+		if (ret->type == SymbolicExpr::Type::Sqrt)
+			ret = SymbolicExpr::power(ret->operands[0], SymbolicExpr::number(::Rational(1, 2)));
+		return ret;
+	};
+	
+	if (left->type == SymbolicExpr::Type::Power && right->type != SymbolicExpr::Type::Power)
+		std::swap(left, right);
+	
+	static unsigned _debug_symb = 0;
+	const unsigned _my_debug_symb = _debug_symb++;
+	err_stream << "Debug ID: " << _my_debug_symb << std::endl;
+	err_stream << "[Debug output] precall: left: " << left->to_string() << "; right: " << right->to_string() << std::endl;
+	
+	// 一个数乘以自己的倒数：
+	if (right->type == SymbolicExpr::Type::Power) {
+		err_stream << _my_debug_symb << " - Pre power compatibility -=====\n";
+		auto lpwr = power_compatible(left);
+		auto ls = HashData(lpwr->operands[0]);
+		auto rs = HashData(right->operands[0]);
+		auto lhashs = ls.to_single_hash();
+		auto rhashs = rs.to_single_hash();
+		err_stream << _my_debug_symb << " - Post power compatibility -=====\n";
+		err_stream << "Pcp yields: " << lpwr->to_string() << std::endl;
+		err_stream << "Debug ID: " << _my_debug_symb << std::endl;
+		err_stream << "[Debug output] left obj: " << lpwr->operands[0]->to_string() << ", right obj: " << right->operands[0]->to_string() << std::endl;
+		err_stream << "[Debug output] division attempt: left hash " << lhashs << ", right hash " << rhashs << std::endl;
+		err_stream << "[Debug output] left hash object: " << ls.k.to_string() << "," << ls.ksqrt.to_string() << "," << ls.hash << std::endl;
+		err_stream << "[Debug output] right hash object: " << rs.k.to_string() << "," << rs.ksqrt.to_string() << "," << rs.hash << std::endl;
+		if (lhashs == rhashs) {
+			// 直接尝试指数项合并之后再化简
+			err_stream << "[Debug output] successfully reached division simplifier\n";
+			return SymbolicExpr::power(lpwr->operands[0], SymbolicExpr::add(lpwr->operands[1], right->operands[1]))->simplify();
+		}
+	}
+	
 	if (right->is_number())
 		std::swap(left, right);	// 尽可能保证左侧操作数为 number
-	
-	// 如果右侧只有 variable，认为化简完成
-	// TODO: 确定如果有 power 项目，要不要同样判断
-	/*
-	std::function<bool(std::shared_ptr<SymbolicExpr>,bool)> check_simp_1;
-	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj, bool allow_num) -> bool {
-		return (obj->type == SymbolicExpr::Type::Number && allow_num) || obj->type == SymbolicExpr::Type::Variable || (
-			(obj->type == SymbolicExpr::Type::Multiply || obj->type == SymbolicExpr::Type::Power) && check_simp_1(obj->operands[0], allow_num) && check_simp_1(obj->operands[1], true)
-			) || (
-			obj->type == SymbolicExpr::Type::Sqrt && check_simp_1(obj->operands[0], allow_num)
-			);
-	};
-	if (check_simp_1(right, false)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
-	*/
 	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
@@ -310,33 +353,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		return res->simplify();
 		
 	}
-	
-	// 注意，multiply 不属于这类类型，需要手动化简
-	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
-		return expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Sqrt
-			|| expr->type == SymbolicExpr::Type::Power || expr->type == SymbolicExpr::Type::Variable;
-	};
-	
-	// 注意，除法使用指数
-	std::function<std::shared_ptr<SymbolicExpr>(const std::shared_ptr<SymbolicExpr>&)> power_compatible;
-	power_compatible = [&](const std::shared_ptr<SymbolicExpr>& expr) -> std::shared_ptr<SymbolicExpr> {
-		std::shared_ptr<SymbolicExpr> ret;
-		if (expr->type == SymbolicExpr::Type::Number || expr->type == SymbolicExpr::Type::Variable) {
-			return SymbolicExpr::power(expr, SymbolicExpr::number(1));
-		} else if (expr->type == SymbolicExpr::Type::Sqrt) {
-			ret = SymbolicExpr::power(power_compatible(expr->operands[0])->simplify(), SymbolicExpr::number(::Rational(1, 2)));
-		} else if (expr->type == SymbolicExpr::Type::Power) {
-			auto pcp = power_compatible(expr->operands[1]);
-			ret = SymbolicExpr::power(power_compatible(expr->operands[0]), pcp)->simplify();
-		} else {
-			return expr;
-		}
-		if (ret->type == SymbolicExpr::Type::Number || ret->type == SymbolicExpr::Type::Variable)
-			ret = SymbolicExpr::power(ret, SymbolicExpr::number(1));
-		if (ret->type == SymbolicExpr::Type::Sqrt)
-			ret = SymbolicExpr::power(ret->operands[0], SymbolicExpr::number(::Rational(1, 2)));
-		return ret;
-	};
 	
 	auto is_compounded_sqrt = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
 		if (expr->type == SymbolicExpr::Type::Multiply) {

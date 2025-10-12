@@ -11,7 +11,7 @@
 #include <functional>
 #include <iostream>
 
-#define _SYMBOLIC_DEBUG 0
+#define _SYMBOLIC_DEBUG 1
 
 #ifdef _WIN32
 #ifdef LAMINA_CORE_EXPORTS
@@ -73,7 +73,7 @@ public:
 #define ODDBIT_D 0x555555555555555ull
 #define EVENBIT_D 0xAAAAAAAAAAAAAAAull
 #define SQRBIT_D 0xBDEEBD77BDEEBD7ull
-#define HALFBIT_D 0x969969669699696ull
+#define HALFBIT_D 0x7EDB7EDB7EDB7EDBull
 #define EMPTY 0ull
 #define INFINITY_D 0xFFF7FFFFDEADBEEFull
 #define PI_H 0x1451419810C0000ull
@@ -105,7 +105,9 @@ public:
 		}
 		
 		HashType to_single_hash() {
-			return (rational_hash(k) & HALFBIT) ^ (rational_hash(ksqrt) & SQRBIT) ^ hash;
+			auto rs = rational_hash(k);
+			rs = rs ? rs : (k == ::Rational(0) ? 0 : 1);
+			return (rs) * (1 | ((rational_hash(ksqrt)) & SQRBIT)) * (hash ? hash : 1);
 		}
 		
 		// TODO: 考虑优化
@@ -122,7 +124,7 @@ public:
 			: ODDBIT(ODDBIT), EVENBIT(EVENBIT), SQRBIT(SQRBIT), HALFBIT(HALFBIT) {
 			// Evaluate hash
 			HashData ld, rd;
-			HashType prehash = 0, rterm = 0;
+			HashType prehash = 0, rterm = 0, ls, rs;
 			switch (obj->type) {
 				case Type::Number:
 					this->k = obj->convert_rational();
@@ -146,9 +148,9 @@ public:
 					this->k = ld.k * rd.k;
 					this->ksqrt = ld.ksqrt * rd.ksqrt;
 					this->hash = (obj->operands[0]->is_number() ? 1 : ld.hash) * (obj->operands[1]->is_number() ? 1 : rd.hash);
-					err_stream << "[HPP Debug] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
-					err_stream << "[HPP Debug] My hash value is " << this->hash << std::endl;
-					err_stream << "[HPP Debug] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
+					err_stream << "[HPP Debug *] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
+					err_stream << "[HPP Debug *] My hash value is " << this->hash << std::endl;
+					err_stream << "[HPP Debug *] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
 						", R applied: " << (obj->operands[1]->is_number() ? 1 : rd.hash) << std::endl;
 					if (!(ld.hash | rd.hash)) this->hash = 0;	// 里面没有东西
 					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
@@ -156,8 +158,15 @@ public:
 				case Type::Add:
 					ld = HashData(obj->operands[0], _HASH_PARAMS);
 					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->hash = ld.to_single_hash() + rd.to_single_hash();
+					ls = ld.to_single_hash();
+					rs = rd.to_single_hash();
+					this->hash = ls + rs;
 					this->hash_obj = obj;	// 没有做任何处理
+					err_stream << "[HPP Debug +] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
+					err_stream << "[HPP Debug +] LDK: " << ld.k.to_string() << ", RDK: " << rd.k.to_string() << std::endl;
+					err_stream << "[HPP Debug +] LDKq: " << ld.ksqrt.to_string() << ", RDKq: " << rd.ksqrt.to_string() << std::endl;
+					err_stream << "[HPP Debug +] My hash value is " << this->hash << std::endl;
+					err_stream << "[HPP Debug +] L applied: " << ld.hash << ", R applied: " << rd.hash << std::endl;
 					break;
 				case Type::Power:
 					// TODO: 此处引入类似根式化简的机制，暂时直接 hash（可能有问题）
