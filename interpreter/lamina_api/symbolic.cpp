@@ -566,7 +566,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			flatten_multiply = [&](const std::shared_ptr<SymbolicExpr>& expr, std::shared_ptr<SymbolicExpr> pre_timing) -> bool {
 				if (expr->type == SymbolicExpr::Type::Multiply) {
 					for (auto &i : expr->operands) {
-						if (!flatten_multiply(i, pre_timing)) return false;
+						if (!flatten_multiply(i, pre_timing)) {
+							err_stream << "Upstream failure for " << expr->to_string() << "\n";
+							return false;
+						}
 					}
 					return true;
 				} else if (is_power_compatible(expr)) {
@@ -575,8 +578,12 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						current->operands[1] = SymbolicExpr::multiply(current->operands[1], pre_timing)->simplify();
 					if (current->operands[0]->type == SymbolicExpr::Type::Multiply) {
 						for (auto &i : current->operands[0]->operands) {
-							if (!flatten_multiply(i, current->operands[1])) return false;
+							if (!flatten_multiply(i, current->operands[1])) {
+								err_stream << "Upstream failure for " << expr->to_string() << "\n";
+								return false;
+							}
 						}
+						return true;
 					} else {
 						// TODO: Debug output:
 						err_stream << "Converting " << expr->to_string() << " to " << current->to_string() << std::endl;
@@ -584,6 +591,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						return true;
 					}
 				}
+				err_stream << "Failed at " << expr->to_string() << std::endl;
 				return false;
 			};
 			// 这样传递可能有性能问题
@@ -712,8 +720,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						}
 						// TODO: Debug output:
 						err_stream << "[Debug output] [2] extra exponent referring (" << base_special_ref[i.first]->to_string() << ")^(" << i.second->to_string() << ")\n";
-						res = inits ? SymbolicExpr::power(base_special_ref[i.first], i.second) 
-								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second->simplify()));
+						res = inits ? SymbolicExpr::power(base_special_ref[i.first], i.second)->simplify() 
+								: SymbolicExpr::multiply(res, SymbolicExpr::power(base_special_ref[i.first], i.second)->simplify());
 					}
 					return res;
 				} else if (base_merger && (base_merger_cnt >= exponent_merger_cnt)) {
