@@ -224,8 +224,10 @@ int repl() {
             } else {
                 prompt = ConClr::MAGENTA + ">>> " + ConClr::RESET ;   // 带绿色高亮的提示符
             }
-
-            std::string line = repl_readline(prompt,"");
+            std::string line;
+            // repl readline有问题，这里暂时使用std::getline
+            // std::string line = repl_readline(prompt,"");
+            std::getline(std::cin, line);
 
             if (line == "\x03") {   // Ctrl+C interrupt
                 if (brace_level > 0) {
