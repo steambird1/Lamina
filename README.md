@@ -1,4 +1,4 @@
-# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (Big Refactor) （debug) 
+# <img src="./assets/logo-icon.svg" width="10%"> This is Lamina version 1.2.0 (Release Candidate) （debug) 
 
 <img src="./assets/logo.svg" width="100%">
 
@@ -59,7 +59,7 @@
 - [x] **底层架构重构**：重构 Parser 与 AST 模块，将部分内置函数迁移至内置库，提升代码可维护性与运行效率。
 - [x] **C++ 生态联动**：完全重构 C++ 模块加载器与扩展格式，让 Lamina 与 C++ 生态的协作更顺畅。
 
-**⚠️注意：c++ module缺乏测试，可能bug**
+**⚠️注意：c++ module缺乏测试，可能会有bug**
 ---
     
 感谢所有参与开发的工作者和用户
