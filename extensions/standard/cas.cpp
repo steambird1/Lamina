@@ -2,7 +2,6 @@
  * Lamina CAS (计算机代数系统) 扩展实现
  * 提供符号计算、微积分、方程求解等功能
  */
-
 #include "standard.hpp"
 #include "cas.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
