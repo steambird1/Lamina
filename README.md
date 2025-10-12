@@ -24,12 +24,10 @@
 
 - [语法指南](docs/zh_CN/wiki.md)
 
+
 <br>
 
-<h2>🎉Lamina v1.2.0(Big Refactor) 有什么新功能 ?</h1>
-<details>
-<summary><strong>点击展开详情</strong></b>
-</summary>
+<h2>🎉Lamina v1.2.0(Big Refactor) 有什么新功能 ?</h2>
 
 <ul>
 <li>自动添加分号</li>
