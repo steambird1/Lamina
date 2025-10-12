@@ -1,6 +1,1 @@
-[submodule "external/libuv"]
-	path = external/libuv
-	url = https://github.com/libuv/libuv.git
-[submodule "external/exprtk"]
-	path = external/exprtk
-	url = https://github.com/ArashPartow/exprtk.git
+

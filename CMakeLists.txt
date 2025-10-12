@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(Lamina VERSION 0.0.1 LANGUAGES CXX)# Lamina version is here
+project(lamina VERSION 1.1.1 LANGUAGES CXX)
+
+include(GNUInstallDirs)
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/lamina)
 
 # add sub directory
 add_subdirectory(interpreter)
@@ -34,36 +37,17 @@ if(WIN32)
 endif()
 
 # Set output directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 
-# Set libuv related variables
-set(LIBUV_LIBRARY uv_a)
-set(LIBUV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/libuv)
-
-
-# Check if libuv submodule exists
-if(NOT EXISTS ${LIBUV_ROOT}/CMakeLists.txt)
-    message(FATAL_ERROR "LibUV submodule not found. Please run 'git submodule update --init --recursive'")
-endif()
-
-# Add libuv subdirectory
-add_subdirectory(${LIBUV_ROOT})
-# Enable PIC only for libuv
-set_target_properties(uv uv_a PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# Set libuv libraries and include directories
-set(LIBUV_LIBRARIES uv_a)
-set(LIBUV_INCLUDE_DIRS ${LIBUV_ROOT}/include)
 include_directories(
-        ${LIBUV_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
         ${CMAKE_CURRENT_BINARY_DIR} # version.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 新增ExprTK头文件路径
 )
 
 include_directories(interpreter)
+
 # Create lamina_core shared library
 add_library(lamina_core SHARED
         interpreter/ast.hpp
@@ -91,9 +75,6 @@ add_library(lamina_core SHARED
         extensions/standard/times.cpp
         extensions/standard/times.hpp
         extensions/standard/array.cpp
-        extensions/standard/sockets.hpp
-        extensions/standard/sockets.cpp
-      #  extensions/standard/latex.hpp
         extensions/standard/string.hpp
         extensions/standard/string.cpp
         extensions/standard/cas.hpp
@@ -111,19 +92,33 @@ target_sources(lamina_core PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
 
 # Set lamina_core properties
 set_target_properties(lamina_core PROPERTIES 
-    WINDOWS_EXPORT_ALL_SYMBOLS ON
+    # 关键修改：禁用自动导出所有符号
+    WINDOWS_EXPORT_ALL_SYMBOLS OFF  # ← 改为 OFF！
     VERSION ${PROJECT_VERSION}
     SOVERSION 1
     ENABLE_EXPORTS ON
     PREFIX ""  # Remove lib prefix on all platforms
 )
 
+# 针对 x86 架构的特殊处理
+if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    message(STATUS "Detected x86 (32-bit) build, applying compatibility fixes")
+    
+    # 添加链接器选项，忽略特定警告
+    target_link_options(lamina_core PRIVATE 
+        /IGNORE:4197  # 忽略多次导出警告
+    )
+    
+    # 可选：如果仍有问题，取消下面的注释使用 .def 文件
+    # if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lamina_core_x86.def")
+    #     target_sources(lamina_core PRIVATE 
+    #         "${CMAKE_CURRENT_SOURCE_DIR}/lamina_core_x86.def"
+    #     )
+    # endif()
+endif()
+
 # Define export macros
 target_compile_definitions(lamina_core PRIVATE LAMINA_CORE_EXPORTS)
-target_compile_definitions(lamina_core PRIVATE USE_LIBUV)
-
-# Link libuv
-target_link_libraries(lamina_core PRIVATE ${LIBUV_LIBRARY} uv)
 
 # Add imagehlp library link for Windows
 if(WIN32)
@@ -145,6 +140,13 @@ if(MSVC)
         /wd4459  # declaration hides global declaration
         /wd4244  # conversion from 'type1' to 'type2', possible loss of data
         /wd4005  # macro redefinition
+        # 添加 x86 特有的警告抑制
+        /wd4305  # 'initializing': truncation from 'unsigned __int64' to 'const size_t'
+        /wd4309  # 'initializing': truncation of constant value
+        /wd4456  # declaration hides previous local declaration
+        /wd4101  # unreferenced local variable
+        /wd4715  # not all control paths return a value
+        /wd4701  # potentially uninitialized local variable used
     )
 else()
     target_compile_options(lamina_core PRIVATE 
@@ -154,17 +156,9 @@ else()
     )
 endif()
 
-# Set lamina_core public header file directory
-target_include_directories(lamina_core PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk  # 确保公共包含
-)
-
 # Create main executable
-add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
-               # Directly include module_loader.cpp to resolve MinGW linking issues
+add_executable(lamina interpreter/main.cpp interpreter/repl_input.cpp
                interpreter/module_loader.cpp
-               # Include symbolic.cpp for symbolic expression support
                interpreter/symbolic.cpp
         interpreter/console_ui.hpp
         interpreter/console_ui.cpp
@@ -173,30 +167,22 @@ add_executable(Lamina interpreter/main.cpp interpreter/repl_input.cpp
 )
 
 # Add version header
-target_sources(Lamina PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
+target_sources(lamina PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.hpp)
 
 # Link to lamina_core
-target_link_libraries(Lamina PRIVATE lamina_core)
+target_link_libraries(lamina PRIVATE lamina_core)
 
 # Platform specific link libraries
 if(UNIX)
-    target_link_libraries(Lamina PRIVATE dl)
+    target_link_libraries(lamina PRIVATE dl)
 endif()
-
-# Automatically copy dependent dynamic libraries
-add_custom_command(TARGET Lamina POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:uv>
-        $<TARGET_FILE_DIR:Lamina>
-    COMMENT "Copying libuv.dll to output directory"
-)
 
 # Copy lamina_core.dll on Windows
 if(WIN32)
-    add_custom_command(TARGET Lamina POST_BUILD
+    add_custom_command(TARGET lamina POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:lamina_core>
-            $<TARGET_FILE_DIR:Lamina>
+            $<TARGET_FILE_DIR:lamina>
         COMMENT "Copying lamina_core.dll to output directory"
     )
 endif()
@@ -216,9 +202,6 @@ function(build_extension EXTENSION_PATH)
         
         # 创建共享库
         add_library(${EXTENSION_NAME} SHARED ${EXTENSION_SOURCE})
-        
-        # 链接到 lamina_core 和 libuv
-        target_link_libraries(${EXTENSION_NAME} PRIVATE lamina_core ${LIBUV_LIBRARY})
         
         # 设置包含目录
         target_include_directories(${EXTENSION_NAME} PRIVATE 
@@ -320,26 +303,17 @@ else()
     message(STATUS "Found and configured ${FOUND_EXTENSIONS} extension(s)")
 endif()
 
-#[[ 
-  This project supports MSVC (Visual Studio) and MinGW (GCC) compilation.
-  - MSVC: Supports .pdb debug symbols, CMake automatically copies DLL and PDB.
-  - MinGW: Only copies DLL, debug information is embedded in DLL/EXE.
-  
-  Extension build instructions:
-  - Automatically searches all subdirectories under extensions/ (except standard/)
-  - Each extension directory should contain a .cpp file with the same name as the directory
-  - Extensions will be compiled as shared libraries and automatically copied to output directory
-  
-  For MSVC compilation, recommended commands:
-    cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Debug .
-    cmake --build build --config Debug --parallel
-]]
+# 确保可执行文件能找到库
+set_target_properties(lamina PROPERTIES
+    INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
+    BUILD_WITH_INSTALL_RPATH True
+)
 
 # Installation rules
-install(TARGETS Lamina lamina_core
-    RUNTIME DESTINATION bin
+install(TARGETS lamina
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} #Utilized the CMAKE_INSTALL_LIBDIR variable to achieve platform-adaptive installation paths.
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 # Install header files (for plugin development)
