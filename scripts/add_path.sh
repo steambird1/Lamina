@@ -33,7 +33,7 @@ case $choice in
     1)
         # 临时生效
         export PATH="$PATH:$DEBUG_DIR"
-        echo "临时生效添加成功！当前终端可直接输入：myapp help"
+        echo "临时生效添加成功！当前终端可直接输入：lamina help"
         ;;
     2)
         # 永久生效
@@ -50,7 +50,7 @@ case $choice in
         echo "export PATH=\"\$PATH:$DEBUG_DIR\"" >> "$CONFIG_FILE"
         echo "永久生效添加成功！配置文件：$CONFIG_FILE"
         echo "立即生效请执行：source $CONFIG_FILE"
-        echo "后续新终端可直接输入：myapp help"
+        echo "后续新终端可直接输入：lamina help"
         ;;
     *)
         echo "错误：无效选项，请输入 1 或 2。"
