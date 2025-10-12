@@ -138,16 +138,7 @@ private:
 };
 
 inline void print_them() {
-    // Output credits and developer information
-    std::cout << "Credits\n";
-    std::cout << "Lamina Interpreter\n";
-    std::cout << "Developed by Ziyang-bai\n";
-    std::cout << "Helper: Ange1PLSGreet\n";
-    std::cout << "Special thanks to all contributors and users!\n";
-    std::cout << "For more information, visit: https://github.com/Ziyang-bai/Lamina\n";
-    std::cout << "This interpreter is open source and welcomes contributions.\n";
-    std::cout << "Designed by Ziyang-Bai\n";
-    std::cout << "\n";
+    std::cout << "Thanks to all the contributors" << std::endl;
 }
 
 inline void print_logo() {
