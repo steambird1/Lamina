@@ -404,93 +404,14 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     // Handle arithmetic operations
     // Just handle them in the f**king different functions
     if (bin->op == "+") {
-<<<<<<< HEAD
         return HANDLE_BINARYEXPR_ADD(&l, &r);
-=======
-		if (l.is_infinity() || r.is_infinity()) {
-			return l;
-		}
-        // String concatenation
-        if (l.is_string() || r.is_string()) {
-            return Value(l.to_string() + r.to_string());
-        }
-        // Vector addition
-        if (l.is_array() && r.is_array()) {
-            return l.vector_add(r);
-        }
-        // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
-		// Debug output:
-		//std::cerr << "Adding: l type " << int(l.type) << "; r type " << int(r.type) << std::endl;
-        if ((l.is_irrational() || l.is_symbolic() || r.is_irrational() || r.is_symbolic()) && l.is_numeric() && r.is_numeric()) {
-            std::shared_ptr<SymbolicExpr> leftExpr;
-            std::shared_ptr<SymbolicExpr> rightExpr;
-            if (l.is_symbolic()) {
-                leftExpr = std::get<std::shared_ptr<SymbolicExpr>>(l.data);
-            } else if (l.is_irrational()) {
-                leftExpr = std::get<::Irrational>(l.data).to_symbolic();
-            } else if (l.is_rational()) {
-                leftExpr = SymbolicExpr::number(std::get<::Rational>(l.data));
-            } else if (l.is_bigint()) {
-                leftExpr = SymbolicExpr::number(std::get<::BigInt>(l.data));
-            } else if (l.is_int()) {
-                leftExpr = SymbolicExpr::number(std::get<int>(l.data));
-            } else if (l.is_float()) {
-                leftExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(l.data)));
-            } else {
-                leftExpr = SymbolicExpr::number(0);
-            }
-            if (r.is_symbolic()) {
-                rightExpr = std::get<std::shared_ptr<SymbolicExpr>>(r.data);
-            } else if (r.is_irrational()) {
-                rightExpr = std::get<::Irrational>(r.data).to_symbolic();
-            } else if (r.is_rational()) {
-                rightExpr = SymbolicExpr::number(std::get<::Rational>(r.data));
-            } else if (r.is_bigint()) {
-                rightExpr = SymbolicExpr::number(std::get<::BigInt>(r.data));
-            } else if (r.is_int()) {
-                rightExpr = SymbolicExpr::number(std::get<int>(r.data));
-            } else if (r.is_float()) {
-                rightExpr = SymbolicExpr::number(::Rational::from_double(std::get<double>(r.data)));
-            } else {
-                rightExpr = SymbolicExpr::number(0);
-            }
-            return Value(SymbolicExpr::add(leftExpr, rightExpr)->simplify());
-        }
-        // Numeric addition with irrational and rational number support
-        if (l.is_numeric() && r.is_numeric()) {
-            // BigInt 优先：如果任一为 BigInt，结果为 BigInt
-            if (l.is_bigint() || r.is_bigint()) {
-                ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
-                ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
-                return Value(lb + rb);
-            }
-            // If either operand is rational, use rational arithmetic
-            if (l.is_rational() || r.is_rational()) {
-                ::Rational result = l.as_rational() + r.as_rational();
-                return Value(result);
-            }
-
-            double result = l.as_number() + r.as_number();// Return int if both operands are int and result is the whole
-            if (l.is_int() && r.is_int()) {
-                // check overflow and underflow
-                if (static_cast<int>(result) == INT_MAX ||
-                    static_cast<int>(result) == INT_MIN) {
-                    return Value(BigInt(l.as_number()) + BigInt(r.as_number()));
-                }
-                return Value(static_cast<int>(result));
-            }
-            return Value(result);
-        } else {
-            error_and_exit("Cannot add " + l.to_string() + " and " + r.to_string());
-        }
->>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3
     }
     // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
         bin->op == "%" || bin->op == "^") {
 		
 		if (l.is_infinity() || r.is_infinity()) {
-			error_and_exit("Error: Infinity cannot participate in evaluations");
+			L_ERR("Error: Infinity cannot participate in evaluations");
 		}
 			
         // Special handling for multiplication
