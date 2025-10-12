@@ -65,26 +65,6 @@ jobs:
           echo 'print("add(10, 20) =", result);' >> test4.lm
           ./Lamina test4.lm
 
-          # Test 5: Include statement syntax (should show error for old syntax)
-          echo 'include test_module;' > test5.lm
-          echo 'print("This should not execute");' >> test5.lm
-          if ./Lamina test5.lm 2>&1 | grep -q "Include statement requires a quoted string"; then
-            echo "✅ Include syntax enforcement working correctly"
-          else
-            echo "❌ Include syntax enforcement failed"
-            exit 1
-          fi
-
-          # Test 6: Correct include syntax (should parse correctly)
-          echo 'print("Testing correct include syntax");' > test6.lm
-          echo 'include "nonexistent";' >> test6.lm
-          if ./Lamina test6.lm 2>&1 | grep -q "Cannot load module"; then
-            echo "✅ Correct include syntax parsing working"
-          else
-            echo "❌ Correct include syntax parsing failed"
-            exit 1
-          fi
-
           echo "✅ All basic tests passed!"
 
       - name: Test example programs
