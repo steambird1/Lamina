@@ -45,23 +45,23 @@ jobs:
 
           # Test 1: Hello World
           echo 'print("Hello, Lamina!");' > test1.lm
-          ./bin/lamina test1.lm
+          ./lamina test1.lm
 
           # Test 2: Basic arithmetic
           echo 'var x = 2 + 3 * 4;' > test2.lm
           echo 'print("2 + 3 * 4 =", x);' >> test2.lm
-          ./bin/lamina test2.lm
+          ./lamina test2.lm
 
           # Test 3: Precise fractions
           echo 'var fraction = 16 / 9;' > test3.lm
           echo 'print("16/9 =", fraction);' >> test3.lm
-          ./bin/lamina test3.lm
+          ./lamina test3.lm
 
           # Test 4: Functions
           echo 'func add(a, b) { return a + b; }' > test4.lm
           echo 'var result = add(10, 20);' >> test4.lm
           echo 'print("add(10, 20) =", result);' >> test4.lm
-          ./bin/lamina test4.lm
+          ./lamina test4.lm
 
           # Test 5: Include statement syntax (should show error for old syntax)
           echo 'include test_module;' > test5.lm
@@ -94,7 +94,7 @@ jobs:
             for example in ../examples/*.lm; do
               if [ -f "$example" ]; then
                 echo "Testing $(basename "$example")..."
-                ./bin/lamina "$example" || echo "⚠️  Warning: $example execution failed"
+                ./lamina "$example" || echo "⚠️  Warning: $example execution failed"
               fi
             done
           else
@@ -110,7 +110,7 @@ jobs:
           echo "Running memory leak test..."
           echo 'var x = 42; print("x =", x);' > memtest.lm
 
-          if valgrind --leak-check=full --error-exitcode=1 ./bin/lamina memtest.lm 2>&1; then
+          if valgrind --leak-check=full --error-exitcode=1 ./lamina memtest.lm 2>&1; then
             echo "✅ No memory leaks detected"
           else
             echo "⚠️  Memory leaks detected, but continuing..."
