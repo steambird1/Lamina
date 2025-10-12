@@ -25,6 +25,10 @@
 #include <link.h>  
 #include <elf.h>
 
+#ifndef STT_DEBUG
+#define STT_DEBUG 0x11
+#endif
+
 #define DYLIB_HANDLE void*
 #define DYLIB_LOAD(path) dlopen(path.c_str(), RTLD_LAZY | RTLD_NOLOAD)  // 加载后不重复加载
 #define DYLIB_GETSYM(handle, name) dlsym(handle, name)
