@@ -20,7 +20,7 @@
 
 ## 一种专注于精确数学计算的以面向过程为主体的编程语言
 
-[语法指南](docs/zh_CN/wiki.md) • [数学特性](#精确数学特性) • [示例代码](/examples) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md) • [ToDo list](TODO.md)
+[语法指南](docs/zh_CN/wiki.md) • [数学特性](#精确数学特性) • [示例代码](/examples) • [本次更新](## Lamina v1.2.0 重磅更新：架构重构焕新，语法体验再升级) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md) • [ToDo list](TODO.md)
 
 - [语法指南](docs/zh_CN/wiki.md)
 
@@ -34,50 +34,25 @@
 
 <br>
 
-<h2>🎉Lamina v1.2.0(Big Refactor) 有什么新功能 ?</h2>
+## Lamina v1.2.0 重磅更新：架构重构焕新，语法体验再升级
+经过深度重构的 Lamina v1.2.0 正式发布！本次更新不仅优化了底层架构，更带来了更灵活的语法、更强大的功能，以及更友好的开发体验，让代码编写效率大幅提升。
 
-<ul>
-<li>自动添加分号</li>
-<li>if, while语句表达式部分可以省略圆括号</li>
-<li>定义没有参数的函数，可以省略圆括号</li>
-<li>匿名结构体声明</li>
-<li>匿名函数声明</li>
-<li>include语句更新+模块系统</li>
-<li>builtins系统更新</li>
-<li>.运算符：结构体访问成员运算符</li>
-<li>::运算符：命名空间访问成员运算符</li>
-<li>\ 续行功能</li>
-<li>结构体深拷贝</li>
-<li>重构 Parser, ast</li>
-<li>将部分内置函数移到内置库</li>
-<li>c++ module loader更新</li>
-<li>c++扩展格式更新</li>
-<li>新增函数 typeof、find、replace、foreach、copy、map、exit、tostring</li>
-<li>新增函数 locals、globals</li>
-<li>loop语句</li>
-<li>repl直接打印表达式</li>
-<li>repl支持不带颜色的输出</li>
-<li>repl关键字高亮及自动补齐</li>
-</ul>
+### 一、语法更灵活，编写更自由
+- [x] **语法糖加持**：if/while 语句表达式可省略圆括号，无参函数定义无需写空括号，代码更简洁。
+- [x] **自动补全细节**：支持自动添加分号，减少手动输入失误；通过 `\` 实现续行功能，长代码排版更清晰。
+- [x] **匿名类型支持**：新增匿名结构体与匿名函数声明，灵活应对临时数据与逻辑场景。
 
-<b>延迟到下一个版本的特性</b>
-<ul>
-<li>数学区间相关扩展</li>
-<li>set 集合类型</li>
-<li>取消int类型, 取消bigint语句, Bigint更名为lmInt, 成为唯一整数类型并优化它的性能,然后在有理数/无理数/虚数/小数的数字部分都使用lmInt </li>
-<li>Decimal类型</li>
-<li>虚数功能</li>
-<li>array[index] = item setitem语法</li>
-<li>struct.item = value setmember语法</li>
-<li>线程库(debug)</li>
-<li>带上下文的报错系统</li>
-<li>多语言支持</li>
-</ul>
-</details>
+### 二、功能更强大，覆盖更多场景
+- [x] **模块与引用升级**：更新 include 语句并引入模块系统，搭配 `::` 命名空间访问运算符，项目管理更规范。
+- [x] **结构体能力增强**：支持 `.` 运算符访问成员，同时新增结构体深拷贝功能，数据处理更安全。
+- [x] **内置能力扩充**：builtins 系统更新，新增 `typeof`/`find`/`replace`/`foreach` 等实用函数，还可通过 `locals`/`globals` 管理变量作用域，减少重复编码。
+- [x] **C++ 生态联动**：优化 C++ 模块加载器与扩展格式，让 Lamina 与 C++ 生态的协作更顺畅。
+
+### 三、开发体验优化，调试更高效
+- [x] **REPL 全面升级**：支持直接打印表达式结果、无颜色输出模式，同时新增关键字高亮与自动补齐功能，交互式开发更流畅。
+- [x] **底层架构重构**：重构 Parser 与 AST 模块，将部分内置函数迁移至内置库，提升代码可维护性与运行效率。
 
 ---
-
-<br>
     
 感谢所有参与开发的工作者和用户
 
