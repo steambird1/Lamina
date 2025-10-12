@@ -68,11 +68,18 @@ private:
     }
 
 public:
+<<<<<<< HEAD:extensions/standard/lmStruct.hpp
     std::shared_ptr<lmStruct> parent_;
     explicit lmStruct();
     explicit lmStruct(const std::vector<std::pair<std::string, Value>>& vec);
     ~lmStruct();
     Value insert(const std::string& key, Value val);
+=======
+	lStruct();
+    explicit lStruct(const std::vector<std::pair<std::string, Value>>& vec);
+    ~lStruct();
+    Value insert(const std::string& key, Value& val);
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:extensions/standard/lstruct.hpp
     [[nodiscard]] std::shared_ptr<Node> find(const std::string& key) const;
     [[nodiscard]] std::string to_string() const;
     [[nodiscard]] std::vector<std::pair<std::string, Value>> to_vector() const;
@@ -92,3 +99,36 @@ public:
         this->elem_count_ = other.elem_count_;
     }
 };
+<<<<<<< HEAD:extensions/standard/lmStruct.hpp
+=======
+
+Value getattr_raw(const std::shared_ptr<lStruct>& lstruct_, const std::string& attr_name);
+void setattr_raw(std::shared_ptr<lStruct> lstruct_, const std::string& attr_name, Value value);
+
+Value new_lstruct(const std::vector<std::pair<std::string, Value>>& vec);
+/* function: new_lstruct
+ * args[0] =>  source vector: vec<pair<str, Value>
+ */
+Value getattr(const std::vector<Value>& args);
+/* function: getattr
+ * args[0] => struct: lstruct
+ * args[1] => name: str
+ */
+Value setattr(const std::vector<Value>& args);
+/* function: setattr
+ * args[0] => struct: lstruct
+ * args[1] => name: str
+ * args[2] => val: Value
+ */
+Value update(const std::vector<Value>& args);
+/* function: update
+ * args[0] => source struct: lstruct
+ * args[1] =>  other struct: lstruct
+ */
+
+namespace Lamina {
+    LAMINA_FUNC_MULTI_ARGS("getattr", getattr, 2);
+    LAMINA_FUNC_MULTI_ARGS("setattr", setattr, 3);
+    LAMINA_FUNC_MULTI_ARGS("update", update, 2);
+} // namespace Lamina
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:extensions/standard/lstruct.hpp

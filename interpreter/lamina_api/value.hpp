@@ -45,6 +45,7 @@ LAMINA_API std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruc
 
 class LAMINA_API Value final {
 public:
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
     enum class Type {
         Lambda, lmStruct, Symbolic,
         lmModule, lmCppFunction,
@@ -54,6 +55,33 @@ public:
         Rational, Irrational,
         String, Array, Set, Matrix }; // ToDO: 完善set相关函数
     Type type;
+=======
+    enum class Type { Null,
+					  Infinity,
+                      Bool,
+                      Int,
+                      Float,
+                      String,
+                      Array,
+                      Matrix,
+                      BigInt,
+                      Rational,
+                      Irrational,
+                      lStruct,
+                      Symbolic };
+    Type type;
+	
+	using DataType = std::variant<
+            std::nullptr_t,
+            bool, int, double, std::string,
+            std::vector<Value>,
+            std::vector<std::vector<Value>>,
+            std::vector<std::pair<std::string, Value>>,
+            ::BigInt, ::Rational, ::Irrational,
+            std::shared_ptr<SymbolicExpr>,
+            std::shared_ptr<lStruct>>;
+    DataType data;
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
 
 	using DataType = std::variant<
 		std::nullptr_t,
@@ -80,6 +108,7 @@ public:
     Value(std::nullptr_t) : type(Type::Null), data(std::in_place_index<0>, nullptr) {}
     Value(bool b) : type(Type::Bool), data(std::in_place_index<1>, b) {}
     Value(int i) : type(Type::Int), data(std::in_place_index<2>, i) {}
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 	Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {
 		int res = std::isinf(f);
 		if (res) {
@@ -88,6 +117,8 @@ public:
 			this->data = DataType(std::in_place_index<2>, res);
 		}
 	}
+=======
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
     Value(const std::string& s) : type(Type::String), data(s) {}
     Value(const char* s) : type(Type::String), data(std::string(s)) {}
     Value(const char s) : type(Type::String), data(std::string(1,s)) {}
@@ -98,8 +129,19 @@ public:
     Value(const std::set<Value>& set) : type(Type::Set), data(set) {}
     Value(const std::shared_ptr<LambdaDeclExpr>& func_def_stmt) : type(Type::Lambda), data(func_def_stmt) {}
     Value(const std::shared_ptr<SymbolicExpr>& sym) : type(Type::Symbolic), data(sym) {}
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
     Value(const std::shared_ptr<LmCppFunction>& func) : type(Type::lmCppFunction), data(func) {}
     Value(const std::shared_ptr<LmModule>& module) : type(Type::lmModule), data(module) {}
+=======
+	Value(double f) : type(Type::Float), data(std::in_place_index<3>, f) {
+		int res = std::isinf(f);
+		if (res) {
+			if (f < 0) res = -1;
+			this->type = Type::Infinity;
+			this->data = DataType(std::in_place_index<2>, res);
+		}
+	}
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
     Value(const std::vector<Value>& arr) {
         // Check if this is a matrix (array of arrays)
         bool is_matrix = !arr.empty() && arr[0].is_array();
@@ -149,7 +191,11 @@ public:
     // Get numeric value as double
     double as_number() const {
 		if (type == Type::Infinity) return (1.0 * std::get<int>(data) / 0.0);
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 		if (type == Type::Int) return static_cast<double>(std::get<int>(data));
+=======
+        if (type == Type::Int) return static_cast<double>(std::get<int>(data));
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
         if (type == Type::Float) return std::get<double>(data);
         if (type == Type::BigInt) {
             // For BigInt, try to convert to int first, then to double
@@ -200,7 +246,11 @@ public:
         }
         return ::Irrational::constant(0);
     }
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 
+=======
+	
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
 	std::shared_ptr<SymbolicExpr> as_symbolic() const {
 		if (type == Type::Infinity) return SymbolicExpr::infinity(std::get<int>(data));
 		if (type == Type::Symbolic) return std::get<std::shared_ptr<SymbolicExpr>>(data);
@@ -212,18 +262,30 @@ public:
 		}
 		return SymbolicExpr::number(0);
 	}
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 
+=======
+	
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
 	bool as_symbolic_compatible() const {
 		if (type == Type::Symbolic) return true;
 		if (type == Type::Int || type == Type::Float || type == Type::Rational || type == Type::BigInt) return true;
 		if (type == Type::Irrational) return true;
 		return false;
 	}
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 
     // Get boolean value
     bool as_bool() const {
 		if (type == Type::Infinity) return true;
 		if (type == Type::Bool) return std::get<bool>(data);
+=======
+	
+    // Get boolean value
+    bool as_bool() const {
+		if (type == Type::Infinity) return true;
+        if (type == Type::Bool) return std::get<bool>(data);
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
         if (type == Type::Int) return std::get<int>(data) != 0;
         if (type == Type::Float) return std::get<double>(data) != 0.0;
         if (type == Type::BigInt) return !std::get<::BigInt>(data).is_zero();
@@ -238,8 +300,13 @@ public:
     std::string to_string() const {
         switch (type) {
 			case Type::Infinity:
+<<<<<<< HEAD:interpreter/lamina_api/value.hpp
 			return std::get<int>(data) > 0 ? "inf" : "-inf";
 			case Type::Null:
+=======
+				return std::get<int>(data) > 0 ? "inf" : "-inf";
+            case Type::Null:
+>>>>>>> a5d98f47f1d3eba474d6d9de372f35b311daa1f3:interpreter/value.hpp
                 return "null";
             case Type::Bool:
                 return std::get<bool>(data) ? "true" : "false";
