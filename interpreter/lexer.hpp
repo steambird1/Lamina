@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -12,7 +13,8 @@
 #define LAMINA_API
 #endif
 
-enum class TokenType {
+
+enum class LexerTokenType {
     Var,
     Func,
     If,
@@ -26,6 +28,7 @@ enum class TokenType {
     Struct,  // 新增
     Define,  // define
     Bigint,  // bigint
+    Loop,    // loop
     True,    // true
     False,   // false
     Null,    // null
@@ -37,36 +40,44 @@ enum class TokenType {
     RParen,
     LBrace,
     RBrace,
-    LBracket,// [
-    RBracket,// ]
+    Lambda,
+    LBracket, // [
+    RBracket, // ]
     Comma,
     Dot,// 新增
+    TripleDot, // ...
     String,
-    Semicolon,
+    Semicolon, // ;
+    ExclamationMark, // !
     Plus,
     Minus,
     Star,
-    Slash,
-    Percent,
-    Caret,
-    Bang,
+    Slash,       // /
+    Backslash,   // \;
+    Percent,     // %
+    Caret,       // ^
+    Bang,        // #
     Equal,       // ==
     NotEqual,    // !=
     Less,        // <
     LessEqual,   // <=
     Greater,     // >
     GreaterEqual,// >=
+    DoubleColon, // ::
+    Pipe,        // |
+    FatArrow,    // =>
+    ThinArrow,   // ->
     EndOfFile,
     Unknown
 };
 
 struct Token {
-    TokenType type;
+    LexerTokenType type;
     std::string text;
     size_t line;
     size_t column;
-    Token(TokenType t, const std::string& txt, int l, int c)
-        : type(t), text(txt), line(l), column(c) {}
+    Token(const LexerTokenType t, std::string  txt, const int l, const int c)
+        : type(t), text(std::move(txt)), line(l), column(c) {}
 };
 
 class LAMINA_API Lexer {

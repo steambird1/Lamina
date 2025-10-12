@@ -8,9 +8,8 @@
 #else
 #define LAMINA_API
 #endif
-#include "ast.hpp"
-#include "module_loader.hpp"
-#include "value.hpp"
+#include "lamina_api/ast.hpp"
+#include "lamina_api/value.hpp"
 #include <functional>
 #include <memory>
 #include <set>
@@ -46,16 +45,6 @@ public:
     }
 };
 
-// L_ERR
-class StdLibException : public std::exception {
-public:
-    std::string message;
-    StdLibException(const std::string& msg) : message(msg) {}
-    const char* what() const noexcept override {
-        return message.c_str();
-    }
-};
-
 // Exception for return statements
 class ReturnException : public std::exception {
 public:
@@ -77,6 +66,7 @@ public:
     ContinueException() = default;
 };
 
+
 class LAMINA_API Interpreter {
     // 禁止拷贝，允许移动
     Interpreter(const Interpreter&) = delete;
@@ -85,74 +75,64 @@ class LAMINA_API Interpreter {
     Interpreter& operator=(Interpreter&&) = default;
 
 public:
-    Interpreter() {
-        register_builtin_functions();
-    }
-    void execute(const std::unique_ptr<Statement>& node);
-    Value eval(const ASTNode* node);
-    // Print all variables in current scope
-    static Value eval_LiteralExpr(const LiteralExpr* node);
-    Value eval_UnaryExpr(const UnaryExpr* unary);
-    Value eval_BinaryExpr(const BinaryExpr* bin);
-    Value eval_CallExpr(const CallExpr* call);
+    Interpreter();
+    ~Interpreter();
+    static Value execute(const std::unique_ptr<Statement>& node);
+    static Value eval(const ASTNode* node);
 
-    void printVariables() const;
-    void add_function(const std::string& name, FuncDefStmt* func);
+    static Value eval_LiteralExpr(const LiteralExpr* node);
+    static Value eval_UnaryExpr(const UnaryExpr* unary);
+    static Value eval_BinaryExpr(const BinaryExpr* bin);
+    static Value eval_CallExpr(const CallExpr* call);
+    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
+
+    // Print all variables in current scope
+    static void print_variables();
+
     // Save AST in REPL mode to keep function pointers valid
-    void save_repl_ast(std::unique_ptr<ASTNode> ast);
+    static void save_repl_ast(std::unique_ptr<ASTNode> ast);
+
     // Stack trace management
-    void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
-    void pop_frame();
-    std::vector<StackFrame> get_stack_trace() const;
-    void print_stack_trace(const RuntimeError& error, bool use_colors = true) const;
+    static void push_frame(const std::string& function_name, const std::string& file_name = "<script>", int line_number = 0);
+    static void pop_frame();
+    static std::vector<StackFrame> get_stack_trace();
+    static void print_stack_trace(const RuntimeError& error, bool use_colors = true);
 
     // Utility functions for error display
     static bool supports_colors();
     static void print_error(const std::string& message, bool use_colors = true);
     static void print_warning(const std::string& message, bool use_colors = true);
-    // Builtin function type
-    using BuiltinFunction = std::function<Value(const std::vector<Value>&)>;
-    // Store builtin functions
-    std::unordered_map<std::string, BuiltinFunction> builtin_functions;
-    using EntryFunction = void (*)(Interpreter&);
-    static void register_entry(EntryFunction func);
+
+    // Store builtins
+    static std::unordered_map<std::string, Value> builtins;
+
     // Variable assignment
-    void set_variable(const std::string& name, const Value& val);
+    static void set_variable(const std::string& name, const Value& val);
+
     // built global variable in interpreter
-    void set_global_variable(const std::string& name, const Value& val);
+    static void set_global_variable(const std::string& name, const Value& val);
+
     // Variable lookup
-    Value get_variable(const std::string& name) const;
-    // Call module function
-    Value call_module_function(const std::string& func_name, const std::vector<Value>& args);
+    static Value get_variable(const std::string& name);
+
     // Variable scope stack, top is the current scope
-    std::vector<std::unordered_map<std::string, Value>> variable_stack{{}};
+    static std::vector<std::unordered_map<std::string, Value>> variable_stack;
 
 private:
-    // Store function definitions
-    std::unordered_map<std::string, FuncDefStmt*> functions;
-    // List of loaded modules to prevent circular imports
-    std::set<std::string> loaded_modules;
-    // Store loaded module ASTs to keep function pointers valid
-    std::vector<std::unique_ptr<ASTNode>> loaded_module_asts;
     // Store REPL ASTs to keep function pointers valid in interactive mode
-    std::vector<std::unique_ptr<ASTNode>> repl_asts;
-    // Store loaded module loaders for function calls
-    std::vector<std::unique_ptr<ModuleLoader>> module_loaders;
+    static std::vector<std::unique_ptr<ASTNode>> repl_asts;
 
     // Stack trace for function calls
-    std::vector<StackFrame> call_stack;
-    // Recursion depth tracking
-    int recursion_depth = 0;
-    int max_recursion_depth = 100;// 可变的递归深度限制
+    static std::vector<StackFrame> call_stack;
     // Enter/exit scope
-    void push_scope();
-    void pop_scope();
+    static void push_scope();
+    static void pop_scope();
     // Load and execute module
-    bool load_module(const std::string& module_name);
-    // Register builtin functions
-    void register_builtin_functions();
+    static bool load_module(const std::string& module_path);
+    static bool load_cpp_module(const std::string& module_path);
+
     // 将Number转为Symbolic(如果可能)
-    std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
+    static std::shared_ptr<SymbolicExpr> from_number_to_symbolic(const Value& v);
     // 移除静态成员变量声明，改用函数内静态变量
     // static std::vector<EntryFunction> entry_functions;
 };

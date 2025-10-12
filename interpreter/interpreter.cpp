@@ -1,10 +1,14 @@
 #include "interpreter.hpp"
-#include "../extensions/standard/lstruct.hpp"
-#include "bigint.hpp"
-#include "lamina.hpp"
+
+#include "../extensions/standard/lmStruct.hpp"
+#include "../extensions/standard/standard.hpp"
+#include "cpp_module_loader.hpp"
+#include "lamina_api/bigint.hpp"
+#include "lamina_api/lamina.hpp"
 #include "lexer.hpp"
-#include "module_loader.hpp"
 #include "parser.hpp"
+#include "utils/properties_parser.hpp"
+#include "utils/src_manger.hpp"
 
 #include <cmath>
 #include <cstdlib>// For std::exit
@@ -13,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #ifdef _WIN32
 #include <direct.h>
@@ -33,16 +38,23 @@
 #include <unistd.h>// For isatty
 #endif
 
+std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
+std::vector<StackFrame> Interpreter::call_stack{};
+std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins;
+std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
 
-// 这些异常类已经移到了 interpreter.hpp
+Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec);
+
+Interpreter::Interpreter()= default;
+
+Interpreter::~Interpreter() {
+    variable_stack = {{}};
+    call_stack = {};
+}
 
 // Scope stack operations
 void Interpreter::push_scope() {
     variable_stack.emplace_back();
-}
-
-void Interpreter::add_function(const std::string& name, FuncDefStmt* func) {
-    functions[name] = func;
 }
 
 void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
@@ -53,24 +65,21 @@ void Interpreter::pop_scope() {
     if (variable_stack.size() > 1) variable_stack.pop_back();
 }
 
-Value Interpreter::get_variable(const std::string& name) const {
-    for (auto it = variable_stack.rbegin(); it != variable_stack.rend(); ++it) {
-        auto found = it->find(name);
-        if (found != it->end()) return found->second;
+Value Interpreter::get_variable(const std::string& name) {
+    for (const auto & it : std::ranges::reverse_view(variable_stack)) {
+        auto found = it.find(name);
+        if (found != it.end()) return found->second;
     }
 
-    // 如果变量找不到，检查是否是函数名
-    auto func_it = functions.find(name);
-    if (func_it != functions.end()) {
-        // 返回一个函数类型的值（这里我们需要扩展Value类型）
-        // 暂时返回一个特殊的字符串值表示函数
-        return Value("__function_" + name);
+    // 如果是函数名找不到，查找builtins
+    const auto builtins_it = builtins.find(name);
+    if (builtins_it != builtins.end()) {
+        return builtins_it->second;
     }
 
     RuntimeError error("Undefined variable '" + name + "'");
     error.stack_trace = get_stack_trace();
     throw error;
-    return Value();// Unreachable, but suppress compiler warning
 }
 
 void Interpreter::set_variable(const std::string& name, const Value& val) {
@@ -85,8 +94,11 @@ void Interpreter::set_global_variable(const std::string& name, const Value& val)
     }
 }
 
-void Interpreter::execute(const std::unique_ptr<Statement>& node) {
-    if (!node) return;
+Value Interpreter::execute(const std::unique_ptr<Statement>& node) {
+    if (!node) {
+        std::cout << "[Nothing to execute]" << std::endl;
+        return LAMINA_NULL;
+    }
 
     if (auto* v = dynamic_cast<VarDeclStmt*>(node.get())) {
         if (v->expr) {
@@ -99,22 +111,9 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
         }
     } else if (auto* d = dynamic_cast<DefineStmt*>(node.get())) {
         if (!d->value) {
-            error_and_exit("Null expression in define statement for '" + d->name + "'");
+            L_ERR("Null expression in define statement for '" + d->name + "'");
         }
         Value val = eval(d->value.get());
-        // 删除递归限制
-        /*if (d->name == "MAX_RECURSION_DEPTH" && val.is_int()) {
-            int new_depth = std::get<int>(val.data);
-            if (new_depth > 0 && new_depth <= 10000) {
-                max_recursion_depth = new_depth;
-                std::cout << "Recursion depth limit set to: " << new_depth << std::endl;
-            } else {
-                error_and_exit("Invalid recursion depth value: " + std::to_string(new_depth) + " (must be between 1 and 10000)");
-            }
-        } else {
-            // 原：std::cerr << "Error: Unknown define constant: " << d->name << std::endl;
-            // 已替换
-        }*/
     } else if (auto* bi = dynamic_cast<BigIntDeclStmt*>(node.get())) {
         if (bi->init_value) {
             Value val = eval(bi->init_value.get());
@@ -131,18 +130,18 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                     ::BigInt big_val(std::get<std::string>(val.data));
                     set_variable(bi->name, Value(big_val));
                 } catch (const std::exception& e) {
-                    error_and_exit("Invalid BigInt string '" + std::get<std::string>(val.data) + "' in declaration of " + bi->name);
+                    L_ERR("Invalid BigInt string '" + std::get<std::string>(val.data) + "' in declaration of " + bi->name);
                 }
             } else {
                 // 默认初始化为0
-                error_and_exit("Cannot convert " + val.to_string() + " to BigInt in declaration of " + bi->name);
+                L_ERR("Cannot convert " + val.to_string() + " to BigInt in declaration of " + bi->name);
             }
         } else {
             set_variable(bi->name, Value(::BigInt(0)));
         }
     } else if (auto* a = dynamic_cast<AssignStmt*>(node.get())) {
         if (!a->expr) {
-            error_and_exit("Null expression in assignment to '" + a->name + "'");
+            L_ERR("Null expression in assignment to '" + a->name + "'");
         }
         Value val = eval(a->expr.get());
         set_variable(a->name, val);
@@ -152,14 +151,13 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             auto val = eval(e.get());
             struct_init_val.emplace_back(n, val);
         }
-        set_variable(a->name, new_lstruct(struct_init_val));
+        set_variable(a->name, new_lm_struct(struct_init_val));
     } else if (auto* ifs = dynamic_cast<IfStmt*>(node.get())) {
         if (!ifs->condition) {
-            error_and_exit("Null condition in if statement");
+            L_ERR("Null condition in if statement");
         }
         Value cond = eval(ifs->condition.get());
-        bool cond_true = cond.as_bool();
-        if (cond_true) {
+        if (cond.as_bool()) {
             for (auto& stmt: ifs->thenBlock->statements) execute(stmt);
         } else if (ifs->elseBlock) {
             for (auto& stmt: ifs->elseBlock->statements) execute(stmt);
@@ -201,7 +199,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                         execute(stmt);
                     } catch (const BreakException&) {
                         // 退出整个循环
-                        return;
+                        return LAMINA_NULL;
                     } catch (const ContinueException&) {
                         // 跳到下一次迭代
                         continue_encountered = true;
@@ -210,7 +208,7 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             }
         } catch (const BreakException&) {
             // 捕获可能从嵌套块冒泡上来的break异常
-            return;
+            return LAMINA_NULL;
         } catch (const ReturnException&) {
             // 函数返回，直接传递给上层
             throw;
@@ -221,21 +219,43 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
             throw error;
         }
     } else if (auto* func = dynamic_cast<FuncDefStmt*>(node.get())) {
-        functions[func->name] = func;
+        set_variable(func->name, Value(std::make_shared<LambdaDeclExpr>(
+            func->name, func->params, std::move(func->body))));
     } else if (auto* block = dynamic_cast<BlockStmt*>(node.get())) {
         for (auto& stmt: block->statements) execute(stmt);
     } else if (auto* ret = dynamic_cast<ReturnStmt*>(node.get())) {
         Value val = eval(ret->expr.get());
         throw ReturnException(val);
-    } else if (auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
-        (void) breakStmt;// 避免未使用变量警告
+    } else if ([[maybe_unused]] auto* breakStmt = dynamic_cast<BreakStmt*>(node.get())) {
         throw BreakException();
-    } else if (auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
-        (void) contStmt;// 避免未使用变量警告
+    } else if ([[maybe_unused]] auto* contStmt = dynamic_cast<ContinueStmt*>(node.get())) {
         throw ContinueException();
     } else if (auto* includeStmt = dynamic_cast<IncludeStmt*>(node.get())) {
-        if (!load_module(includeStmt->module)) {
-            error_and_exit("Failed to include module '" + includeStmt->module + "'");
+        const auto& path = includeStmt->module;
+        bool ok_to_load = false;
+        if (path.ends_with(".lm")){
+            ok_to_load = load_module(path);
+        }
+        else if
+        (   path.ends_with(".dll")
+         or path.ends_with(".so")
+         or path.ends_with(".dylib")
+         or path.ends_with(".a")
+        ){
+            ok_to_load = load_cpp_module(path);
+        }
+        else if (
+            auto it = register_std_libs.find(path);
+            it != register_std_libs.end()
+        ){
+            set_variable(it->first, it->second);
+            ok_to_load = true;
+        }
+        else {
+            L_ERR("Failed to include module '" + path + "'");
+        }
+        if (!ok_to_load) {
+            L_ERR("Failed to include module '" + path + "'");
         }
     } else if (auto* exprstmt = dynamic_cast<ExprStmt*>(node.get())) {
         if (exprstmt->expr) {
@@ -243,34 +263,38 @@ void Interpreter::execute(const std::unique_ptr<Statement>& node) {
                 // std::cerr << "DEBUG: Executing expression statement" << std::endl;
                 Value result = eval(exprstmt->expr.get());
                 // std::cerr << "DEBUG: Expression result: " << result.to_string() << std::endl;
-            } catch (const StdLibException& e){
-                throw StdLibException(e.what());
+                return result;
+            } catch (const StdLibException& e) {
+                throw;
             } catch (const std::exception& e) {
                 std::cerr << "ERROR: Exception in expression statement: " << e.what() << std::endl;
             } catch (...) {
                 std::cerr << "ERROR: Unknown exception in expression statement" << std::endl;
             }
         } else {
-            error_and_exit("Empty expression statement");
+            L_ERR("Empty expression statement");
         }
     } else if (auto* nullstmt = dynamic_cast<NullStmt*>(node.get())) {
         (void) nullstmt;
+    } else {
+        std::cout << "[Nothing to execute]" << std::endl;
     }
+    return LAMINA_NULL;
 }
 
 
 Value Interpreter::eval(const ASTNode* node) {
     if (!node) {
-        error_and_exit("Attempted to evaluate null expression");
+        L_ERR("Attempted to evaluate null expression");
     }
     if (auto* lit = dynamic_cast<const LiteralExpr*>(node)) {
         return eval_LiteralExpr(lit);
     }
     if (auto* id = dynamic_cast<const IdentifierExpr*>(node)) {
-        return get_variable(id->name);
+        return Interpreter::get_variable(id->name);
     }
     if (auto* var = dynamic_cast<const VarExpr*>(node)) {
-        return get_variable(var->name);
+        return Interpreter::get_variable(var->name);
     }
     if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         return eval_BinaryExpr(bin);
@@ -281,6 +305,96 @@ Value Interpreter::eval(const ASTNode* node) {
     if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         return eval_CallExpr(call);
     }
+    if (auto* g_mem = dynamic_cast<const GetMemberExpr*>(node)) {
+        auto left = eval(g_mem->father.get());
+        if (left.is_lstruct()) {
+            const auto lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            variable_stack[0]["self"] = lstruct_;
+            const auto& attr_name = g_mem->child->name;
+            auto res = lstruct_->find(attr_name);
+            if (res == nullptr) {
+                L_ERR("AttrError: struct hasn't attribute named " + attr_name);
+                return LAMINA_NULL;
+            }
+            return res->value;
+        }
+        L_ERR("Type of left can't get it member");
+        return LAMINA_NULL;
+    }
+    if (auto* g_item = dynamic_cast<const GetItemExpr*>(node)) {
+        auto left = eval(g_item->father.get());
+        if (g_item->params.empty()) {
+            L_ERR("Getitem need one parameter");
+            return LAMINA_NULL;
+        }
+        const auto& subscript = eval(g_item->params[0].get());
+        if (left.is_array() and subscript.is_int()) {
+            const auto& larray_ = std::get<std::vector<Value>>(left.data);
+            Value val;
+            try {
+                val = larray_.at(std::get<int>(subscript.data));
+            }
+            catch (const std::out_of_range& e) {
+                L_ERR("Index out of range");
+                return LAMINA_NULL;
+            }
+            return val;
+        }
+
+        if (left.is_lstruct() and subscript.is_string()) {
+            const auto& lstruct_ = std::get<std::shared_ptr<lmStruct>>(left.data);
+            const auto& attr_name = std::get<std::string>(subscript.data);
+            auto res = lstruct_->find(attr_name);
+            if (res == nullptr) {
+                L_ERR("AttrError: struct hasn't attribute named " + attr_name);
+                return LAMINA_NULL;
+            }
+            return res->value;
+        }
+        L_ERR("Type of left is not subscriptable");
+        return LAMINA_NULL;
+    }
+    if (auto* f = dynamic_cast<const LambdaDeclExpr*>(node)) {
+        // 克隆 body
+        std::unique_ptr<BlockStmt> cloned_body;
+        if (f->body) {
+            const auto stmt_ptr = f->body->clone_expr().release();
+            cloned_body = std::unique_ptr<BlockStmt>(dynamic_cast<BlockStmt*>(stmt_ptr));
+        }
+        // Make LambdaDeclExpr
+        auto func = std::make_shared<LambdaDeclExpr>(
+            f->name,
+            f->params,
+            std::move(cloned_body)
+        );
+        return Value(func);
+    }
+    if (auto* ns_g_mem = dynamic_cast<const NameSpaceGetMemberExpr*>(node)) {
+        auto left = eval(ns_g_mem->father.get());
+        if (left.is_lmModule()) {
+            const auto& lmodule_ = std::get<std::shared_ptr<LmModule>>(left.data);
+            const auto& attr_name = ns_g_mem->child->name;
+            Value val;
+            try {
+                val = lmodule_->sub_item.at(attr_name);
+            }
+            catch (const std::out_of_range& e) {
+                L_ERR("Attr "+attr_name+" not in module "+lmodule_->module_name);
+                return LAMINA_NULL;
+            }
+            return val;
+        }
+        L_ERR("Type of left is not a lamina module");
+        return LAMINA_NULL;
+    }
+    if (auto* lm_struct = dynamic_cast<const LambdaStructDeclExpr*>(node)) {
+        std::vector<std::pair<std::string, Value>> struct_init_val{};
+        for (const auto& [n, e]: lm_struct->init_vec) {
+            auto val = eval(e.get());
+            struct_init_val.emplace_back(n, val);
+        }
+        return new_lm_struct(struct_init_val);
+    }
     if (auto* arr = dynamic_cast<const ArrayExpr*>(node)) {
         std::vector<Value> elements;
         for (const auto& element: arr->elements) {
@@ -288,7 +402,7 @@ Value Interpreter::eval(const ASTNode* node) {
                 elements.push_back(eval(element.get()));
             } else {
                 std::cerr << "Error: Null element in array literal" << std::endl;
-                return Value();
+                return {};
             }
         }
         return Value(elements);
@@ -298,192 +412,96 @@ Value Interpreter::eval(const ASTNode* node) {
 }
 
 // Load and execute module
-bool Interpreter::load_module(const std::string& module_name) {
-    // Check if already loaded to avoid circular imports
-    if (loaded_modules.contains(module_name)) {
-        return true;// Already loaded
-    }
-    // 立即插入，防止递归 include
-    loaded_modules.insert(module_name);
+bool Interpreter::load_module(const std::string& module_path) {
+    const auto file_content = open_lm_file(module_path);
+    auto tokens = Lexer::tokenize(file_content);
+    const auto parser = std::make_shared<Parser>(tokens);
+    auto asts = parser->parse_program();
 
-    bool is_shared_lib = false;
-    std::string clean_name = module_name;
-    if (clean_name.rfind("lib", 0) == 0) {
-        clean_name = clean_name.substr(3);
-    }
 
-// 平台相关动态库扩展名
-#if defined(_WIN32)
-    const std::string lib_ext = ".dll";
-#elif defined(__APPLE__)
-    const std::string lib_ext = ".dylib";
-#else
-    const std::string lib_ext = ".so";
-#endif
-
-    // Handle built-in hidden library "splash"
-    if (module_name == "splash") {
-        print_logo();
-        return true;
-    }
-    // Handle built-in hidden library "them" (credits)
-    if (module_name == "them") {
-        print_them();
-        return true;
-    }
-
-    // Build possible file paths
-    std::string filename = module_name;
-    bool has_lm = filename.find(".lm") != std::string::npos;
-    bool has_lib = filename.find(lib_ext) != std::string::npos;
-
-    // Try different paths: current directory, examples directory, etc.
-    const std::vector<std::string> search_paths = {"", ".", "include", "extensions"};
-    std::string full_path;
-
-    // 如果指定了动态库扩展名，直接尝试加载动态库
-    if (has_lib) {
-        std::vector<std::string> tried_paths;
-        for (const auto& path: search_paths) {
-            full_path = (std::filesystem::path(path) / filename).string();
-            std::ifstream testfile(full_path, std::ios::binary);
-            tried_paths.push_back(full_path);
-            if (testfile) {
-                testfile.close();
-                auto loader = std::make_unique<ModuleLoader>(full_path);
-                if (loader->isLoaded()) {
-                    if (loader->registerToInterpreter(*this)) {
-                        // 保存模块加载器实例
-                        module_loaders.push_back(std::move(loader));
-                        return true;
-                    }
-                    std::cerr << "Failed to register module: " << full_path << std::endl;
-                } else {
-                    std::cerr << "Failed to load shared library: " << full_path << std::endl;
-                }
-            }
-        }
-        // 如果指定了.dll/.so/.dylib但没找到，直接返回失败
-        if (tried_paths.empty()) {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
-        } else {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\nTried paths:\n";
-            for (const auto& p : tried_paths) {
-                std::cerr << "  - " << p << "\n";
-            }
-        }
+    // Check if AST generation succeeded
+    if (asts.empty()) {
+        // print_traceback("<stdin>", lineno);
+        // return 1;
+        std::cout << "[Nothing to execute]" << std::endl;
         return false;
     }
 
-    // 如果没有指定扩展名，默认添加.lm
-    if (!has_lm) {
-        filename += ".lm";
-    }
-
-    std::ifstream file;
-    for (const auto& path: search_paths) {
-        full_path = (std::filesystem::path(path) / filename).string();
-        file.open(full_path);
-        if (file) break;
-    }
-
-    // 如果没找到脚本文件，尝试查找动态库（lib前缀和无前缀，自动适配扩展名）
-    if (!file) {
-        std::vector<std::string> lib_names = {
-                "lib" + clean_name + lib_ext,
-                clean_name + lib_ext};
-        is_shared_lib = true;
-        bool found = false;
-        for (const auto& libfile: lib_names) {
-            for (const auto& path: search_paths) {
-                full_path = (std::filesystem::path(path) / libfile).string();
-                std::ifstream testfile(full_path, std::ios::binary);
-                if (testfile) {
-                    testfile.close();
-                    auto loader = std::make_unique<ModuleLoader>(full_path);
-                    if (loader->isLoaded()) {
-                        if (loader->registerToInterpreter(*this)) {
-                            // 保存模块加载器实例
-                            module_loaders.push_back(std::move(loader));
-                            found = true;
-                            break;
-                        }
-                        std::cerr << "Failed to register module: " << full_path << std::endl;
-                    } else {
-                        std::cerr << "Failed to load shared library: " << full_path << std::endl;
-                    }
-                }
-            }
-            if (found) break;
-        }
-        if (!found) {
-            std::cerr << "Error: Cannot load module '" << module_name << "'\n";
-            std::cerr << "  Searched in: ";
-            for (const auto& libfile: lib_names) {
-                for (const auto& path: search_paths) {
-                    std::cerr << (std::filesystem::path(path) / libfile).string() << " ";
-                }
-            }
-            std::cerr << "\n";
-            return false;
-        }
-        return true;
-    }
-
-
-    // Read file into string
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string source = buffer.str();
-    file.close();
-
-
-    // Lexical and syntax analysis
-    auto tokens = Lexer::tokenize(source);
-    auto ast = Parser::parse(tokens);
-
-    if (!ast) {
-        std::cerr << "Error: Failed to parse module '" << module_name << "'" << std::endl;
-        loaded_modules.erase(module_name);// Remove from loaded modules on failure
-        return false;
-    }// Execute module code (should be a block statement)
-    auto* block = dynamic_cast<BlockStmt*>(ast.get());
-    if (block) {
-        // Execute module code in the current scope (not a new scope)
-        // This allows variables and functions to be accessible after inclusion
+    // Only support AST of type BlockStmt (block statement)
+    const auto block = std::make_unique<BlockStmt>(std::move(asts));
+    push_frame(module_path, module_path, 0);   // Add to call stack
+    push_scope();                              // Create scope here
+    for (auto& stmt: block->statements) {
         try {
-            for (auto& stmt: block->statements) {
-                execute(stmt);
-            }
+            execute(stmt);
         } catch (const std::exception& e) {
-            std::cerr << "Error: Exception while executing module '" << module_name << "': " << e.what() << std::endl;
-            loaded_modules.erase(module_name);// 失败时移除，防止死锁
+            std::cerr << "Error when import other file: " << e.what() << std::endl;
+        } catch (...) { // 捕获非标准异常
+            std::cerr << "Error: Unknown exception occurred while loading module" << std::endl;
+            if (!call_stack.empty()) pop_frame();
+            if (!variable_stack.empty()) pop_scope();
             return false;
         }
-
-        // Store the AST to keep function pointers valid
-        loaded_module_asts.push_back(std::move(ast));
-        return true;
     }
-    std::cerr << "Error: Module '" << module_name << "' does not contain valid code" << std::endl;
-    return false;
-}
 
-// 使用函数内的静态变量来避免DLL导出/导入问题
-static std::vector<Interpreter::EntryFunction>& get_entry_functions() {
-    static std::vector<Interpreter::EntryFunction> entry_functions;
-    return entry_functions;
-}
-
-void Interpreter::register_entry(EntryFunction func) {
-    get_entry_functions().push_back(func);
-}
-
-// Register builtin mathematical functions
-void Interpreter::register_builtin_functions() {
-    for (auto entry: get_entry_functions()) {
-        entry(*this);
+    auto module_var_table = variable_stack.back();
+    pop_scope();
+    pop_frame();
+    auto module_name = parser->get_module_name();
+    if (module_name.empty()) {
+        namespace fs = std::filesystem;
+        const fs::path path(module_path);
+        module_name = path.stem().string();
+        std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     }
+
+    std::cout << "\nProgram execution completed." << std::endl;
+    set_variable(module_name,
+        Value(
+            std::make_shared<LmModule>(
+                module_name,
+                parser->get_module_version(),
+                module_var_table
+               )
+            )
+    );
+    return true;
+}
+
+bool Interpreter::load_cpp_module(const std::string& module_path) {
+    const auto& module = load_cppmodule(module_path);
+    namespace fs = std::filesystem;
+    const fs::path path(module_path);
+    std::string module_name = path.stem().string();
+    std::cout << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
+    
+    for (const auto& [key, value] : module) {
+        if (key == "lamina_init_module") {
+            [[maybe_unused]] auto _ = std::get<std::shared_ptr<LmCppFunction>>(value.data)->function({}); // 初始化函数
+        }
+        std::cerr << "Debug: checking c++ function " << key << std::endl;
+    }
+    
+    // 拼接properties文件名
+    const size_t last_dot_pos = module_path.find_last_of('.');
+    std::string properties_file_path;
+    if (last_dot_pos != std::string::npos) {
+        properties_file_path = module_path.substr(0, last_dot_pos + 1) + "properties"; // +1 保留 '.'
+    } else {
+        properties_file_path = module_path + "." + "properties";
+    }
+
+    const auto version = parse_properties(properties_file_path).at("version");
+    set_variable(module_name,
+        Value(
+            std::make_shared<LmModule>(
+                module_name,
+                version.empty() ? version : "0.0.0" ,
+                module
+               )
+            )
+    );
+    return true;
 }
 
 // 将Number转为Symbolic(如果可能)
@@ -506,20 +524,13 @@ std::shared_ptr<SymbolicExpr> Interpreter::from_number_to_symbolic(const Value& 
     return expr;
 }
 
-
-// 在文件顶端添加错误处理函数
-LAMINA_EXPORT void error_and_exit(const std::string& msg) {
-    std::cerr << "Error: " << msg << std::endl;
-    std::exit(EXIT_FAILURE);
-}
-
 // 添加一个新的错误报告函数，只打印错误但不终止程序
 // static void report_error(const std::string& msg) {
 //     std::cerr << "Error: " << msg << std::endl;
 // }
 
 // 打印当前所有变量
-void Interpreter::printVariables() const {
+void Interpreter::print_variables() {
     if (variable_stack.empty()) {
         std::cout << "No variables defined." << std::endl;
         return;
@@ -541,33 +552,24 @@ void Interpreter::printVariables() const {
     if (!hasVars) {
         std::cout << "No variables defined." << std::endl;
     }
-
-    // 打印函数列表
-    if (!functions.empty()) {
-        std::cout << "\nDefined functions:" << std::endl;
-        std::cout << "------------------" << std::endl;
-        for (const auto& [name, _]: functions) {
-            std::cout << name << "()" << std::endl;
-        }
-    }
 }
 
 // Stack trace management functions
 void Interpreter::push_frame(const std::string& function_name, const std::string& file_name, int line_number) {
-    call_stack.emplace_back(function_name, file_name, line_number);
+    Interpreter::call_stack.emplace_back(function_name, file_name, line_number);
 }
 
 void Interpreter::pop_frame() {
-    if (!call_stack.empty()) {
-        call_stack.pop_back();
+    if (!Interpreter::call_stack.empty()) {
+        Interpreter::call_stack.pop_back();
     }
 }
 
-std::vector<StackFrame> Interpreter::get_stack_trace() const {
+std::vector<StackFrame> Interpreter::get_stack_trace() {
     return call_stack;
 }
 
-void Interpreter::print_stack_trace(const RuntimeError& error, bool use_colors) const {
+void Interpreter::print_stack_trace(const RuntimeError& error, const bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
 
     // Use stack trace from error if available, otherwise use current call stack
@@ -622,7 +624,7 @@ bool Interpreter::supports_colors() {
     return true;
 }
 
-void Interpreter::print_error(const std::string& message, bool use_colors) {
+void Interpreter::print_error(const std::string& message, const bool use_colors) {
     bool colors_enabled = supports_colors() && use_colors;
 
     if (colors_enabled) {
@@ -630,27 +632,6 @@ void Interpreter::print_error(const std::string& message, bool use_colors) {
     } else {
         std::cerr << "Error: " << message << "\n";
     }
-}
-
-// Call module function implementation
-Value Interpreter::call_module_function(const std::string& func_name, const std::vector<Value>& args) {
-    // Try each loaded module
-    for (auto& loader: module_loaders) {
-        if (loader && loader->isLoaded()) {
-            // Check if this module has the function (by namespace)
-            size_t dot_pos = func_name.find(".");
-            if (dot_pos != std::string::npos) {
-                std::string ns = func_name.substr(0, dot_pos);
-                const auto* module_info = loader->getModuleInfo();
-                if (module_info && std::string(module_info->namespace_name) == ns) {
-                    return loader->callModuleFunction(func_name, args);
-                }
-            }
-        }
-    }
-
-    std::cerr << "ERROR: Module function '" << func_name << "' not found in any loaded module" << std::endl;
-    return Value();// null value
 }
 
 void Interpreter::print_warning(const std::string& message, bool use_colors) {

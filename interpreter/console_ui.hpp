@@ -3,6 +3,8 @@
 #include "help_text.hpp"
 #include <string>
 
+class Interpreter;
+
 inline void print_help() {
     std::cout << HELP_TEXT << std::endl;
 }

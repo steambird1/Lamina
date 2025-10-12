@@ -1,10 +1,8 @@
 #include "console_ui.hpp"
 #include "interpreter.hpp"
-#include "lamina.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "repl_input.hpp"
-#include "trackback.hpp"
+#include "utils/repl_input.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -15,6 +13,11 @@
 #include <winnls.h>
 #endif
 
+#include "lamina_api/lamina.hpp"
+#include "utils/color_style.hpp"
+#include "version.hpp"
+
+
 #include <string>
 
 int exec_block(const BlockStmt* block) {
@@ -24,10 +27,10 @@ int exec_block(const BlockStmt* block) {
     for (auto& stmt: block->statements) {
         currentLine++;
         try {
-            interpreter.execute(stmt);
+            Interpreter::execute(stmt);
         } catch (const RuntimeError& re) {
             // Use stack trace for runtime errors
-            interpreter.print_stack_trace(re, true);
+            Interpreter::print_stack_trace(re, true);
         } catch (const ReturnException&) {
             // Catch and show meaningful info (return outside function causes this exception)
             Interpreter::print_warning("Return statement used outside function (line " + std::to_string(currentLine) + ")", true);
@@ -61,7 +64,8 @@ int run_file(const std::string& path) {
     buffer << file.rdbuf();
     std::string source = buffer.str();
     auto tokens = Lexer::tokenize(source);
-    auto ast = Parser::parse(tokens);
+    auto parser = std::make_shared<Parser>(tokens);
+    auto ast = parser->parse_program();
 
     // 注释掉自动加载minimal模块，改为按需加载
     // std::cout << "Loading minimal module..." << std::endl;
@@ -86,16 +90,17 @@ int run_file(const std::string& path) {
     //     std::cerr << "Exception during module loading: " << e.what() << std::endl;
     // }
 
-    if (!ast) {
-        print_traceback(path, 1);
-        return 2;
+    if (ast.empty()) {
+        // print_traceback(path, 1);
+        // return 2;
+        std::cout << "[Nothing to execute]" << std::endl;
     }
 
     // 只支持 BlockStmt
-    auto block = dynamic_cast<BlockStmt*>(ast.get());
+    auto block = std::make_unique<BlockStmt>(std::move(ast));
     if (!block) return 1;
 
-    exec_block(block);
+    exec_block(block.get());
     std::cout << "\nProgram execution completed." << std::endl;
     return 0;
 }
@@ -215,16 +220,12 @@ int repl() {
             // Set prompt style based on whether the terminal supports color
             std::string prompt;
             if (brace_level > 0) {
-                prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m. \033[0m "   // 多行输入下等待输入的提示符
-                                 : ". ";
+                prompt = ConClr::MAGENTA + "... " + ConClr::RESET ;    // 多行输入下等待输入的提示符
             } else {
-                prompt = Interpreter::supports_colors()
-                                 ? "\033[1;32m> \033[0m "   // 带绿色高亮的提示符（ANSI转义序列）
-                                 : "> ";                    // 普通提示符
+                prompt = ConClr::MAGENTA + ">>> " + ConClr::RESET ;   // 带绿色高亮的提示符
             }
 
-            std::string line = repl_readline(prompt);
+            std::string line = repl_readline(prompt,"");
 
             if (line == "\x03") {   // Ctrl+C interrupt
                 if (brace_level > 0) {
@@ -250,7 +251,7 @@ int repl() {
                 code_buffer += line + "\n";
 
                 // Simply check if the code block is complete by counting braces
-                for (char c: line) {
+                for (const char c: line) {
                     if (c == '{') {
                         brace_level++;
                     } else if (c == '}') {
@@ -294,25 +295,28 @@ int repl() {
                     std::cout << "  :help - Show this help message\n";
                     std::cout << "  :vars - Show all variables\n";
                     std::cout << "  :clear - Clear screen\n";
+                    std::cout << "  :nouse_color - no use the color for output\n";
+                    std::cout << "  :use_color - use color for output(default option)\n";
                     ++lineno;
                     continue;
                 }
                 if (trimmed_line == ":vars") {
-                    interpreter.printVariables();
+                    Interpreter::print_variables();
                     ++lineno;
                     continue;
+                }
+                if (trimmed_line == ":nouse_color"){
+                    ConClr::init(false); // 设置不使用颜色
+                }
+                if (trimmed_line == ":use_color"){
+                    ConClr::init(true); // 设置使用颜色
                 }
                 if (trimmed_line == ":clear") {
 #ifdef _WIN32
-                    auto result = system("cls");    // Windows下使用cls命令
+                    [[maybe_unused]] auto result = system("cls");    // Windows下使用cls命令
 #else
-                    auto result = system("clear");  // Linux/macOS下使用clear命令
+                    [[maybe_unused]] auto result = system("clear");  // Linux/macOS下使用clear命令
 #endif
-                    (void) result;  // 显式忽略system函数的返回值，避免编译器警告
-                    ++lineno;
-                    continue;
-                }
-                if (trimmed_line == ":fns") {
                     ++lineno;
                     continue;
                 }
@@ -320,29 +324,29 @@ int repl() {
 
             // frontend
             auto tokens = Lexer::tokenize(line_to_process);
-            auto ast = Parser::parse(tokens);
-
+            const auto parser = std::make_shared<Parser>(tokens);
+            auto asts = parser->parse_program();
 
             // Check if AST generation succeeded
-            if (!ast) {
-                print_traceback("<stdin>", lineno);
-                return 1;
+            if (asts.empty()) {
+                // print_traceback("<stdin>", lineno);
+                // return 1;
+                std::cout << "[Nothing to execute]" << std::endl;
             }
 
             // Only support AST of type BlockStmt (block statement)
-            auto* block = dynamic_cast<BlockStmt*>(ast.get());
-            if (!block) return 1;
-            // 保存AST以保持函数指针有效
-            interpreter.save_repl_ast(std::move(ast));
+            auto block = std::make_unique<BlockStmt>(std::move(asts));
 
             try {
-
                 // Execute each statement in the block
                 for (auto& stmt: block->statements) {
                     try {
-                        interpreter.execute(stmt);
+                        const auto result = Interpreter::execute(stmt);
+                        if (! result.is_null()) {
+                            std::cout << result.to_string() << std::endl;
+                        }
                     } catch (const RuntimeError& re) {
-                        interpreter.print_stack_trace(re, true);
+                        Interpreter::print_stack_trace(re, true);
                         break;
                     } catch (const ReturnException&) {
                         Interpreter::print_warning(
@@ -379,7 +383,7 @@ int repl() {
 
             // Catch top-level runtime errors during block execution
             catch (const RuntimeError& re) {
-                interpreter.print_stack_trace(re, true);
+                Interpreter::print_stack_trace(re, true);
             }
 
             catch (StdLibException) {
@@ -396,6 +400,13 @@ int repl() {
             catch (...) {
                 Interpreter::print_error("Unknown error occurred", true);
             }
+            // 保存AST以保持函数指针有效
+            Interpreter::save_repl_ast(std::move(block));
+        }
+        catch (StdLibException& e) {
+            Interpreter::print_error(
+                    e.what(),
+                    true);
         }
         // Catch and handle all exceptions in REPL loop to prevent crashes
         catch (...) {

@@ -1,0 +1,3 @@
+// include "../extensions/lamina_extensions/fist_lib/hello.lm"
+var name = "lamina"
+print("Hello from "+name )
