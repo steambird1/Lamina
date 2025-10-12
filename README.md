@@ -20,9 +20,13 @@
 
 ## 一种专注于精确数学计算的以面向过程为主体的编程语言
 
-[语法指南](docs/zh_CN/wiki.md) • [数学特性](#精确数学特性) • [示例代码](/examples) • [本次更新](## Lamina v1.2.0 重磅更新：架构重构焕新，语法体验再升级) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md) • [ToDo list](TODO.md)
+[语法指南](docs/zh_CN/wiki.md) • [示例代码](/examples) • [编译指南](/docs/zh_CN/Compile.md) • [贡献指南](/docs/zh_CN/CONTRIBUTING.md) • [Wiki](https://wiki.lm-lang.org) • [动态库插件开发](/docs/zh_CN/PLUGIN_GUIDE.md) • [ToDo list](TODO.md)
 
+## 目录
 - [语法指南](docs/zh_CN/wiki.md)
+- [数学特性](#精确数学特性)
+- [本次更新](##Lamina v1.2.0 重磅更新：架构重构焕新，语法体验再升级) 
+- [示例代码](/examples)
 
 ## 精确数学特性
 1. **精确数学计算**：从底层解决浮点数精度丢失问题，支持有理数（分数）和无理数（√、π、e）的符号化存储与运算，多次循环运算仍保持精确。
