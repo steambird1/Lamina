@@ -60,7 +60,7 @@ add_library(lamina_core SHARED
     extensions/standard/lmStruct.hpp
     extensions/standard/lmStruct.cpp
     extensions/standard/standard.hpp
-        extensions/standard/io.cpp
+    extensions/standard/io.cpp
 
     interpreter/eval.cpp
     interpreter/interpreter.cpp
