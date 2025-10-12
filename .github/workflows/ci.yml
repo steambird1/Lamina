@@ -40,6 +40,8 @@ jobs:
 
       - name: Basic functionality test
         working-directory: build
+        env:
+          LD_LIBRARY_PATH: .  
         run: |
           echo "Running basic tests..."
 
