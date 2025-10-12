@@ -1,9 +1,9 @@
 #include "symbolic.hpp"
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <functional>
 #include <iostream>
-#include <map>
 
 // 符号表达式的化简实现
 std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
@@ -34,6 +34,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_sqrt() const {
     if (operands.empty()) return std::make_shared<SymbolicExpr>(*this);
     
     auto simplified_operand = operands[0]->simplify();
+	if (simplified_operand->type == SymbolicExpr::Type::Infinity) return simplified_operand;
     
     if (simplified_operand->is_number()) {
 		
@@ -209,6 +210,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
     auto left = operands[0]->simplify();
     auto right = operands[1]->simplify();
 	
+	// TODO: 理论上为未定式
+	if (left->type == SymbolicExpr::Type::Number && left->convert_rational() == ::Rational(0)) return left;
+	if (right->type == SymbolicExpr::Type::Number && right->convert_rational() == ::Rational(0)) return right;
+	
+	if (left->type == SymbolicExpr::Type::Infinity) return left;
+	if (right->type == SymbolicExpr::Type::Infinity) return right;
+	
 	// TODO: Debug output:
 	std::cerr << "[Debug output] Init: Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 	
@@ -227,7 +235,6 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	}
 	
     // 如果两个操作数都是数字，直接相乘
-	// TODO: 有些计算时会出问题
     if (left->is_number() && right->is_number()) {
 		std::cerr << "[Debug output] numeric calling in multiplier: ";
         auto left_num = left->get_number();
@@ -243,6 +250,22 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			return SymbolicExpr::number(result);
 		}
     }
+	
+	if (right->is_number())
+		std::swap(left, right);	// 尽可能保证左侧操作数为 number
+	
+	// 如果右侧只有 variable，认为化简完成
+	// TODO: 确定如果有 power 项目，要不要同样判断
+	
+	std::function<bool(std::shared_ptr<SymbolicExpr>,bool)> check_simp_1;
+	check_simp_1 = [&check_simp_1](std::shared_ptr<SymbolicExpr> obj, bool allow_num) -> bool {
+		return (obj->type == SymbolicExpr::Type::Number && allow_num) || obj->type == SymbolicExpr::Type::Variable || (
+			(obj->type == SymbolicExpr::Type::Multiply || obj->type == SymbolicExpr::Type::Power) && check_simp_1(obj->operands[0], allow_num) && check_simp_1(obj->operands[1], true)
+			) || (
+			obj->type == SymbolicExpr::Type::Sqrt && check_simp_1(obj->operands[0], allow_num)
+			);
+	};
+	if (check_simp_1(right, false)) return std::make_shared<SymbolicExpr>(*this);	// 已经化简完成
 	
 	// 加法运算特殊化简
 	if ((left->type == SymbolicExpr::Type::Add) || (right->type == SymbolicExpr::Type::Add)) {
@@ -427,7 +450,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	if ((left->type == SymbolicExpr::Type::Power || right->type == SymbolicExpr::Type::Power
 		|| (left->type == right->type && left->type == SymbolicExpr::Type::Variable))
 		|| (!is_for_auxiliary(left)) || (!is_for_auxiliary(right))) {
-		
+
 		if (is_power_compatible(left) && is_power_compatible(right)) {
 			if (left->type != SymbolicExpr::Type::Power)
 				std::swap(left, right);
@@ -452,6 +475,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 				else
 					return false;
 			};
+			
 			// TODO: Debug output:
 			std::cerr << "[Debug output] [1] preparing to merge exponents" << std::endl;
 			
@@ -477,7 +501,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 						
 						if (lcom->operands[0]->type == SymbolicExpr::Type::Variable || rcom->operands[0]->type == SymbolicExpr::Type::Variable) {
 							std::cerr << "[Debug output] [1a] Entering special reservation\n";
-							return SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify()), SymbolicExpr::number(lcr)); // 不要化简整体！
+							auto mt = SymbolicExpr::multiply(lcom->operands[0]->simplify(), rcom->operands[0]->simplify());
+							if (lcr == ::Rational(1)) return mt;
+							else return SymbolicExpr::power(mt, SymbolicExpr::number(lcr)); // 不要化简整体！
 						} else {
 							std::cerr << "[Debug output] [1a] No variable, normalizing\n";
 							auto tmp = SymbolicExpr::power(SymbolicExpr::multiply(lcom->operands[0], rcom->operands[0]),
@@ -670,6 +696,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 
     auto left = operands[0]->simplify();
     auto right = operands[1]->simplify();
+	
+	if (left->type == SymbolicExpr::Type::Infinity) return left;
+	if (right->type == SymbolicExpr::Type::Infinity) return right;
 
     // 解析根号
 	// 如果为根号，其中 coeff 为根式的系数，radicand 为根号下的值
@@ -787,6 +816,13 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_power() const {
     // 如果底数是数字，且指数是整数，用数字储存
     auto base = operands[0]->simplify();
     auto exponent = operands[1]->simplify();
+	
+	// TODO: 理论上有未定式
+	if (exponent->type == SymbolicExpr::Type::Number && exponent->convert_rational() == ::Rational(0)) return SymbolicExpr::number(1);
+	if (base->type == SymbolicExpr::Type::Number && base->convert_rational() == ::Rational(0)) return SymbolicExpr::number(0);
+	
+	if (base->type == SymbolicExpr::Type::Infinity) return base;
+	if (exponent->type == SymbolicExpr::Type::Infinity) return exponent;
 	
 	// TODO: Debug output:
 	std::cerr << "[Debug output] Simplifying power: base = " << base->to_string() << "; exponent = " << exponent->to_string()
@@ -993,6 +1029,10 @@ std::string SymbolicExpr::to_string() const {
             
         case Type::Variable:
             return identifier;
+			
+		case Type::Infinity:
+			if (std::get<int>(number_value) > 0) return "inf";
+			else return "-inf";
             
         case Type::Sqrt:
             if (operands.empty()) return "√()";
@@ -1066,6 +1106,10 @@ double SymbolicExpr::to_double() const {
             }
             // 其他变量仍抛异常
             throw std::runtime_error("Symbolic variable cannot be converted to double");
+
+		case Type::Infinity:
+			if (std::get<int>(number_value) > 0) return std::numeric_limits<double>::infinity();
+			else return -std::numeric_limits<double>::infinity();
 
         case Type::Sqrt:
             if (!operands.empty()) {

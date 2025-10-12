@@ -8,110 +8,458 @@ on:
 
 jobs:
   build:
+    name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-2025, macos-latest]
-        build_type: [Release, Debug]
         include:
-          - os: ubuntu-latest
-            compiler: gcc
-            cmake_generator: "Unix Makefiles"
-          - os: windows-2025
-            compiler: msvc
-            cmake_generator: "Visual Studio 17 2022"
-            cmake_arch: "-A x64"
+          # Windows targets
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            generator: "Visual Studio 17 2022"
+            arch: "x64"
+            toolchain: ""
+          
+         # - os: windows-latest
+         #   target: i686-pc-windows-msvc
+         #   generator: "Visual Studio 17 2022"
+         #   arch: "Win32"
+         #   toolchain: ""
+
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            generator: "Visual Studio 17 2022"
+            arch: "ARM64"
+          
+          # macOS targets
           - os: macos-latest
-            compiler: clang
-            cmake_generator: "Unix Makefiles"
+            target: x86_64-apple-darwin
+            generator: "Unix Makefiles"
+            arch: x86_64
+            toolchain: ""
+          
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            generator: "Unix Makefiles"
+            arch: arm64
+            toolchain: ""
+          
+          # Linux targets
+          - os: ubuntu-latest
+            target: "i386-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "i686-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "i686-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "i686-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "x86_64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "x86_64-linux-gnu"
+            pcknm: "x86-64-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "x32-unknown-linux-gnux32"
+            generator: "Unix Makefiles"
+            arch: "x86_64-linux-gnux32"
+            pcknm: "x86-64-linux-gnux32"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "arm-unknown-linux-gnueabi"
+            generator: "Unix Makefiles"
+            arch: "arm-linux-gnueabi"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "armv7-unknown-linux-gnueabihf"
+            generator: "Unix Makefiles"
+            arch: "arm-linux-gnueabihf"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "aarch64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "aarch64-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mips-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "mips-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mipsel-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "mipsel-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mips64-unknown-linux-gnuabi64"
+            generator: "Unix Makefiles"
+            arch: "mips64-linux-gnuabi64"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mips64el-unknown-linux-gnuabi64"
+            generator: "Unix Makefiles"
+            arch: "mips64el-linux-gnuabi64"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mipsr6-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "mipsisa32r6-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "mipsr6el-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "mipsisa32r6el-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "powerpc-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "powerpc-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "ppc64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "powerpc64-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "ppc64le-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "powerpc64le-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "alpha-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "alpha-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "arc-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "arc-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "hppa-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "hppa-linux-gnu"
+            toolchain: ""
+
+          #- os: ubuntu-latest
+          #  target: "hppa64-unknown-linux-gnu"
+          #  generator: "Unix Makefiles"
+          #  arch: "hppa64-linux-gnu"
+          #  toolchain: ""
+
+          - os: ubuntu-latest
+            target: "loongarch64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "loongarch64-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "m68k-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "m68k-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "riscv64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "riscv64-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "s390x-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "s390x-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "sh4-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "sh4-linux-gnu"
+            toolchain: ""
+
+          - os: ubuntu-latest
+            target: "sparc64-unknown-linux-gnu"
+            generator: "Unix Makefiles"
+            arch: "sparc64-linux-gnu"
+            toolchain: ""
+
+          
+          # Linux musl targets
+          # TODO
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.6"
-
-      - name: Set up build environment (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Extract Lamina version
+        id: extract-version
+        shell: bash
         run: |
+          set -euo pipefail
+          echo "PWD: $(pwd)"
+          # Locate CMakeLists.txt (repo root or first match tracked by git)
+          if [ -f "CMakeLists.txt" ]; then
+            SRC="CMakeLists.txt"
+          else
+            SRC=$(git ls-files | grep -i 'CMakeLists.txt' | head -n1 || true)
+          fi
+
+          if [ -z "$SRC" ]; then
+            echo "CMakeLists.txt not found in repo" >&2
+            echo "version=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Using CMake file: $SRC"
+
+          # Use sed to extract project(lamina VERSION 1.1.1 ...)
+          VERSION=$(sed -nE 's/.*project\([[:space:]]*[Ll]amina[^V]*VERSION[[:space:]]*([0-9A-Za-z.+-]+).*/\1/p' "$SRC" | head -n1 || true)
+
+          echo "Extracted version: [$VERSION]"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          PACKAGE_NAME=""
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build
-
-      - name: Set up build environment (macOS)
-        if: matrix.os == 'macos-latest'
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            gcc-13-multilib \
+            g++-13-multilib \
+            gcc-13-${{ matrix.pcknm || matrix.arch }} \
+            g++-13-${{ matrix.pcknm || matrix.arch }} \
+            musl-tools
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
         run: |
-          brew uninstall cmake || brew install cmake
-          brew uninstall ninja || brew install ninja
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+          choco install ninja -y
 
-      - name: Set up MSVC (Windows)
-        if: matrix.os == 'windows-2025'
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install cmake ninja pkg-config openssl@3
+          brew link --force openssl@3
+
+      - name: Setup build environment
+        run: |
+          mkdir -p build
+          echo "GENERATOR=${{ matrix.generator }}" >> $GITHUB_ENV
+          echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "TOOLCHAIN=${{ matrix.toolchain }}" >> $GITHUB_ENV
+          
+      - name: Setup MSVC environment(Windows)
         uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+        with:
+          arch: ${{ matrix.arch }}
 
-      - name: Initialize Git submodules
+      - name: Configure CMake(Windows)
+        if: runner.os == 'Windows'
         run: |
-          git submodule update --init --recursive
+          $cmakeArgs = @(
+            "-B", "build",
+            "-G", "${{ matrix.generator }}",
+            "-A", "${{ matrix.arch }}",
+            "-DCMAKE_BUILD_TYPE=Release"
+          )
+          cmake @cmakeArgs
 
-      - name: Configure CMake
+      - name: Configure CMake(UNIX)
+        if: runner.os == 'macOS' || runner.os == 'Linux'
+        env:
+          MUSL: "${{ matrix.musl }}"
         run: |
-          cmake -B build ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -G "${{ matrix.cmake_generator }}" .
+          # 平台检测
+          case "$(uname -s)" in
+            Linux*)
+              PLATFORM="Linux"
+              # 安装环境时已设置好编译器后缀
+              ;;
+            Darwin*)
+              PLATFORM="MacOS"
+              # macOS使用-arch标志
+              CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=$ARCH"
+              ;;
+          esac
 
-      - name: Build with CMake
-        run: |
-          cmake --build build --config ${{ matrix.build_type }} --parallel
-
-      - name: Test basic functionality
-        working-directory: build
-        shell: bash
-        run: |
-          echo "Testing basic functionality..."
-
-          # Create a simple test file
-          echo 'print("Hello, Lamina!");' > test.lm
-          echo 'var x = 2 + 3;' >> test.lm
-          echo 'print("2 + 3 =", x);' >> test.lm
-
-          if [ "${{ matrix.os }}" = "windows-2025" ]; then
-            ./${{ matrix.build_type }}/Lamina.exe test.lm
+          # 构建命令
+          if [ -n "$TOOLCHAIN" ]; then
+            echo "Using toolchain: $TOOLCHAIN"
+            cmake -B build \
+              -G "$GENERATOR" \
+              -DCMAKE_TOOLCHAIN_FILE="../$TOOLCHAIN" \
+              -DCMAKE_BUILD_TYPE=Release \
+              $CMAKE_EXTRA_FLAGS \
+              .
           else
-            ./Lamina test.lm
-          fi
-
-          echo "Basic test passed!"
-
-      - name: Run example programs
-        working-directory: build
-        shell: bash
-        run: |
-          echo "Running example programs..."
-
-          # Test all example files if they exist
-          if [ -d "../examples" ]; then
-            for example in ../examples/*.lm; do
-              if [ -f "$example" ]; then
-                echo "Testing $example..."
-                if [ "${{ matrix.os }}" = "windows-2025" ]; then
-                  ./${{ matrix.build_type }}/Lamina.exe "$example" || echo "Warning: $example failed"
-                else
-                  ./Lamina "$example" || echo "Warning: $example failed"
-                fi
+            echo "Building for $ARCH on $PLATFORM"
+            # 设置编译器（Linux）
+            if [ "$PLATFORM" = "Linux" ] && [ -n "$ARCH" ]; then
+              if [ -z "$MUSL" ]; then
+                export CC="$ARCH-gcc-13"
+                export CXX="$ARCH-g++-13"
+              else
+                export CC="gcc-13-$ARCH"
+                export CXX="g++-13-$ARCH"
               fi
-            done
-          else
-            echo "No examples directory found, skipping example tests"
+            fi
+
+            cmake -B build \
+              -G "$GENERATOR" \
+              -DCMAKE_BUILD_TYPE=Release \
+              $CMAKE_EXTRA_FLAGS \
+              .
           fi
 
-      - name: Upload build artifacts
+      - name: Build project
+        run: |
+          cmake --build build --config Release --parallel $(nproc)
+
+      - name: Prepare artifacts(Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $buildConfig = "Release"
+          $artifactDir = New-Item -ItemType Directory -Path "artifacts/" -Force
+          
+          # 拷贝二进制文件
+          $binSource = "build/bin/$buildConfig"
+          $binDest = "$artifactDir/bin"
+          New-Item -ItemType Directory -Path $binDest -Force | Out-Null
+          if (Test-Path $binSource) {
+              Copy-Item -Path "$binSource/*" -Destination $binDest -Recurse -Force
+              Write-Output "✅ Copied binaries from $binSource to $binDest"
+              Get-ChildItem $binDest | Format-Table Name, Length
+          } else {
+              Write-Error "❌ Binary directory not found: $binSource"
+              exit 1
+          }
+
+          # 拷贝库文件
+          $libSource = "build/lib/lamina/$buildConfig"
+          $libDest = "$artifactDir/lib/lamina"
+          New-Item -ItemType Directory -Path $libDest -Force | Out-Null
+          if (Test-Path $libSource) {
+              Copy-Item -Path "$libSource/*" -Destination $libDest -Recurse -Force
+              Write-Output "✅ Copied libraries from $libSource to $libDest"
+              Get-ChildItem $libDest | Format-Table Name, Length
+          } else {
+              Write-Warning "⚠️ Library directory not found: $libSource"
+          }
+
+          New-Item -ItemType Directory -Path $libDest/examples -Force | Out-Null
+          New-Item -ItemType Directory -Path $libDest/doc -Force | Out-Null
+          Copy-Item -Path "examples/*" -Destination $libDest/examples -Recurse -Force
+          Copy-Item -Path "docs/*" -Destination $libDest/doc -Recurse -Force
+
+          # 验证产物结构
+          Write-Output "`n📦 Final artifact structure ($buildConfig):"
+          tree $artifactDir /F
+
+      - name: Prepare artifacts(UNIX)
+        if: runner.os == 'macOS' || runner.os == 'Linux'
+        run: |
+          mkdir -p artifacts/bin
+          mkdir -p artifacts/lib/lamina
+          mkdir -p artifacts/lib/lamina/doc
+          mkdir -p artifacts/lib/lamina/examples
+          
+          EXE_PATH="build/bin/lamina"
+          LIB_PATTERN="build/lib"
+
+          # 复制可执行文件
+          if [ -f "$EXE_PATH" ]; then
+            cp -R "$EXE_PATH" "artifacts/bin"
+            echo "✅ Binary copied: artifacts/bin/"
+          else
+            echo "❌ Binary not found at: $EXE_PATH"
+            exit 1
+          fi
+
+          cp -R "$LIB_PATTERN" artifacts/
+          echo "📦 Library copied:"
+          ls -laR --color artifacts/lib/lamina
+
+          # 拷贝文档和示例
+          cp -R examples/* artifacts/lib/lamina/examples/
+          cp -R docs/* artifacts/lib/lamina/doc/
+
+          # 显示最终产物
+          echo "📦 Final artifacts:"
+          ls -laR --color artifacts/
+    
+      - name: Upload artifact
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lamina-${{ matrix.os }}-${{ matrix.build_type }}
-          path: |
-            build/${{ matrix.os == 'windows-2025' && format('{0}/Lamina.exe', matrix.build_type) || 'Lamina' }}
-            build/${{ matrix.os == 'windows-2025' && format('{0}/*.dll', matrix.build_type) || '*.so' }}
-            examples/
+          name: Lamina-${{ matrix.target }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Submit signing request (Windows only)
+        if: runner.os == 'Windows'
+        id: signpath
+        uses: signpath/github-action-submit-signing-request@v1
+        env:
+          SIGNING_API_TOKEN: "${{ secrets.SIGNING_API_TOKEN }}"
+        with:
+          api-token: ${{ env.SIGNING_API_TOKEN }}
+          organization-id: '7e544555-678f-4f64-a945-ad61c35f957f'
+          project-slug: 'Lamina'
+          signing-policy-slug: 'test-signing'
+          artifact-configuration-slug: 'Lamina_on_Windows'
+          github-artifact-id: '${{ steps.upload-artifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'artifacts/signed'
+          parameters: |
+            version: "1.1.1"
+
+      - name: Package signed artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ZIP_NAME: "Lamina-${{ matrix.target }}-signed.zip"
+        run: |
+          # Ensure output dir exists
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          # Remove existing zip if present
+          if (Test-Path "artifacts/$env:ZIP_NAME") { Remove-Item "artifacts/$env:ZIP_NAME" -Force }
+          # Package all signed files into a single zip
+          Compress-Archive -Path "artifacts/signed/*" -DestinationPath "artifacts/$env:ZIP_NAME" -Force
+          Write-Output "Packaged signed artifacts: artifacts/$env:ZIP_NAME"
+
+      - name: Upload signed artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lamina-${{ matrix.target }}-signed
+          path: artifacts/Lamina-${{ matrix.target }}-signed.zip
+          if-no-files-found: error
           retention-days: 30
