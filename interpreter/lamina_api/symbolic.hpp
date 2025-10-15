@@ -91,7 +91,7 @@ public:
 		
 		static HashType bigint_hash(const BigInt& rt) {
 			// 直接哈希所有 digits
-			HashType weight = 1ull, ans = 0ull;
+			SymbolicExpr::HashData::HashType weight = 1ull, ans = 0ull;
 			for (auto &i : rt.digits) {
 				ans = ans * weight + (i + 3ull);
 				weight *= 17ull;			// 不用 10 减少哈希冲突
@@ -104,11 +104,7 @@ public:
 			return bigint_hash(rt.get_numerator()) ^ bigint_hash(rt.get_denominator());
 		}
 		
-		HashType to_single_hash() {
-			auto rs = rational_hash(k);
-			rs = rs ? rs : (k == ::Rational(0) ? 0 : 1);
-			return (rs) * (1 | ((rational_hash(ksqrt)) & SQRBIT)) * (hash ? hash : 1);
-		}
+		HashType to_single_hash();
 		
 		// TODO: 考虑优化
 		std::shared_ptr<SymbolicExpr> get_combined_k() {
@@ -120,94 +116,8 @@ public:
 		}
 		
 		HashData(std::shared_ptr<SymbolicExpr> obj, 
-			HashType ODDBIT = ODDBIT_D, HashType EVENBIT = EVENBIT_D, HashType SQRBIT = SQRBIT_D, HashType HALFBIT = HALFBIT_D)
-			: ODDBIT(ODDBIT), EVENBIT(EVENBIT), SQRBIT(SQRBIT), HALFBIT(HALFBIT) {
-			// Evaluate hash
-			HashData ld, rd;
-			HashType prehash = 0, rterm = 0, ls, rs;
-			switch (obj->type) {
-				case Type::Number:
-					this->k = obj->convert_rational();
-					err_stream << "[HPP Debug] Return as value " << k.to_string() << "\n";
-					break;
-				case Type::Infinity:
-					this->hash = INFINITY_D;
-					break;
-				
-				case Type::Sqrt:
-					ld = HashData(obj->operands[0], _HASH_PARAMS);
-					// sqrt 里面还有 sqrt，取值异或哈希
-					this->ksqrt = ld.k;
-					ld.k = ::Rational(0);
-					this->hash = ld.to_single_hash() * SQRBIT;	// 表明这是个 sqrt，里面没东西则恰好为 0
-					this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
-					break;
-				case Type::Multiply:
-					ld = HashData(obj->operands[0], _HASH_PARAMS);
-					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					this->k = ld.k * rd.k;
-					this->ksqrt = ld.ksqrt * rd.ksqrt;
-					this->hash = (obj->operands[0]->is_number() ? 1 : ld.hash) * (obj->operands[1]->is_number() ? 1 : rd.hash);
-					err_stream << "[HPP Debug *] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
-					err_stream << "[HPP Debug *] My hash value is " << this->hash << std::endl;
-					err_stream << "[HPP Debug *] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
-						", R applied: " << (obj->operands[1]->is_number() ? 1 : rd.hash) << std::endl;
-					if (!(ld.hash | rd.hash)) this->hash = 0;	// 里面没有东西
-					this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
-					break;
-				case Type::Add:
-					ld = HashData(obj->operands[0], _HASH_PARAMS);
-					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					ls = ld.to_single_hash();
-					rs = rd.to_single_hash();
-					this->hash = ls + rs;
-					this->hash_obj = obj;	// 没有做任何处理
-					err_stream << "[HPP Debug +] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
-					err_stream << "[HPP Debug +] LDK: " << ld.k.to_string() << ", RDK: " << rd.k.to_string() << std::endl;
-					err_stream << "[HPP Debug +] LDKq: " << ld.ksqrt.to_string() << ", RDKq: " << rd.ksqrt.to_string() << std::endl;
-					err_stream << "[HPP Debug +] My hash value is " << this->hash << std::endl;
-					err_stream << "[HPP Debug +] L applied: " << ld.hash << ", R applied: " << rd.hash << std::endl;
-					break;
-				case Type::Power:
-					// TODO: 此处引入类似根式化简的机制，暂时直接 hash（可能有问题）
-					ld = HashData(obj->operands[0], _HASH_PARAMS);
-					rd = HashData(obj->operands[1], _HASH_PARAMS);
-					// 不是特别恰当，但可以先这样
-					// 保证 1，2，-1 等常见数值
-					rterm = rd.to_single_hash() - 1;
-					this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 8) ^ (rterm << 16) ^ (rterm << 32);
-					this->hash_obj = obj;	// 没有做任何处理
-					break;
-				case Type::Variable:
-					if (obj->identifier == "π" || obj->identifier == "pi") this->hash = PI_H;
-					else if (obj->identifier == "e") this->hash = E_H;
-					else this->hash = UNKNOWN_H;
-					this->hash_obj = obj;	// 没有做任何处理
-					break;
-				default:
-					// 如果某个 hash 不能用就调过来
-					defs: this->hash = EMPTY;
-					for (auto &i : obj->operands) {
-						if (obj->type == Type::Add) {
-							this->hash += HashData(i).to_single_hash();	// 令其自然溢出，同时避免异或消除
-						} else {
-							this->hash *= HashData(i).to_single_hash() + 1;	// 令其自然溢出，同时避免异或消除
-						}
-					}
-					this->hash ^= prehash;
-					this->hash_obj = obj;
-			}
-			// TODO: 可能考虑在这里做根式化简
-		}
-#undef ODDBIT_D
-#undef EVENBIT_D
-#undef SQRBIT_D
-#undef HALFBIT_D
-#undef EMPTY
-#undef INFINITY_D
-#undef PI_H
-#undef E_H
-#undef UNKNOWN_H		
+			HashType ODDBIT = ODDBIT_D, HashType EVENBIT = EVENBIT_D, HashType SQRBIT = SQRBIT_D, HashType HALFBIT = HALFBIT_D);
+	
 	};
 
     Type type;
