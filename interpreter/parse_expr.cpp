@@ -68,8 +68,9 @@ std::unique_ptr<Expression> Parser::parse_power() {
 
 std::unique_ptr<Expression> Parser::parse_unary() {
     if (curr_token().type == LexerTokenType::Minus) {
-        auto tok = curr_token();
-        auto operand = parse_unary();
+        //auto tok = curr_token();
+		skip_token("-");
+        auto operand = parse_factor();
         return std::make_unique<UnaryExpr>("-", std::move(operand));
     }
     return parse_factor();
