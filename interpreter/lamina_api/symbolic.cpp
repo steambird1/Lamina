@@ -1,5 +1,12 @@
 #include "symbolic.hpp"
 
+/*
+HASH_METHOD:
+1 - Use numeric hash (not recommended right now -- may suppress some simplifier, but a little bit faster).
+2 - Use string hash.
+*/
+#define HASH_METHOD 2
+
 SymbolicExpr::HashData::HashType SymbolicExpr::HashData::to_single_hash() {
 	auto rs = rational_hash(k);
 	rs = rs ? rs : (k == ::Rational(0) ? 0 : 1);
@@ -20,17 +27,21 @@ SymbolicExpr::HashData::HashData(std::shared_ptr<SymbolicExpr> obj,
 		case Type::Number:
 			this->k = obj->convert_rational();
 			err_stream << "[HPP Debug] Return as value " << k.to_string() << "\n";
+			return;
 			break;
 		case Type::Infinity:
 			this->hash = INFINITY_D;
+			return;
 			break;
 		
 		case Type::Sqrt:
 			ld = HashData(obj->operands[0], _HASH_PARAMS);
 			// sqrt 里面还有 sqrt，取值异或哈希
 			this->ksqrt = ld.k;
-			ld.k = ::Rational(0);
+			ld.k = ::Rational(1);	// TODO: 也许 0？？
+#if HASH_METHOD & 1
 			this->hash = ld.to_single_hash() * SQRBIT;	// 表明这是个 sqrt，里面没东西则恰好为 0
+#endif
 			this->hash_obj = SymbolicExpr::sqrt(ld.hash_obj);
 			break;
 		case Type::Multiply:
@@ -38,24 +49,28 @@ SymbolicExpr::HashData::HashData(std::shared_ptr<SymbolicExpr> obj,
 			rd = HashData(obj->operands[1], _HASH_PARAMS);
 			this->k = ld.k * rd.k;
 			this->ksqrt = ld.ksqrt * rd.ksqrt;
+#if (HASH_METHOD & 1) || (HASH_METHOD & 2)
 			this->hash = (obj->operands[0]->is_number() ? 1 : ld.hash) * (obj->operands[1]->is_number() ? 1 : rd.hash);
-			err_stream << "[HPP Debug *] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
-			err_stream << "[HPP Debug *] My hash value is " << this->hash << std::endl;
-			err_stream << "[HPP Debug *] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
-				", R applied: " << (obj->operands[1]->is_number() ? 1 : rd.hash) << std::endl;
+			//err_stream << "[HPP Debug *] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
+			//err_stream << "[HPP Debug *] My hash value is " << this->hash << std::endl;
+			//err_stream << "[HPP Debug *] L applied: " << (obj->operands[0]->is_number() ? 1 : ld.hash) <<
+			//	", R applied: " << (obj->operands[1]->is_number() ? 1 : rd.hash) << std::endl;
 			if (!(ld.hash | rd.hash)) this->hash = 0;	// 里面没有东西
+#endif
 			this->hash_obj = SymbolicExpr::multiply(ld.hash_obj, rd.hash_obj)->simplify();
 			break;
 		case Type::Add:
 			ld = HashData(obj->operands[0], _HASH_PARAMS);
 			rd = HashData(obj->operands[1], _HASH_PARAMS);
-			rd.k = rd.k / ld.k;
+			rd.k = rd.k / ld.k;			// TODO: 这里会导致一些问题？
 			this->k = ld.k;
 			ld.k = ::Rational(1);		// 暂时强行使得第一项为 1
+#if HASH_METHOD & 1
 			ls = ld.to_single_hash();
 			rs = rd.to_single_hash();
 			this->hash = ls + rs;
-			this->hash_obj = obj;	// 没有做任何处理
+#endif
+			this->hash_obj = SymbolicExpr::multiply(SymbolicExpr::number(this->k.reciprocal()), obj)->simplify();
 			/*
 			err_stream << "[HPP Debug +] LDHash: " << ld.hash_obj->to_string() << ", RDHash: " << rd.hash_obj->to_string() << std::endl;
 			err_stream << "[HPP Debug +] LDK: " << ld.k.to_string() << ", RDK: " << rd.k.to_string() << std::endl;
@@ -71,7 +86,9 @@ SymbolicExpr::HashData::HashData(std::shared_ptr<SymbolicExpr> obj,
 			// 不是特别恰当，但可以先这样
 			// 保证 1，2，-1 等常见数值
 			rterm = rd.to_single_hash() - 1;
+#if HASH_METHOD & 1
 			this->hash = ld.to_single_hash() ^ rterm ^ (rterm << 8) ^ (rterm << 16) ^ (rterm << 32);
+#endif
 			this->hash_obj = obj;	// 没有做任何处理
 			break;
 		case Type::Variable:
@@ -79,9 +96,11 @@ SymbolicExpr::HashData::HashData(std::shared_ptr<SymbolicExpr> obj,
 			else if (obj->identifier == "e") this->hash = E_H;
 			else this->hash = UNKNOWN_H;
 			this->hash_obj = obj;	// 没有做任何处理
+			return;
 			break;
 		default:
 			// 如果某个 hash 不能用就调过来
+#if HASH_METHOD & 1
 			defs: this->hash = EMPTY;
 			for (auto &i : obj->operands) {
 				if (obj->type == Type::Add) {
@@ -91,8 +110,33 @@ SymbolicExpr::HashData::HashData(std::shared_ptr<SymbolicExpr> obj,
 				}
 			}
 			this->hash ^= prehash;
+#endif
 			this->hash_obj = obj;
 	}
+#if HASH_METHOD & 2
+	switch (obj->type) {
+		case Type::Number:
+		case Type::Infinity:
+		case Type::Sqrt:
+		case Type::Multiply:
+		case Type::Variable:
+			break;
+		default:
+		if (this->hash_obj != nullptr) {
+			auto st = this->hash_obj->to_string();
+			for (auto &i : st) {
+				this->hash *= 277u;
+				this->hash += HashType(i) % 277u;		// ascii 计算
+			}
+			err_stream << "[HPP Debug] hashing string " << st << " for " << obj->to_string() << std::endl;
+			err_stream << "[HPP Debug] result: " << this->hash << std::endl;
+		} else {
+			err_stream << "[HPP Debug] no hash object for " << obj->to_string() << std::endl;
+			this->hash = 0u;
+		}
+		break;
+	}
+#endif
 }
 
 // 符号表达式的化简实现
@@ -102,7 +146,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	
 	static int current_simplify_level = 0, first_warn_flags = 0;
 	const int max_simplify_level = 30;
-	const bool demand_decimal_check = true;			// 仅供调试使用
+	const bool demand_decimal_check = false;			// 仅供调试使用
 	const double err_thr = 1e-5;
 	
 	auto d_abs = [](double x) -> double {
@@ -111,7 +155,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	};
 	
 #if (!_SYMBOLIC_DEBUG)
-	if (demand_decimal_check && (!(first_warn_flags & 1)) {
+	if (demand_decimal_check && (!(first_warn_flags & 1))) {
 		first_warn_flags |= 1;
 		std::cerr << "[Warning] SymbolicExpr: calculation evaluation turned on with debug mode off. Please pay attention to potential efficiency problem.\n";
 	}
@@ -120,6 +164,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify() const {
 	if (current_simplify_level > max_simplify_level) {
 		// 不用 err_stream
 		std::cerr << "[Warning] SymbolicExpr: reaching maximum simplifying depth\n";
+		return std::make_shared<SymbolicExpr>(*this);
 	}
 	current_simplify_level++;
 	double origin = 0.0;
@@ -358,21 +403,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 	// TODO: Debug output:
 	err_stream << "[Debug output] Init: Processing l:" << left->to_string() << ", r:" << right->to_string() << std::endl;
 	
-	// TODO: 1 或 -1 乘以某个内容，直接返回另一边
-	// TODO: 加快运算速度，数字和 Multiply 相乘时，直接处理 Multiply 内的数字，不进入指数环节
-	auto has_no_multiply_effect = [](const std::shared_ptr<SymbolicExpr>& obj) -> bool {
-		return (obj->is_number() && obj->convert_rational() == ::Rational(1));
-	};
-	if (has_no_multiply_effect(left)) {
-		err_stream << "[Debug output] left has no effect\n";
-		return right;
-	}
-	if (has_no_multiply_effect(right)) {
-		err_stream << "[Debug output] right has no effect\n";
-		return left;
-	}
-	
-    // 如果两个操作数都是数字，直接相乘
+	// 如果两个操作数都是数字，直接相乘
     if (left->is_number() && right->is_number()) {
 		err_stream << "[Debug output] numeric calling in multiplier: ";
         auto left_num = left->get_number();
@@ -388,6 +419,20 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 			return SymbolicExpr::number(result);
 		}
     }
+	
+	// 1 或 -1 乘以某个内容，直接返回另一边
+	// TODO: 加快运算速度，数字和 Multiply 相乘时，直接处理 Multiply 内的数字，不进入指数环节
+	auto has_no_multiply_effect = [](const std::shared_ptr<SymbolicExpr>& obj) -> bool {
+		return (obj->is_number() && obj->convert_rational() == ::Rational(1));
+	};
+	if (has_no_multiply_effect(left)) {
+		err_stream << "[Debug output] left has no effect\n";
+		return right;
+	}
+	if (has_no_multiply_effect(right)) {
+		err_stream << "[Debug output] right has no effect\n";
+		return left;
+	}
 	
 	// 注意，multiply 不属于这类类型，需要手动化简
 	auto is_power_compatible = [](const std::shared_ptr<SymbolicExpr>& expr) -> bool {
@@ -432,7 +477,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		auto rs = HashData(right->operands[0]);
 		auto lhashs = ls.to_single_hash();
 		auto rhashs = rs.to_single_hash();
-		/*
+		
 		err_stream << _my_debug_symb << " - Post power compatibility -=====\n";
 		err_stream << "Pcp yields: " << lpwr->to_string() << std::endl;
 		err_stream << "Debug ID: " << _my_debug_symb << std::endl;
@@ -440,7 +485,8 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_multiply() const {
 		err_stream << "[Debug output] division attempt: left hash " << lhashs << ", right hash " << rhashs << std::endl;
 		err_stream << "[Debug output] left hash object: " << ls.k.to_string() << "," << ls.ksqrt.to_string() << "," << ls.hash << std::endl;
 		err_stream << "[Debug output] right hash object: " << rs.k.to_string() << "," << rs.ksqrt.to_string() << "," << rs.hash << std::endl;
-		*/
+		err_stream << "[Debug output] left hash r: " << ls.hash_obj->to_string() << ", right hash r: " << rs.hash_obj->to_string() << std::endl;
+		
 		if (ls.hash == rs.hash) {
 			// 直接尝试指数项合并之后再化简
 			err_stream << "[Debug output] successfully reached division simplifier\n";
@@ -1079,9 +1125,10 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
             // Do nothing yet
         } else {
 			// TODO: 这边上哈希
-			err_stream << "[Debug output] adder: special item " << term->to_string() << std::endl;
             //others.push_back(term);
 			SymbolicExpr::HashData hd(term);
+			err_stream << "[Debug output] adder: at :" << this->to_string() << "\n   --> special item " << term->to_string() << " has hash value " << hd.hash << "; k " << hd.k.to_string() << "; ks " << hd.ksqrt.to_string() << std::endl;
+			err_stream << "[Debug output] --> hashed object: " << hd.hash_obj->to_string() << std::endl;
 			auto cb = hd.get_combined_k();
 			hash_ref[hd.hash] = hd.hash_obj;
 			if (undealt_items.count(hd.hash)) {
@@ -1120,7 +1167,9 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 				continue;
 			}
 		}
-		result_terms.push_back(SymbolicExpr::multiply(isv, hash_ref[i.first]->simplify()));
+		auto hs = hash_ref[i.first]->simplify();
+		err_stream << "[Debug output] add: for " << this->to_string() << ":\n" << isv->to_string() << " for " << hs->to_string() << std::endl;
+		result_terms.push_back(SymbolicExpr::multiply(isv, hs));
 	}
 	
     if (number_term != 0) {// 非0时才添加数字
@@ -1143,6 +1192,7 @@ std::shared_ptr<SymbolicExpr> SymbolicExpr::simplify_add() const {
 	
     for (size_t i = 1; i < result_terms.size(); ++i) {
 		allow_further_simplifier = allow_further_simplifier && has_variable(result_terms[i]);
+		err_stream << "[Debug output] add: summary for " << this->to_string() << ":\nadding: " << result_terms[i]->to_string() << std::endl;
         sum = SymbolicExpr::add(sum, result_terms[i]);
     }
 

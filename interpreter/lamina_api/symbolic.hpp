@@ -11,7 +11,7 @@
 #include <functional>
 #include <iostream>
 
-#define _SYMBOLIC_DEBUG 1
+#define _SYMBOLIC_DEBUG 0
 
 #ifdef _WIN32
 #ifdef LAMINA_CORE_EXPORTS
