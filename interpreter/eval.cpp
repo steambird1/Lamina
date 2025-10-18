@@ -70,13 +70,17 @@ Value HANDLE_BINARYEXPR_ADD(Value *l, Value *r)
     {
         auto ltype = GET_VALUE_TYPE(l);
         auto rtype = GET_VALUE_TYPE(r);
-        if (ltype & VALUE_IS_STRING && rtype & VALUE_IS_STRING) {
+		/*
+		if (ltype & VALUE_IS_STRING && rtype & VALUE_IS_STRING) {
             return HANDLE_BINARYEXPR_STR_ADD_STR(l, r);
-        } else if (ltype & VALUE_IS_STRING || rtype & VALUE_IS_STRING) {
+			//return l->to_string() + r->to_string();				// Removing the feature !!!
+        }
+		*/
+        if (ltype & VALUE_IS_STRING || rtype & VALUE_IS_STRING) {
             return Value(l->to_string() + r->to_string());
         } else if (ltype & VALUE_IS_ARRAY && rtype & VALUE_IS_ARRAY) {
             // Vector addition
-            return l->vector_add(r);
+            return l->vector_add(*r);
         // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
         } else if (((ltype & VALUE_IS_IRRATIONAL)
                     || (ltype & VALUE_IS_SYMBOLIC)

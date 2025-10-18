@@ -326,6 +326,7 @@ public:
 
     // Vector operations
     Value vector_add(const Value& other) const {
+
         if (!is_array() || !other.is_array()) {
             std::cerr << "Error: Vector addition requires two arrays" << std::endl;
             return Value();

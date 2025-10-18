@@ -44,17 +44,19 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     // Debug: std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') {
-            if  (   tokens.back().type != LexerTokenType::Semicolon
-                and tokens.back().type != LexerTokenType::LBrace
-                and tokens.back().type != LexerTokenType::LBracket
-                and tokens.back().type != LexerTokenType::LParen
-                and tokens.back().type != LexerTokenType::Comma
-                and tokens.back().type != LexerTokenType::Backslash) {
-                tokens.emplace_back(LexerTokenType::Semicolon, ";", line, col);
-            }
-            if (tokens.back().type == LexerTokenType::Backslash) {
-                tokens.pop_back();
-            }
+			if (tokens.size()) {
+					if  (   tokens.back().type != LexerTokenType::Semicolon
+					and tokens.back().type != LexerTokenType::LBrace
+					and tokens.back().type != LexerTokenType::LBracket
+					and tokens.back().type != LexerTokenType::LParen
+					and tokens.back().type != LexerTokenType::Comma
+					and tokens.back().type != LexerTokenType::Backslash) {
+					tokens.emplace_back(LexerTokenType::Semicolon, ";", line, col);
+				}
+				if (tokens.back().type == LexerTokenType::Backslash) {
+					tokens.pop_back();
+				}
+			}
             ++line;
             col = 1;
             ++i;
