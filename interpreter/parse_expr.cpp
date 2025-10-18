@@ -17,7 +17,7 @@ std::unique_ptr<Expression> Parser::parse_comparison() {
         or curr_token().type == LexerTokenType::LessEqual
         or curr_token().type == LexerTokenType::Assign
     ) {
-        if (curr_token().type == LexerTokenType::Assign) throw StdLibException("'=' can not use in expression, Maybe you mean '=='");
+        if (curr_token().type == LexerTokenType::Assign) throw StdLibException("'=' cannot be used in expression, Maybe you mean '=='");
         auto tok = curr_token();
         auto op = skip_token().text;
         auto right = parse_add_sub();

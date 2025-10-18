@@ -87,10 +87,6 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             tokens.emplace_back(LexerTokenType::Equal, "==", line, start_col);
             i += 2;
             col += 2;
-        } else if (src[i] == '!') {
-            tokens.emplace_back(LexerTokenType::ExclamationMark, "!", line, start_col);
-            ++i;
-            ++col;
         } else if (src[i] == '!' && i + 1 < src.size() && src[i + 1] == '=') {
             tokens.emplace_back(LexerTokenType::NotEqual, "!=", line, start_col);
             i += 2;
@@ -119,6 +115,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 ++col;
                 tokens.emplace_back(LexerTokenType::DoubleColon, "::", line, start_col);
             }
+        } else if (src[i] == '!') {
+            tokens.emplace_back(LexerTokenType::ExclamationMark, "!", line, start_col);
+            ++i;
+            ++col;
         } else if (src[i] == '=') {
             tokens.emplace_back(LexerTokenType::Assign, "=", line, start_col);
             ++i;
