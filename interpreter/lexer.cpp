@@ -30,6 +30,8 @@ void registerKeywords() {
     keywords["null"] = LexerTokenType::Null;
     keywords["do"] = LexerTokenType::Lambda;
     keywords["loop"] = LexerTokenType::Loop;
+	keywords["and"] = LexerTokenType::LogicalAnd;
+	keywords["or"] = LexerTokenType::LogicalOr;
     keywords_registered = true;
 }
 
@@ -127,7 +129,29 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             tokens.emplace_back(LexerTokenType::Greater, ">", line, start_col);
             ++i;
             ++col;
-        } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
+        } else if (src[i] == '&') {
+			if (i + 1 < src.size() && src[i + 1] == '&') {
+				tokens.emplace_back(LexerTokenType::LogicalAnd, "&&", line, start_col);
+				++i;
+				++col;
+			} else {
+				//tokens.emplace_back(LexerTokenType::And, "&", line, start_col);
+				throw StdLibException("'&' is not a valid operator. Maybe you mean '&&' or 'and' for logical expression, or Bit module for bitwise calculation");
+			}
+			++i;
+			++col;
+		} else if (src[i] == '|') {
+			if (i + 1 < src.size() && src[i + 1] == '|') {
+				tokens.emplace_back(LexerTokenType::LogicalOr, "||", line, start_col);
+				++i;
+				++col;
+			} else {
+				//tokens.emplace_back(LexerTokenType::Or, "|", line, start_col);
+				throw StdLibException("'|' is not a valid operator. Maybe you mean '||' or 'or' for logical expression, or Bit module for bitwise calculation");
+			}
+			++i;
+			++col;
+		} else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
             size_t j = i;
             bool has_dot = false;
             bool has_underscore;

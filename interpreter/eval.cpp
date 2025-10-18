@@ -402,10 +402,14 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value r = eval(bin->right.get());
 
     // Handle arithmetic operations
-    // Just handle them in the f**king different functions
     if (bin->op == "+") {
         return HANDLE_BINARYEXPR_ADD(&l, &r);
     }
+	if (bin->op == "||" || bin->op == "&&") {
+		if (bin->op == "||") return l.as_bool() || r.as_bool();
+		else if (bin->op == "&&") return l.as_bool() && r.as_bool();
+		else return false;
+	}
     // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
         bin->op == "%" || bin->op == "^") {
