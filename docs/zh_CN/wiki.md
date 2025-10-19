@@ -503,6 +503,11 @@ print("总和：", total); // 输出"总和：150"
   ```lamina
   replace(arr: array, func: lambda, new_val) -> null
   ```
+- **数组排序函数**：对数组按给定条件排序（`func` 是可选的；如果给定 `func`，则 `func(a,b)` 返回 `true` 时，`a` 将排在 `b` 前。）
+  ```lamina
+  sort(arr: array, func: lambda) -> array
+  ```
+
 
 ### 字符串函数
 - **字符串拼接函数**：拼接多个字符串，返回拼接后的新字符串。  

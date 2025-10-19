@@ -203,8 +203,33 @@ Value concat(const std::vector<Value>& args) {
 	return Value(result);
 }
 
+// 列表切片
+Value slice(const std::vector<Value>& args) {
+	check_cpp_function_argv_x(args, 3, 4);
+	if (!args[0].is_array()) {
+		L_ERR("slice() requires a list");
+		return LAMINA_NULL;
+	}
+	std::vector<Value> val = std::get<std::vector<Value> >(args[0].data);
+	std::vector<Value> result;
+	int begin = (int) args[1].as_number(), end = (int) args[2].as_number(), step = 1;
+	if (end < begin) step = -1;
+	if (args.size() >= 4) {
+		step = (int) args[3].as_number();
+	}
+	for (int i = begin; i != end; i += step) {
+		int it = (i >= 0) ? i : (int(val.size()) + i);
+		if (it < 0 || it >= val.size()) {
+			break;
+		}
+		result.push_back(val[it]);
+	}
+	return Value(result);
+}
+
 // 排序给定的列表，第二个参数表示比较器
 Value _sort(const std::vector<Value>& args) {
+	check_cpp_function_argv_x(args, 1, 2);
 	if (!args[0].is_array()) {
 		L_ERR("sort() requires a list");
 		return LAMINA_NULL;
@@ -217,7 +242,7 @@ Value _sort(const std::vector<Value>& args) {
 		}
 	}
 	std::function<bool(const Value &a, const Value &b)> comparer;
-	if (args.size() == 2) {
+	if (args.size() >= 2) {
 		if (!args[1].is_lambda()) {
 			L_ERR("Comparer must be a lambda/function");
 			return LAMINA_NULL;
