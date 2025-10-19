@@ -17,6 +17,7 @@ std::string Parser::get_module_version() const {
 Token Parser::skip_token(const std::string& want_skip) {
     if (curr_tok_idx_ < tokens_.size()) {
         auto& tok = tokens_[curr_tok_idx_];
+		std::cerr << "[Parser] want to skip \"" << want_skip << "\"; current: \"" << tok.text << "\"\n";
         if (!want_skip.empty() and tok.text != want_skip) {
             std::cerr << ConClr::RED
             << "There should be '" << want_skip << "' , but you given '"
@@ -81,6 +82,7 @@ std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
 
 std::unique_ptr<Statement> Parser::parse_stmt() {
     auto tok = curr_token();
+	std::cerr << "[Parser] parsing statement, token: \"" << tok.text << "\"\n";
 
     if (tok.type == LexerTokenType::If) {
         skip_token("if");
@@ -172,14 +174,15 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<AssignStmt>(name, std::move(expr));
     }
-	// Remove empty parts
-	while (tok.type == LexerTokenType::Semicolon) {
-        skip_token(";");
-        tok = curr_token();
+	if (tok.type == LexerTokenType::Semicolon) {
+		skip_token(";");
+        return nullptr;
     }
 	if (tok.type == LexerTokenType::EndOfFile) {
 		return nullptr;
 	}
+	std::cerr << "[Parser] try to parse expression\n";
+	// Remove empty parts
     auto expr = parse_expression();
     if (expr != nullptr and curr_token().text == "=") {
         if (dynamic_cast<GetMemberExpr*>(expr.get())) {
