@@ -20,7 +20,7 @@ Token Parser::skip_token(const std::string& want_skip) {
 		// std::cerr << "[Parser] want to skip \"" << want_skip << "\"; current: \"" << tok.text << "\"\n";
         if (!want_skip.empty() and tok.text != want_skip) {
             std::cerr << ConClr::RED
-            << "There should be '" << want_skip << "' , but you given '"
+            << "Error: At line " << tok.line << " column " << tok.column << ": There should be '" << want_skip << "' , but you given '"
             << tok.text << "'" << ConClr::RESET << std::endl;
             throw StdLibException("");
         }
@@ -55,14 +55,14 @@ void Parser::skip_end_of_ln() {
     if (tok.type == LexerTokenType::EndOfFile) {
         return;
     }
-    std::cerr << ConClr::RED << "End of line must be ';', got '" << tok.text << "'" << ConClr::RESET << std::endl;
+    std::cerr << ConClr::RED << "Error: At line " << tok.line << ": " << "End of line must be ';', got '" << tok.text << "'" << ConClr::RESET << std::endl;
     throw StdLibException("");
 }
 
 void Parser::must_token(const std::string& text, const std::string& waring) const {
     if (const auto tok = this->curr_token();
         tok.text != text) {
-        std::cerr << ConClr::RED << "The word'" << tok.text << "' cause error that : \n"
+        std::cerr << ConClr::RED << "Error: At line " << tok.line << " column " << tok.column << ": The word'" << tok.text << "' cause error that : \n"
                   << waring
                   << ConClr::RESET << std::endl;
     }
