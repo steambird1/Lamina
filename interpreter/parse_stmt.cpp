@@ -18,9 +18,9 @@ std::unique_ptr<Statement> Parser::parse_if() {
     if (curr_token().type == LexerTokenType::Else) {
         skip_token("else");
         if (curr_token().type == LexerTokenType::If) {
+            skip_token("if");
             std::vector<std::unique_ptr<Statement>> if_branch = {};
-			skip_token("if");
-            if_branch.emplace_back(parse_if());
+            if_branch.emplace_back(std::move(parse_if()));
             else_stmts = std::make_unique<BlockStmt>(std::move(if_branch));
         } else {
             skip_token("{");

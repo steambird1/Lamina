@@ -1,7 +1,7 @@
 # Lamina ToDo List
 
 ## 符号含义
-⚠️(在第一个RC发布前一定要完成)
+⚠️(在第二个RC发布前一定要完成)
 
 🟡建议早日完成(以完备基本的语法特性)
 
@@ -14,18 +14,18 @@
 </b>
 
 ## 库方面
-- [ ] ⚠️ IO库（未完成）<br>
+- [ ] IO库（正在做）<br>
      备注：`已在extensions/standard/io.cpp`有预留
 
-- [ ] 🟡 bit库（未完成）<br>     备注：
+- [ ] bit库（正在做）<br>     备注：
 
 - [ ] 🟡 数学图像库（未完成）<br>     备注：
 
-- [ ] ⚠️ 集合库（未完成）<br>     备注：
+- [ ] ⚠️ 集合库（正在做）<br>     备注：
 
-- [ ] 🟡 线程库（未完成）<br>     备注：
+- [ ] 线程库（正在做）<br>     备注：
 
-- [ ] ⚠️ console库（未完成）<br>
+- [ ] console库（未完成）<br>
      备注：`已在extensions/standard/io.cpp`有预留
 
 ## 语法方面
@@ -33,9 +33,6 @@
      备注：
 
 - [ ] 🟡 列表项赋值语句 a[i] = v（未完成）<br>
-     备注：
-
-- [ ] 🟡 break expr 表达式（未完成）<br>
      备注：
 
 - [ ] 🟡 三元表达式（未完成）<br>
@@ -59,22 +56,22 @@
      备注：
 
 ## 内置函数方面
-- [ ] 🟡 exit(n)（未完成）<br>
+- [x] exit(n)（已完成）<br>
      备注：
 
-- [ ] 🟡 eval(code)（未完成）<br>
+- [ ] eval(code)（未完成）<br>
      备注：
 
-- [ ] 🟡 xpcall(fn)（未完成）<br>
+- [x] xpcall(fn)（已完成）<br>
      备注：
 
-- [ ] 🟡 locals()（未完成）<br>
+- [x] locals()（已完成）<br>
      备注：
 
-- [ ] 🟡 globals()（未完成）<br>
+- [x] globals()（已完成）<br>
      备注：
 
-- [ ] 🟡 vars()（未完成）<br>
+- [x] vars()（已完成）<br>
      备注：
 
 - [ ] 🟡 help(key)（未完成）<br>
@@ -89,27 +86,42 @@
 - [ ] 🟧 replace(arr, lambda)（未完成）<br>
      备注：
 
-- [ ] 🟡 same_parent(a, b)（未完成）<br>
-     备注：
-
-- [ ] 🟡 same_base(a, b)（未完成）<br>
-     备注：
-
-- [ ] 🟡 same(a, b)（未完成）<br>
+- [x] same(a, b)（已完成）<br>
      备注：
 
 ## 类型方面
 - [ ] ⚠️ LmInt（未完成）<br>
      备注：
 
+     优化现在Bigint效率，
+
+     然后把Bigint改名为LmInt, 
+
+     成为lamina唯一整数类型
+
 - [ ] ⚠️ LmDec（未完成）<br>
      备注：
 
-- [ ] ⚠️ LmComplex（未完成）<br>
-     备注：
+     就是无限精度的安全小数， 
 
-- [ ] ⚠️ LmList（未完成）<br>
-     备注：
+     但如果用户要从有理数转到安全小数，
+
+     需要设置小数位数(以防止无限循环小数和不循环小数）
+
+
+- [ ] ⚠️ LmComplex（未完成）<br>
+     备注：复数类型
+
+- [ ] ⚠️ LmList（正在做）<br>
+     备注：链表类型
+
+     已完成基本实线，正在debug及完善
+
+     无具体引用，欢迎后人补充，文件位置
+
+     底层模板类：`interpreter/base_list.hpp`
+
+     继承套用：`interpreter/list.hpp`
 
 ## 其他
 - [ ] ⚠️ 测试新的c++ module loader（未完成）<br>

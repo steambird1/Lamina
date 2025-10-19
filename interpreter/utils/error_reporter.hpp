@@ -38,7 +38,7 @@ inline std::string generate_separator(const int col_start, const int col_end, co
     return ss.str();
 }
 
-LAMINA_API inline void error_reporter(
+inline void error_reporter(
     const std::string& src_path,
     const int& src_line_start,
     const int& src_line_end,
@@ -72,7 +72,7 @@ LAMINA_API inline void error_reporter(
     std::exit(error.err_code);
 }
 
-LAMINA_API inline void warning_reporter(
+inline void warning_reporter(
     const std::string& src_path,
     const WarningLevel& level,
     const int& src_line_start,

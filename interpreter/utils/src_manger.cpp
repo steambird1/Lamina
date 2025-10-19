@@ -1,5 +1,6 @@
 #include "src_manger.hpp"
 #include "color_style.hpp"
+#include <sstream>
 #include <filesystem>
 #include <fstream>
 #include <iostream>

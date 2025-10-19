@@ -324,6 +324,14 @@ public:
         }
     }
 
+    // ToDo: for set type
+    bool operator<(const Value& other) const {
+        return false;
+    }
+    bool operator==(const Value& other) const {
+        return false;
+    }
+
     // Vector operations
     Value vector_add(const Value& other) const {
 

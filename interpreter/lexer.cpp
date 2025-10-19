@@ -44,19 +44,20 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     // Debug: std::cerr << "Starting tokenization of " << src.length() << " characters" << std::endl;
     while (i < src.size()) {
         if (src[i] == '\n') {
-			if (tokens.size()) {
-					if  (   tokens.back().type != LexerTokenType::Semicolon
-					and tokens.back().type != LexerTokenType::LBrace
-					and tokens.back().type != LexerTokenType::LBracket
-					and tokens.back().type != LexerTokenType::LParen
-					and tokens.back().type != LexerTokenType::Comma
-					and tokens.back().type != LexerTokenType::Backslash) {
-					tokens.emplace_back(LexerTokenType::Semicolon, ";", line, col);
-				}
-				if (tokens.back().type == LexerTokenType::Backslash) {
-					tokens.pop_back();
-				}
-			}
+            // I'm not so sure about this
+            if (tokens.size()) {
+                if  (   tokens.back().type != LexerTokenType::Semicolon
+                and tokens.back().type != LexerTokenType::LBrace
+                and tokens.back().type != LexerTokenType::LBracket
+                and tokens.back().type != LexerTokenType::LParen
+                and tokens.back().type != LexerTokenType::Comma
+                and tokens.back().type != LexerTokenType::Backslash) {
+                tokens.emplace_back(LexerTokenType::Semicolon, ";", line, col);
+              }
+              if (tokens.back().type == LexerTokenType::Backslash) {
+                tokens.pop_back();
+              }
+            }
             ++line;
             col = 1;
             ++i;
@@ -95,6 +96,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             tokens.emplace_back(LexerTokenType::NotEqual, "!=", line, start_col);
             i += 2;
             col += 2;
+        } else if (src[i] == '!') {
+            tokens.emplace_back(LexerTokenType::ExclamationMark, "!", line, start_col);
+            ++i;
+            ++col;
         } else if (src[i] == '<' && i + 1 < src.size() && src[i + 1] == '=') {
             tokens.emplace_back(LexerTokenType::LessEqual, "<=", line, start_col);
             i += 2;
@@ -374,9 +379,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 tokens.emplace_back(LexerTokenType::Dot, ".", line, start_col);
             }
         } else {
-            tokens.emplace_back(LexerTokenType::Unknown, std::string(1, src[i]), line, start_col);
-            ++i;
-            ++col;
+            // tokens.emplace_back(LexerTokenType::Unknown, std::string(1, src[i]), line, start_col);
+            throw StdLibException("Unknown token '"+std::string(1, src[i]) + "'");
+            // ++i;
+            // ++col;
         }
     }
     tokens.emplace_back(LexerTokenType::EndOfFile, "", line, col);

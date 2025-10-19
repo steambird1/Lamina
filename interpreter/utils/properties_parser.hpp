@@ -1,6 +1,6 @@
 #pragma once
 #include <algorithm>
-#include <cctype>// 鐢ㄤ簬 isspace
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <sstream>

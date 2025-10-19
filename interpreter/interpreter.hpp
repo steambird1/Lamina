@@ -8,6 +8,7 @@
 #else
 #define LAMINA_API
 #endif
+#include "lamina_api/lamina.hpp"
 #include "lamina_api/ast.hpp"
 #include "lamina_api/value.hpp"
 #include <functional>
@@ -84,7 +85,7 @@ public:
     static Value eval_UnaryExpr(const UnaryExpr* unary);
     static Value eval_BinaryExpr(const BinaryExpr* bin);
     static Value eval_CallExpr(const CallExpr* call);
-    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args) ;
+    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args, Value self=LAMINA_NULL) ;
 
     // Print all variables in current scope
     static void print_variables();

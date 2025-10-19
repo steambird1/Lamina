@@ -159,6 +159,12 @@ Value locals(const std::vector<Value>& args);
 // 全局变量表
 Value globals(const std::vector<Value>& args);
 
+// 退出程序
+Value exit_(const std::vector<Value>& args);
+
+// 错误处理函数
+Value xpcall(const std::vector<Value>& args);
+
 // 拼接多个字符串，并返回一个新字符串
 Value cat(const std::vector<Value>& args);
 
@@ -284,6 +290,8 @@ inline std::unordered_map<std::string, Value> register_builtins =
         LAMINA_FUNC("vars", vars),
         LAMINA_FUNC("locals", locals),
         LAMINA_FUNC("globals", globals),
+        LAMINA_FUNC("exit", exit_),
+        LAMINA_FUNC("xpcall", xpcall),
 
         // 容器遍历模块：一级函数
         LAMINA_FUNC("foreach", foreach),

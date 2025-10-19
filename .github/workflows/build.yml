@@ -2,9 +2,7 @@ name: Build Lamina Interpreter
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
 
 jobs:
   build:
@@ -301,12 +299,12 @@ jobs:
             Linux*)
               PLATFORM="Linux"
               # 安装环境时已设置好编译器后缀
-              ;;
+            ;;
             Darwin*)
               PLATFORM="MacOS"
-              # macOS使用-arch标志
-              CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=$ARCH"
-              ;;
+              # macOS：添加架构指定 + CoreFoundation框架链接
+              CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=$ARCH -DCMAKE_EXE_LINKER_FLAGS=-framework CoreFoundation -DCMAKE_SHARED_LINKER_FLAGS=-framework CoreFoundation"
+            ;;
           esac
 
           # 构建命令
@@ -338,9 +336,18 @@ jobs:
               .
           fi
 
-      - name: Build project
-        run: |
-          cmake --build build --config Release --parallel $(nproc)
+      - name: Build project (Linux)
+        if: runner.os == 'Linux'
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      # 使用sysctl
+      - name: Build project (macOS)
+        if: runner.os == 'macOS'
+        run: cmake --build build --config Release --parallel $(sysctl -n hw.ncpu)
+
+      - name: Build project (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
 
       - name: Prepare artifacts(Windows)
         if: runner.os == 'Windows'
