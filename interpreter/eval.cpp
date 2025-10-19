@@ -350,11 +350,13 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
             return {};
         }
         // User function
-        return Interpreter::call_function(func.get(), args, self);
+        return Interpreter::call_function(func.get(), args, self, left.in_module ? Value(left.in_module) : LAMINA_NULL);
     }
 
     if (std::holds_alternative<std::shared_ptr<LmCppFunction>>(left.data)) {
         push_frame("<cpp function>", " ");
+		push_scope();
+		set_module_as(left.in_module ? Value(left.in_module) : LAMINA_NULL);
 
         Value result;
         std::shared_ptr<LmCppFunction> func;
@@ -365,6 +367,7 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
             throw;
         }
         pop_frame();
+		pop_scope();
         return result;
     }
 

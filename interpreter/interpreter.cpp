@@ -41,7 +41,7 @@ std::vector<std::unique_ptr<ASTNode>> Interpreter::repl_asts{};
 std::vector<StackFrame> Interpreter::call_stack{};
 std::unordered_map<std::string, Value> Interpreter::builtins = register_builtins;
 std::vector<std::unordered_map<std::string, Value>> Interpreter::variable_stack{{}};
-std::vector<Value> Interpreter::module_stack{};
+std::vector<Value> Interpreter::module_stack{{}};
 
 Value new_lm_struct(const std::vector<std::pair<std::string, Value>>& vec);
 
@@ -63,7 +63,9 @@ void Interpreter::save_repl_ast(std::unique_ptr<ASTNode> ast) {
 }
 
 void Interpreter::set_module_as(const Value& mod) {
-	if (module_stack.size()) module_stack.back() = mod;
+	if (module_stack.size()) {
+		module_stack.back() = mod;
+	}
 }
 
 void Interpreter::pop_scope() {
@@ -73,8 +75,11 @@ void Interpreter::pop_scope() {
 
 Value Interpreter::get_variable(const std::string& name) {
     //for (const auto & it : std::ranges::reverse_view(variable_stack)) {
+	if (module_stack.size() != variable_stack.size()) {
+		std::cerr << "[Interpreter] <Warning> Module stack length " << module_stack.size() << " doesn't match " << variable_stack.size() << "\n";
+	}
 	for (int i = variable_stack.size() - 1; i >= 0; i--) {
-		if (!module_stack[i].is_null()) {
+		if (module_stack[i].type == Value::Type::lmModule) {
 			// Attempt to get variable in the module, through:
 			auto& mg = std::get<std::shared_ptr<LmModule>>(module_stack[i].data);
 			if (mg->sub_item.count(name)) return mg->sub_item[name];
@@ -492,7 +497,7 @@ bool Interpreter::load_module(const std::string& module_path) {
         namespace fs = std::filesystem;
         const fs::path path(module_path);
         module_name = path.stem().string();
-        std::cerr << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
+        //std::cerr << "[Debug] Path: " << module_path << " → module: " << module_name << std::endl;
     }
 
 	auto cur_module = std::make_shared<LmModule>(
@@ -505,7 +510,7 @@ bool Interpreter::load_module(const std::string& module_path) {
 	}
 	cur_module->sub_item = module_var_table;
 
-    std::cerr << "\nModule Loader: Program execution completed." << std::endl;
+    //std::cerr << "\nModule Loader: Program execution completed." << std::endl;
     set_variable(module_name, Value(cur_module));
     return true;
 }
