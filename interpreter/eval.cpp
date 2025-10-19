@@ -437,9 +437,9 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     if (bin->op == "+") {
         return HANDLE_BINARYEXPR_ADD(&l, &r);
     }
-	if (bin->op == "`" || bin->op == "&&") {
-		if (bin->op == "`") return l.as_bool() || r.as_bool();
-		else if (bin->op == "&&") return l.as_bool() && r.as_bool();
+	if (bin->op == "`" || bin->op == "&&" || bin->op == "or" || bin->op == "and") {
+		if (bin->op == "`" || bin->op == "or") return l.as_bool() || r.as_bool();
+		else if (bin->op == "&&" || bin->op == "and") return l.as_bool() && r.as_bool();
 		else return false;
 	}
     // Arithmetic operations (require numeric operands or vector operations)
