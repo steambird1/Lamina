@@ -187,3 +187,50 @@ Value replace(const std::vector<Value>& args) {
     arr = result;
     return arr;
 }
+
+// 拼接给定的所有列表
+Value concat(const std::vector<Value>& args) {
+	std::vector<Value> result;
+	for (const auto &i : args) {
+		if (!i.is_array()) {
+			L_ERR("Given parameter(s) have no-array element");
+			return LAMINA_NULL;
+		}
+		for (const auto &j : std::get<std::vector<Value> >(i.data)) {
+			result.push_back(j);
+		}
+	}
+	return Value(result);
+}
+
+// 排序给定的列表，第二个参数表示比较器
+Value _sort(const std::vector<Value>& args) {
+	if (!args[0].is_array()) {
+		L_ERR("sort() requires a list");
+		return LAMINA_NULL;
+	}
+	std::vector<Value> val = std::get<std::vector<Value> >(args[0].data);
+	for (auto &i : val) {
+		if (!i.is_comparable()) {
+			L_ERR("Array has uncomparable object");
+			return args[0];	// A failure, not an error.
+		}
+	}
+	std::function<bool(const Value &a, const Value &b)> comparer;
+	if (args.size() == 2) {
+		if (!args[1].is_lambda()) {
+			L_ERR("Comparer must be a lambda/function");
+			return LAMINA_NULL;
+		}
+		const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+		comparer = [&func](const Value &a, const Value &b) -> bool {
+			return Interpreter::call_function(func.get(), {a, b}).as_bool();
+		};
+	} else {
+		comparer = [](const Value &a, const Value &b) -> bool {
+			return a < b;
+		};
+	}
+	sort(val.begin(), val.end(), comparer);
+	return Value(val);
+}

@@ -147,17 +147,6 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
 			}
 			++i;
 			++col;
-		} else if (src[i] == '|') {
-			if (i + 1 < src.size() && src[i + 1] == '|') {
-				tokens.emplace_back(LexerTokenType::LogicalOr, "||", line, start_col);
-				++i;
-				++col;
-			} else {
-				//tokens.emplace_back(LexerTokenType::Or, "|", line, start_col);
-				throw StdLibException("'|' is not a valid operator. Maybe you mean '||' or 'or' for logical expression, or Bit module for bitwise calculation");
-			}
-			++i;
-			++col;
 		} else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
             size_t j = i;
             bool has_dot = false;
@@ -358,10 +347,14 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             ++i;
             ++col;
         } else if (src[i] == '|') {
-            tokens.emplace_back(LexerTokenType::Pipe, "|", line, start_col);
+			tokens.emplace_back(LexerTokenType::Pipe, "|", line, start_col);
             ++i;
             ++col;
-        } else if (src[i] == ',') {
+        } else if (src[i] == '`') {
+			tokens.emplace_back(LexerTokenType::LogicalOr, "`", line, start_col);
+            ++i;
+            ++col;
+		} else if (src[i] == ',') {
             tokens.emplace_back(LexerTokenType::Comma, ",", line, start_col);
             ++i;
             ++col;
