@@ -17,7 +17,7 @@ std::string Parser::get_module_version() const {
 Token Parser::skip_token(const std::string& want_skip) {
     if (curr_tok_idx_ < tokens_.size()) {
         auto& tok = tokens_[curr_tok_idx_];
-		std::cerr << "[Parser] want to skip \"" << want_skip << "\"; current: \"" << tok.text << "\"\n";
+		// std::cerr << "[Parser] want to skip \"" << want_skip << "\"; current: \"" << tok.text << "\"\n";
         if (!want_skip.empty() and tok.text != want_skip) {
             std::cerr << ConClr::RED
             << "There should be '" << want_skip << "' , but you given '"
@@ -27,7 +27,7 @@ Token Parser::skip_token(const std::string& want_skip) {
         curr_tok_idx_++;
         return tok;
     }
-	std::cerr << "[Parser] already EOF\n";
+	// std::cerr << "[Parser] already EOF\n";
     return {LexerTokenType::EndOfFile, "", 0, 0};
 }
 
@@ -82,7 +82,7 @@ std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
 
 std::unique_ptr<Statement> Parser::parse_stmt() {
     auto tok = curr_token();
-	std::cerr << "[Parser] parsing statement, token: \"" << tok.text << "\"\n";
+	// std::cerr << "[Parser] parsing statement, token: \"" << tok.text << "\"\n";
 
     if (tok.type == LexerTokenType::If) {
         skip_token("if");
@@ -181,7 +181,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 	if (tok.type == LexerTokenType::EndOfFile) {
 		return nullptr;
 	}
-	std::cerr << "[Parser] try to parse expression\n";
+	// std::cerr << "[Parser] try to parse expression\n";
 	// Remove empty parts
     auto expr = parse_expression();
     if (expr != nullptr and curr_token().text == "=") {
