@@ -26,6 +26,7 @@ Token Parser::skip_token(const std::string& want_skip) {
         curr_tok_idx_++;
         return tok;
     }
+	std::cerr << "[Parser] already EOF\n";
     return {LexerTokenType::EndOfFile, "", 0, 0};
 }
 
@@ -171,6 +172,14 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<AssignStmt>(name, std::move(expr));
     }
+	// Remove empty parts
+	while (tok.type == LexerTokenType::Semicolon) {
+        skip_token(";");
+        tok = curr_token();
+    }
+	if (tok.type == LexerTokenType::EndOfFile) {
+		return nullptr;
+	}
     auto expr = parse_expression();
     if (expr != nullptr and curr_token().text == "=") {
         if (dynamic_cast<GetMemberExpr*>(expr.get())) {
