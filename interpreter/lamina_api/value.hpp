@@ -149,7 +149,7 @@ public:
     // Get numeric value as double
     double as_number() const {
 		if (type == Type::Infinity) return (1.0 * std::get<int>(data) / 0.0);
-		if (type == Type::Int) return static_cast<double>(std::get<int>(data));
+        if (type == Type::Int) return static_cast<double>(std::get<int>(data));
         if (type == Type::Float) return std::get<double>(data);
         if (type == Type::BigInt) {
             // For BigInt, try to convert to int first, then to double
@@ -219,11 +219,10 @@ public:
 		if (type == Type::Irrational) return true;
 		return false;
 	}
-
     // Get boolean value
     bool as_bool() const {
 		if (type == Type::Infinity) return true;
-		if (type == Type::Bool) return std::get<bool>(data);
+        if (type == Type::Bool) return std::get<bool>(data);
         if (type == Type::Int) return std::get<int>(data) != 0;
         if (type == Type::Float) return std::get<double>(data) != 0.0;
         if (type == Type::BigInt) return !std::get<::BigInt>(data).is_zero();
@@ -238,8 +237,8 @@ public:
     std::string to_string() const {
         switch (type) {
 			case Type::Infinity:
-			return std::get<int>(data) > 0 ? "inf" : "-inf";
-			case Type::Null:
+				return std::get<int>(data) > 0 ? "inf" : "-inf";
+            case Type::Null:
                 return "null";
             case Type::Bool:
                 return std::get<bool>(data) ? "true" : "false";
@@ -335,6 +334,7 @@ public:
 
     // Vector operations
     Value vector_add(const Value& other) const {
+
         if (!is_array() || !other.is_array()) {
             std::cerr << "Error: Vector addition requires two arrays" << std::endl;
             return Value();

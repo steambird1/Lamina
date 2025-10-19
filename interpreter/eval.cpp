@@ -71,13 +71,17 @@ Value HANDLE_BINARYEXPR_ADD(Value *l, Value *r)
     {
         auto ltype = GET_VALUE_TYPE(l);
         auto rtype = GET_VALUE_TYPE(r);
-        if (ltype & VALUE_IS_STRING && rtype & VALUE_IS_STRING) {
+		/*
+		if (ltype & VALUE_IS_STRING && rtype & VALUE_IS_STRING) {
             return HANDLE_BINARYEXPR_STR_ADD_STR(l, r);
-        } else if (ltype & VALUE_IS_STRING || rtype & VALUE_IS_STRING) {
+			//return l->to_string() + r->to_string();				// Removing the feature !!!
+        }
+		*/
+        if (ltype & VALUE_IS_STRING || rtype & VALUE_IS_STRING) {
             return Value(l->to_string() + r->to_string());
         } else if (ltype & VALUE_IS_ARRAY && rtype & VALUE_IS_ARRAY) {
             // Vector addition
-            return l->vector_add(r);
+            return l->vector_add(*r);
         // 只要有一方是 Irrational 或 Symbolic，优先生成符号表达式
         } else if (((ltype & VALUE_IS_IRRATIONAL)
                     || (ltype & VALUE_IS_SYMBOLIC)
@@ -430,13 +434,22 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     Value r = eval(bin->right.get());
 
     // Handle arithmetic operations
-    // Just handle them in the f**king different functions
     if (bin->op == "+") {
         return HANDLE_BINARYEXPR_ADD(&l, &r);
     }
+	if (bin->op == "||" || bin->op == "&&") {
+		if (bin->op == "||") return l.as_bool() || r.as_bool();
+		else if (bin->op == "&&") return l.as_bool() && r.as_bool();
+		else return false;
+	}
     // Arithmetic operations (require numeric operands or vector operations)
     if (bin->op == "-" || bin->op == "*" || bin->op == "/" ||
         bin->op == "%" || bin->op == "^") {
+		
+		if (l.is_infinity() || r.is_infinity()) {
+			L_ERR("Error: Infinity cannot participate in evaluations");
+		}
+			
         // Special handling for multiplication
         if (bin->op == "*") {
             // Vector and matrix operations
@@ -718,6 +731,28 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
     if (bin->op == "==" || bin->op == "!=" || bin->op == "<" ||
         bin->op == "<=" || bin->op == ">" || bin->op == ">=") {
         // Handle different type combinations
+		if (l.is_infinity() && r.is_infinity()) {
+			int lt = std::get<int>(l.data), rt = std::get<int>(r.data);
+			if (bin->op == "==") return lt == rt;
+			else if (bin->op == "!=") return lt != rt;
+			else if (bin->op == "<") return lt < rt;
+			else if (bin->op == "<=") return lt <= rt;
+			else if (bin->op == ">") return lt > rt;
+			else if (bin->op == ">=") return lt >= rt;
+			else return false;
+		}
+		if (l.is_infinity()) {
+			if (bin->op == "==") return false;
+			if (bin->op == "!=") return true;
+			if (bin->op == ">" || bin->op == ">=") return (std::get<int>(l.data) > 0);
+			else return !(std::get<int>(l.data) > 0);
+		}
+		if (r.is_infinity()) {
+			if (bin->op == "==") return false;
+			if (bin->op == "!=") return true;
+			if (bin->op == "<" || bin->op == "<=") return (std::get<int>(r.data) > 0);
+			else return !(std::get<int>(r.data) > 0);
+		}
         if (l.is_numeric() && r.is_numeric()) {
             // BigInt 比较优先
             if (l.is_bigint() || r.is_bigint()) {
@@ -819,6 +854,10 @@ Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
     Value v = eval(unary->operand.get());
 
     if (unary->op == "-") {
+		if (v.is_infinity()) {
+			v.data = Value::DataType(std::in_place_index<2>, 0-(std::get<int>(v.data)));
+			return v;
+		}
         if (v.type != Value::Type::Int && v.type != Value::Type::BigInt && v.type != Value::Type::Float) {
             RuntimeError error("Unary operator '-' requires integer, float or big integer operand");
             error.stack_trace = get_stack_trace();
