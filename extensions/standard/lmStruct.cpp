@@ -26,27 +26,55 @@ lmStruct::lmStruct(const std::vector<std::pair<std::string, Value>>& vec) {
 
 lmStruct::~lmStruct() = default;
 
-// 查找键对应的节点（返回nullptr表示未找到）
 std::shared_ptr<Node> lmStruct::find(const std::string& key) const {
-    if (buckets_.empty()) return nullptr;   // 桶数组未初始化时直接返回
+    std::shared_ptr<Node> target_node = find_in_current(key);
+    if (target_node != nullptr) {
+        return target_node; // 找到目标，直接返回
+    }
 
-    const size_t hash = hash_string(key);
-    const size_t bucket_idx = getBucketIndex(hash);
+    // 没找到，查找当前结构体的__parent__节点
+    const std::shared_ptr<Node> parent_node = find_in_current("__parent__");
+    if (parent_node == nullptr) {
+        return nullptr; // 没有父结构体，返回未找到
+    }
 
-    // 遍历桶内链表查找（先比哈希，再比字符串）
+    const Value& parent_value = parent_node->value;
+    if (!parent_value.is_lstruct()) {
+        return nullptr;
+    }
+    // 用get_if替代std::get，避免类型不匹配时抛异常
+    const auto parent_struct_ptr = std::get_if<std::shared_ptr<lmStruct>>(&parent_value.data);
+    if (parent_struct_ptr == nullptr || *parent_struct_ptr == nullptr) {
+        return nullptr;
+    }
+
+    return (*parent_struct_ptr)->find(key);
+}
+
+// 辅助函数：仅在当前结构体中查找指定key
+std::shared_ptr<Node> lmStruct::find_in_current(const std::string& key) const {
+    if (buckets_.empty()) {
+        return nullptr;
+    }
+
+    const size_t key_hash = hash_string(key);
+    const size_t bucket_idx = getBucketIndex(key_hash);
+
+    // 检查桶索引合法性
+    if (bucket_idx >= buckets_.size()) {
+        return nullptr;
+    }
+
+    // 查找目标节点
     std::shared_ptr<Node> current = buckets_[bucket_idx];
     while (current != nullptr) {
-        if (current->hash == hash && current->key == key) {
-            return current; // 找到匹配节点
+        if (current->hash == key_hash && current->key == key) {
+            return current;
         }
         current = current->next;
     }
 
-    if (parent_) {
-        return parent_->find(key);
-    }
-
-    return nullptr; // 未找到
+    return nullptr;
 }
 
 // 插入或更新键值对
@@ -97,10 +125,6 @@ std::vector<std::pair<std::string, Value>> lmStruct::to_vector() const {
 std::string lmStruct::to_string() const {
     std::stringstream ss;
     ss << "{ ";
-
-    if (parent_) {
-        ss << "parent: " << parent_->to_string() << "; ";
-    }
 
     // 统计总节点数
     size_t total_node_count = 0;
@@ -190,14 +214,13 @@ std::string lStruct_to_string(const std::shared_ptr<lmStruct>& lstruct) {
 
 Value new_struct_from(const std::vector<Value>& args) {
     check_cpp_function_argv(args, {Value::Type::lmStruct});
-    auto arg_data = args[0].data;
-    auto original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
+    const auto arg_data = args[0].data;
+    const auto original_ptr = std::get<std::shared_ptr<lmStruct>>(arg_data);
 
     if (!original_ptr) return LAMINA_NULL;
 
     // 新对象
     const auto new_obj = std::make_shared<lmStruct>();
-    new_obj->parent_ = original_ptr;
     new_obj->insert("__parent__", Value(original_ptr));
     return {new_obj};
 

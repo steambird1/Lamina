@@ -372,6 +372,34 @@ struct GetMemberExpr final :  Expression {
     }
 };
 
+// 设置成员
+struct SetMemberExpr final :  Expression {
+    std::unique_ptr<Expression> g_mem;
+    std::unique_ptr<Expression> val;
+    SetMemberExpr(std::unique_ptr<Expression> g_mem, std::unique_ptr<Expression> val)
+        : g_mem(std::move(g_mem)), val(std::move(val)) {}
+    // 实现克隆方法
+    [[nodiscard]] std::unique_ptr<Expression> clone_expr() const override {
+        auto cloned_g_mem = g_mem ? g_mem->clone_expr() : nullptr;
+
+        // 克隆 val
+        std::unique_ptr<Expression> cloned_val;
+        if (val) {
+            // 先通过 clone_expr
+            const auto expr_ptr = val->clone_expr().release();
+            cloned_val = std::unique_ptr<Expression>(
+                dynamic_cast<Expression*>(expr_ptr)
+            );
+        }
+
+        // 用克隆后的成员构造新的 SetMemberExpr 并返回
+        return std::make_unique<SetMemberExpr>(
+            std::move(cloned_g_mem),
+            std::move(cloned_val)
+        );
+    }
+};
+
 // 命名空间访问成员
 struct NameSpaceGetMemberExpr final :  Expression {
     std::unique_ptr<Expression> father;

@@ -227,6 +227,7 @@ int repl() {
             std::string line;
             // repl readline有问题，这里暂时使用std::getline
             // std::string line = repl_readline(prompt,"");
+            std::cout << prompt;
             std::getline(std::cin, line);
 
             if (line == "\x03") {   // Ctrl+C interrupt

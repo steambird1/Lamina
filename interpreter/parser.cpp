@@ -43,6 +43,13 @@ void Parser::skip_end_of_ln() {
         skip_token(";");
         return;
     }
+    if (tok.type == LexerTokenType::EndOfLine) {
+        skip_token();
+        if (curr_token().type == LexerTokenType::EndOfFile) {
+            skip_token();
+        }
+        return;
+    }
     if (tok.type == LexerTokenType::EndOfFile) {
         return;
     }
@@ -164,9 +171,20 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         skip_end_of_ln();
         return std::make_unique<AssignStmt>(name, std::move(expr));
     }
-    if (auto expr = parse_expression();
-        expr != nullptr
-    ) {
+    auto expr = parse_expression();
+    if (expr != nullptr and curr_token().text == "=") {
+        if (dynamic_cast<GetMemberExpr*>(expr.get())) {
+            skip_token("=");
+            auto value = parse_expression();
+            skip_end_of_ln();
+
+            auto set_mem = std::make_unique<SetMemberExpr>(std::move(expr), std::move(value));
+            return std::make_unique<ExprStmt>(std::move(set_mem));
+        }
+        //非成员访问表达式后不能跟 =
+        throw StdLibException("invalid assignment target: expected member access");
+    }
+    if (expr != nullptr) {
         skip_end_of_ln();
         return std::make_unique<ExprStmt>(std::move(expr));
     }

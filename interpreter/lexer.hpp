@@ -68,6 +68,7 @@ enum class LexerTokenType {
     FatArrow,    // =>
     ThinArrow,   // ->
     EndOfFile,
+    EndOfLine,
     Unknown
 };
 

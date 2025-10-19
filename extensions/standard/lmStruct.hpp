@@ -1,5 +1,14 @@
 #pragma once
 #include "../../interpreter/lamina_api/value.hpp"
+#ifdef _WIN32
+#ifdef LAMINA_CORE_EXPORTS
+#define LAMINA_API __declspec(dllexport)
+#else
+#define LAMINA_API __declspec(dllimport)
+#endif
+#else
+#define LAMINA_API
+#endif
 
 #include <memory>
 #include <string>
@@ -33,7 +42,7 @@ struct StringBucket {
           next(nullptr) {}
 };
 
-class lmStruct {
+class LAMINA_API lmStruct {
 private:
     std::vector<std::shared_ptr<Node>> buckets_;    // 桶数组（每个桶是链表头指针）
     size_t elem_count_ = 0;
@@ -68,12 +77,12 @@ private:
     }
 
 public:
-    std::shared_ptr<lmStruct> parent_;
     explicit lmStruct();
     explicit lmStruct(const std::vector<std::pair<std::string, Value>>& vec);
     ~lmStruct();
     Value insert(const std::string& key, Value val);
     [[nodiscard]] std::shared_ptr<Node> find(const std::string& key) const;
+    [[nodiscard]] std::shared_ptr<Node> find_in_current(const std::string& key) const;
     [[nodiscard]] std::string to_string() const;
     [[nodiscard]] std::vector<std::pair<std::string, Value>> to_vector() const;
     // 深拷贝结构体

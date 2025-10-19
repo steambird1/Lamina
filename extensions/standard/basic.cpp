@@ -3,6 +3,8 @@
 
 
 #include <fstream>
+#include <cstdlib>
+#include <exception>
 
 #include "../../interpreter/lamina_api/lamina.hpp"
 #include "../../interpreter/lamina_api/value.hpp"
@@ -16,20 +18,7 @@ Value input(const std::vector<Value>& args) {
     }
 
     if (std::getline(std::cin, input_line)) {
-        // Try to parse as number first
-        try {
-            // Check if it contains a decimal point for float
-            if (input_line.find('.') != std::string::npos) {
-                double d = std::stod(input_line);
-                return Value(d);
-            } else {
-                int i = std::stoi(input_line);
-                return Value(i);
-            }
-        } catch (...) {
-            // Return as string if not a number
-            return Value(input_line);
-        }
+        return Value(input_line);
     }
 
     // Return empty string if input failed
@@ -119,6 +108,39 @@ Value vars(const std::vector<Value>& args) {
     return results;
 }
 
+// 退出程序
+Value exit_(const std::vector<Value>& args){
+    if (args.empty()) return LAMINA_NULL;
+    const auto err_code = std::get<int>(args[0].data);
+    std::exit(err_code);
+    return LAMINA_NULL;
+}
+
+// 错误处理函数
+Value xpcall(const std::vector<Value>& args){
+    if (args.size() < 2) return LAMINA_NULL;
+    if (!args[0].is_lambda() and !args[1].is_lambda()) return LAMINA_NULL;
+    const auto func = std::get<std::shared_ptr<LambdaDeclExpr>>(args[0].data);
+    const auto handle = std::get<std::shared_ptr<LambdaDeclExpr>>(args[1].data);
+    const auto new_args = std::vector(args.begin() + 2, args.end());
+    try {
+        Value result = Interpreter::call_function(
+                func.get(), new_args);
+        return result;
+    }
+    catch (std::exception& e) {
+        try {
+            return Interpreter::call_function(
+                handle.get(), {Value(e.what())}
+            );
+        } catch (...) {
+            return LAMINA_NULL;
+        }
+    }
+    catch (...) {
+        return LAMINA_NULL;
+    }
+}
 
 Value typeof_(const std::vector<Value>& args) {
     if (args.empty()) {
