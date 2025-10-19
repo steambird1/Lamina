@@ -23,6 +23,7 @@
 
 // Stack frame for function call tracking
 struct StackFrame {
+	// TODO: Recommended to add module name here.
     std::string function_name;
     std::string file_name;
     int line_number;
@@ -85,7 +86,7 @@ public:
     static Value eval_UnaryExpr(const UnaryExpr* unary);
     static Value eval_BinaryExpr(const BinaryExpr* bin);
     static Value eval_CallExpr(const CallExpr* call);
-    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args, Value self=LAMINA_NULL) ;
+    static Value call_function(const LambdaDeclExpr* func, const std::vector<Value>& args, Value self=LAMINA_NULL, Value module=LAMINA_NULL) ;
 
     // Print all variables in current scope
     static void print_variables();
@@ -118,6 +119,9 @@ public:
 
     // Variable scope stack, top is the current scope
     static std::vector<std::unordered_map<std::string, Value>> variable_stack;
+	static std::vector<Value> module_stack;
+
+	static void set_module_as(const Value& mod);
 
 private:
     // Store REPL ASTs to keep function pointers valid in interactive mode

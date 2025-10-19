@@ -372,15 +372,16 @@ Value Interpreter::eval_CallExpr(const CallExpr* call) {
     return {};
 }
 
-Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args, Value self) {
+// Module border also only works for this.
+Value Interpreter::call_function(const LambdaDeclExpr* func, const std::vector<Value>& args, Value self, Value module) {
     if (func == nullptr ) {
         std::cerr << "Error: Function at '" << func << "' is null" << std::endl;
         return Value("<func error>");
     }
 
     Interpreter::push_frame(func->name, "<script>", 0);   // Add to call stack
-
     Interpreter::push_scope();// Create scope here
+	Interpreter::set_module_as(module);	// After pushing scope!! If it's null, then there's nothing to consider.
     // Pass arguments
     for (size_t j = 0; j < func->params.size(); ++j) {
         set_variable(func->params[j], args[j]);

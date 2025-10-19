@@ -70,6 +70,7 @@ public:
 		std::shared_ptr<LambdaDeclExpr>>;
 
     DataType data;
+	std::shared_ptr<LmModule> in_module = nullptr;
 
     ~Value() = default;
 
