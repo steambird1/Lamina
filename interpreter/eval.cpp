@@ -860,7 +860,15 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
         } else if (l.is_null() && r.is_null()) {
             if (bin->op == "==") return Value(true);
             return Value(false);
-        } else {
+        } else if ((l.is_array() || l.is_matrix()) && (r.is_array() || r.is_matrix())) {
+			// Implemented in value.hpp
+			bool judge = (l == r);
+			if (bin->op == "==") return Value(judge); 
+            if (bin->op == "!=") return Value(!judge);
+			
+			L_ERR("Cannot compare array or matrix with operator '" + bin->op + "'");
+            return Value();
+		} else {
             // Type mismatch - only equality/inequality make sense
             if (bin->op == "==") return Value(false);   // Different types are never equal
             if (bin->op == "!=") return Value(true);    // Different types are always not equal
