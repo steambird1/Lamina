@@ -758,8 +758,19 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
 			else return !(std::get<int>(r.data) > 0);
 		}
         if (l.is_numeric() && r.is_numeric()) {
-            // BigInt 比较优先
-            if (l.is_bigint() || r.is_bigint()) {
+            if (l.is_symbolic() || r.is_symbolic()) {
+				auto ls = l.as_symbolic();
+				auto rs = SymbolicExpr::multiply(SymbolicExpr::number(-1), r.as_symbolic());
+				auto res = SymbolicExpr::add(ls, rs)->simplify();
+				double rd = res->to_double();
+				
+				if (bin->op == "==") return Value(rd == 0);
+                if (bin->op == "!=") return Value(rd != 0);
+                if (bin->op == "<") return Value(rd < 0);
+                if (bin->op == "<=") return Value(rd <= 0);
+                if (bin->op == ">") return Value(rd > 0);
+                if (bin->op == ">=") return Value(rd >= 0);
+			} else if (l.is_bigint() || r.is_bigint()) {
                 ::BigInt lb = l.is_bigint() ? std::get<::BigInt>(l.data) : ::BigInt(l.as_number());
                 ::BigInt rb = r.is_bigint() ? std::get<::BigInt>(r.data) : ::BigInt(r.as_number());
 
@@ -805,7 +816,16 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
                     if (bin->op == ">") return Value(!result_less && ls != rs);
                     if (bin->op == ">=") return Value(!result_less);
                 }
-            } else {
+            } else if (l.is_rational() || r.is_rational()) {
+				const auto& ld = l.as_rational();
+				const auto& rd = r.as_rational();
+				if (bin->op == "==") return Value(ld == rd);
+                if (bin->op == "!=") return Value(ld != rd);
+                if (bin->op == "<") return Value(ld < rd);
+                if (bin->op == "<=") return Value(ld <= rd);
+                if (bin->op == ">") return Value(ld > rd);
+                if (bin->op == ">=") return Value(ld >= rd);
+			} else {
                 double ld = l.as_number();
                 double rd = r.as_number();
 
@@ -856,6 +876,10 @@ Value Interpreter::eval_BinaryExpr(const BinaryExpr* bin) {
 
 Value Interpreter::eval_UnaryExpr(const UnaryExpr* unary) {
     Value v = eval(unary->operand.get());
+
+	if (unary->op == "not") {
+		return Value(!v.as_bool());
+	}
 
     if (unary->op == "-") {
 		if (v.is_infinity()) {

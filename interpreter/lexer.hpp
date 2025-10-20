@@ -71,6 +71,7 @@ enum class LexerTokenType {
 	LogicalAnd,	 // &&
 	//Or,			 // |
 	LogicalOr,	 // ||
+	LogicalNot,
     EndOfFile,
     EndOfLine,
     Unknown
